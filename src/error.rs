@@ -1,7 +1,13 @@
-
-pub enum CompileErrors
+pub enum CompileErrors<'a>
 {
 	Usage,
+	NoSuchFile(&'a str),
+}
+
+pub enum ExitCodes
+{
+	Usage,
+	NoSuchFile,
 }
 
 // Prints a formatted error message to stderr.
@@ -9,16 +15,27 @@ pub enum CompileErrors
 #[macro_export]
 macro_rules! print_err 
 {
-	( $err_code:expr, $( $print_data:tt )* ) => 
+	( $compile_error:expr, $( $print_data:tt )* ) => 
 	{
 		// Print "slow: error - " while "slow" is white bold and "error" is in red bold
 		eprint!("\x1b[1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
-		match $err_code
+		let error_code: i32;	
+		match $compile_error
 		{
-			CompileErrors::Usage => eprint!("Incorrect usage.\n\t")
+			CompileErrors::Usage => 
+			{
+				eprint!("Incorrect usage.\n\t");
+				error_code = error::ExitCodes::Usage as i32;
+			},
+
+			CompileErrors::NoSuchFile(filepath) =>
+			{
+				eprint!("No such file: \"{filepath}\"\n\t");
+				error_code = error::ExitCodes::NoSuchFile as i32;
+			}
 		}
 		eprintln!($($print_data)*);
-		std::process::exit($err_code as i32 + 1);
+		std::process::exit(error_code + 1);
 	}
 }
 
