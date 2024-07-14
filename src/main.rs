@@ -9,5 +9,5 @@ fn main() {
     }
 
     let filename: &String = &argv[1];
-    println!("Compiling file \"{filename}\"");
+    print_msg!("Compiling file \"{filename}\"");
 }

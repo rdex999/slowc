@@ -1,3 +1,4 @@
+
 pub enum CompileErrors
 {
 	Usage,
@@ -10,17 +11,37 @@ macro_rules! print_err
 {
 	( $err_code:expr, $( $print_data:tt )* ) => 
 	{
-		use std::io::Write;
-		eprint!("\x1b[97;1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
+		// Print "slow: error - " while "slow" is white bold and "error" is in red bold
+		eprint!("\x1b[1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
 		match $err_code
 		{
 			CompileErrors::Usage => eprint!("Incorrect usage.\n\t")
 		}
-		std::io::stdout().flush().unwrap();
 		eprintln!($($print_data)*);
 		std::process::exit($err_code as i32 + 1);
 	}
 }
 
+// Prints a formatted warning message to stdout.
+#[macro_export]
+macro_rules! print_wrn
+{
+	( $( $print_data:tt )* ) => 
+	{
+		// Print "slow: warning - " while "slow" is in bold and "warning" is in yellow bold
+		print!("\x1b[1mslowc\x1b[0m: \x1b[93;1mwarning\x1b[0m - ");
+		println!($($print_data)*);
+	}
+}
 
-// Print "slow: error - " while "slow" is white bold and "error" is in red bold
+// Prints a formatted message to stdout.
+#[macro_export]
+macro_rules! print_msg
+{
+	( $( $print_data:tt )* ) => 
+	{
+		// Print "slow: info - " while "slow" is in bold and "info" is in white bold
+		print!("\x1b[1mslowc\x1b[0m: \x1b[97;1minfo\x1b[0m - ");
+		println!($($print_data)*);
+	}
+}
