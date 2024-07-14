@@ -1,3 +1,13 @@
+mod error;
+use error::CompileErrors;
+
 fn main() {
-    println!("Hello, world!");
+    let argv: Vec<String> = std::env::args().collect();
+    if argv.len() < 2
+    {
+        print_err!(CompileErrors::Usage, "Correct usage: slowc <FILE.slw>");
+    }
+
+    let filename: &String = &argv[1];
+    println!("Compiling file \"{filename}\"");
 }
