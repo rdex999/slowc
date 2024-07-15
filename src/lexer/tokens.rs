@@ -27,11 +27,13 @@ pub enum TokenKind
 	LeftParen,
 	RightParen,
 	Semicolon,
+	Ident(String),
+	Create,
 }
 
 impl Token
 {
-	pub fn new(kind: TokenKind, span: TextSpan) -> Self
+	pub fn new(kind: TokenKind, span: TextSpan) -> Token
 	{
 		return Self
 		{
