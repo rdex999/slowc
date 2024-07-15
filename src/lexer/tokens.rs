@@ -19,11 +19,14 @@ pub enum TokenKind
 {
 	Eof,
 	IntLit(i64),
-	// Plus,
-	// Minus,
-	// Asterisk,
-	// ForwardSlash,
+	Plus,
+	Minus,
+	Asterisk,
+	ForwardSlash,
 	// BackwardsSlash,
+	LeftParen,
+	RightParen,
+	Semicolon,
 }
 
 impl Token

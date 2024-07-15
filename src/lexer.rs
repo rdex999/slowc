@@ -1,20 +1,25 @@
 mod tokens;
 
+use core::{str, panic};
+use std::iter::Peekable;
+
 pub use tokens::*;
+
+use crate::{error::CompileErrors, print_err};
 
 pub struct Lexer<'a>
 {
 	source: &'a str,
-	iter: core::str::Chars<'a>,
+	iter: Peekable<str::Chars<'a>>,
 	current: Option<char>,
 	position: usize,
 }
 
-impl Lexer<'_>
+impl<'a> Lexer<'a>
 {
-	pub fn new<'a>(source: &'a str) -> Lexer<'a>
+	pub fn new(source: &'a str) -> Lexer<'a>
 	{
-		let mut iter = source.chars();	
+		let mut iter = source.chars().peekable();
 		let current = iter.next();
 
 		return Lexer
@@ -29,6 +34,17 @@ impl Lexer<'_>
 	// Could just make a vectors of tokens, but its inefficient. This is much better
 	pub fn next_token(&mut self) -> Token
 	{
+		while let Some(current_ch) = self.current
+		{
+			if Self::is_whitespace(current_ch)
+			{
+				self.advance();
+			} else
+			{
+				break;
+			}
+		}
+		
 		if self.position >= self.source.len() || self.current == Option::None
 		{
 			return Token::new(
@@ -36,12 +52,13 @@ impl Lexer<'_>
 				TextSpan::new(self.position, self.position)
 			);
 		}
-
+		
 		let ch = self.current.unwrap();
+		let start = self.position;
+		let end: usize;
+
 		if Self::is_number_start(ch)
 		{
-			let start = self.position;
-			let end: usize;	
 			let number = self.parse_number();	
 			end = self.position;
 			return Token::new(
@@ -50,7 +67,42 @@ impl Lexer<'_>
 			);
 		}
 
-		return Token::new(TokenKind::Eof, TextSpan::new(self.position, self.position));
+		if Self::is_op_start(ch)
+		{
+			if let Some(_next_ch) = self.advance()
+			{
+				end = self.position;
+				let kind: TokenKind;
+
+				match ch {
+					'+' => kind = TokenKind::Plus,
+					'-' => kind = TokenKind::Minus,
+					'*' => kind = TokenKind::Asterisk,
+					'/' => kind = TokenKind::ForwardSlash,
+					'(' => kind = TokenKind::LeftParen,
+					')' => kind = TokenKind::RightParen,
+					';' => kind = TokenKind::Semicolon,
+
+					_ => {
+						panic!("Dev error!!!!!\nLexer, operator match default");
+					}
+				}
+
+				return Token::new(
+					kind,
+					TextSpan::new(start, end)
+				);
+
+			} else
+			{
+				print_err!(CompileErrors::UnexpectedEof, "Opetator \"{ch}\" found at the end of the file.");
+			}
+		}
+
+		return Token::new(
+			TokenKind::Eof, 
+			TextSpan::new(self.position, self.position)
+		);
 	}
 
 	fn advance(&mut self) -> Option<char>
@@ -81,5 +133,22 @@ impl Lexer<'_>
 		}
 		return result;
 	}
+
+	// Operators such as (, ), *, +, -, ;, /, \, 
+	fn is_op_start(ch: char) -> bool
+	{
+		return !ch.is_alphanumeric() && ch != '\'' && ch != '\"' && !ch.is_whitespace();
+	}
+
+	fn is_whitespace(ch: char) -> bool
+	{
+		return ch.is_whitespace();
+	}
+
+	// fn peek(&mut self) -> Option<char>
+	// {
+	// 	let next = self.iter.peek().cloned();
+	// 	return next;
+	// }
 
 }

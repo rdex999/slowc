@@ -11,6 +11,8 @@ fn main() {
     }
     
     slowc_compile_file(&argv[1]);
+    // let ch: char = ' ';
+    // println!("alnum: {}", lexer::Lexer::is_op_start(ch));
 }
 
 fn slowc_compile_file(filepath: &str)
