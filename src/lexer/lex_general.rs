@@ -77,7 +77,8 @@ impl<'a> Lexer<'a>
 		let kind: TokenKind;
 
 		match &name[..] {
-			KEYWORD_VAR_DECL => kind = TokenKind::VarDecl,
+			KEYWORD_VAR_DECL 	=> kind = TokenKind::VarDecl,
+			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
 			_ => kind = TokenKind::Ident(name)
 		}
 

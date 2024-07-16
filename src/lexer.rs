@@ -7,7 +7,7 @@ use std::iter::Peekable;
 
 pub use tokens::*;
 
-use crate::{error::CompileErrors, print_err};
+use super::{error::CompileErrors, print_err};
 
 macro_rules! create_keyword {
 	($heb:expr, $eng:expr) => {
@@ -23,7 +23,8 @@ macro_rules! create_keyword {
 
 // Note: variables will be declared in the following format: "create i32 my_number = 420;"
 // or "ויהי חתום32 מספר_או_משהו = 420;" read from right to left, and the semicolon if actually on the end of the sentence (at the left part)
-const KEYWORD_VAR_DECL: &str = create_keyword!("ויהי", "let");
+const KEYWORD_VAR_DECL	: &str 	= create_keyword!("ויהי", "let");
+const KEYWORD_FUNC_DECL	: &str 	= create_keyword!("פונקציה", "func");
 
 pub struct Lexer<'a>
 {

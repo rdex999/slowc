@@ -1,5 +1,6 @@
 mod error;
 mod lexer;
+mod ast;
 use error::CompileErrors;
 
 fn main() {
@@ -23,15 +24,12 @@ fn slowc_compile_file(filepath: &str)
 
     let mut lexer = lexer::Lexer::new(&source);
 
-    // let mut itr = lexer.into_iter();
-    while let Some(token) = lexer.next()
-    {
-        print_msg!("{:?}", token);
-    }
+    let mut parser = ast::parser::Parser::new(lexer);
 
-    // for token in lexer
+    // let ast = parser.generate_ast();
+
+    // while let Some(token) = lexer.next()
     // {
     //     print_msg!("{:?}", token);
     // }
-
 }

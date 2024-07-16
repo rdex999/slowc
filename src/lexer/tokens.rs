@@ -28,6 +28,7 @@ pub enum TokenKind
 	Semicolon,
 	Ident(String),
 	VarDecl,
+	FuncDecl,
 }
 
 impl Token
