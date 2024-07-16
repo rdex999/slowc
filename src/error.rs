@@ -3,6 +3,7 @@ pub enum CompileErrors<'a>
 	Usage,
 	NoSuchFile(&'a str),
 	UnexpectedEof,
+	NoSuchOperator(&'a str),
 }
 
 pub enum ExitCodes
@@ -10,6 +11,7 @@ pub enum ExitCodes
 	Usage,
 	NoSuchFile,
 	UnexpectedEof,
+	NoSuchOperator,
 }
 
 
@@ -20,7 +22,10 @@ macro_rules! print_err
 {
 	( $compile_error:expr, $( $print_data:tt )* ) => 
 	{
+		// Can someone please explain to me why the fuck do i need this line
+		// I mean i dont need to do it for the CompileErrors enum
 		use crate::error::ExitCodes;
+
 		// Print "slow: error - " while "slow" is white bold and "error" is in red bold
 		eprint!("\x1b[1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
 		let error_code: i32;	
@@ -43,9 +48,15 @@ macro_rules! print_err
 				eprint!("Unexpected Eof.\n\t");
 				error_code = ExitCodes::UnexpectedEof as i32;
 			},
+
+			CompileErrors::NoSuchOperator(op) =>
+			{
+				eprint!("No such operator \"{op}\".");
+				error_code = ExitCodes::NoSuchOperator as i32;
+			},
 		}
 		eprintln!($($print_data)*);
-		std::process::exit(error_code + 1);
+		std::process::exit(error_code + 1); 	/* +1 because error codes start from 1 and enums start from 0 */
 	}
 }
 

@@ -1,7 +1,6 @@
 mod error;
 mod lexer;
 use error::CompileErrors;
-use lexer::TokenKind;
 
 fn main() {
     let argv: Vec<String> = std::env::args().collect();
@@ -24,11 +23,15 @@ fn slowc_compile_file(filepath: &str)
 
     let mut lexer = lexer::Lexer::new(&source);
 
-    let mut token = lexer.next_token();
-    while token.kind != TokenKind::Eof
+    // let mut itr = lexer.into_iter();
+    while let Some(token) = lexer.next()
     {
         print_msg!("{:?}", token);
-        token = lexer.next_token();
     }
+
+    // for token in lexer
+    // {
+    //     print_msg!("{:?}", token);
+    // }
 
 }

@@ -1,8 +1,8 @@
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Token
 {
 	pub kind: TokenKind,
-	#[allow(dead_code)]
 	pub span: TextSpan,
 }
 
@@ -17,7 +17,6 @@ pub struct TextSpan
 #[derive(PartialEq, Debug)]
 pub enum TokenKind
 {
-	Eof,
 	IntLit(i64),
 	Plus,
 	Minus,
@@ -28,7 +27,7 @@ pub enum TokenKind
 	RightParen,
 	Semicolon,
 	Ident(String),
-	Create,
+	VarDecl,
 }
 
 impl Token
