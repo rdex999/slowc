@@ -71,12 +71,15 @@ macro_rules! print_err
 #[macro_export]
 macro_rules! print_errln {
 	($compile_error:expr, $source_index:expr, $lexer:expr, $( $print_data:tt )* ) => {
-		// Print "slow: error - " while "slow" is white bold and "error" is in red bold
+		// Print "slow: error - " while "slow" is in bold and "error" is in red bold
 		eprint!("\x1b[1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
 		let exit_code = crate::error::get_exit_code($compile_error);
-		let (line, line_contents) = $lexer.get_line_from_index($source_index);
+		let line = $lexer.get_line_from_index($source_index).unwrap_or_else(|| {
+			panic!("Dev error!!!!\nprint_errln!, get_line_from_index() returned None.\nLine: {}", line!());
+		});
 		eprintln!($($print_data)*);
-		eprintln!("\tOn line {}: {}", line + 1, line_contents);
+		eprintln!("\tOn line {}: {}", line.line_index + 1, line.line_contents);
+		eprintln!("\t   {: <1$}\x1b[1mHere: <---->\x1b[0m", "", line.column);
 		std::process::exit(exit_code as i32 + 1); 	/* +1 because error codes start from 1 and enums start from 0 */
 	};
 }

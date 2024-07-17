@@ -35,6 +35,25 @@ pub struct Lexer<'a>
 	position: usize,
 }
 
+pub struct LineInfo
+{
+	pub line_index: usize,
+	pub column: usize,
+	pub line_contents: String	
+}
+
+impl LineInfo
+{
+	pub fn new(line_index: usize, column: usize, line_contents: String) -> Self
+	{
+		return Self {
+			line_index,
+			column,
+			line_contents
+		};
+	}
+}
+
 impl<'a> Iterator for Lexer<'a>
 {
 	type Item = Token;
@@ -99,25 +118,31 @@ impl<'a> Lexer<'a>
 		return self.current;
 	}
 
-	// Takes O(n), returns the line number and the text in the line
-	pub fn get_line_from_index(&self, index: usize) -> (usize, &str) 
+	// Takes O(n), line, column, line_contents
+	pub fn get_line_from_index(&self, mut index: usize) -> Option<LineInfo>
 	{
 		if index >= self.source.len()
 		{
-			return (usize::MAX, "");
+			return None;
 		}
 
 		let mut idx_in_source: usize = 0;
 		for (i, line) in self.source.lines().enumerate()
 		{
 			idx_in_source += line.len();
-
+			
 			if idx_in_source > index
 			{
-				return (i, line);
+				return Some(LineInfo::new(
+					i, 
+					index % idx_in_source,
+					line.to_string()
+				));
 			}
+			
+			index -= line.len() + 1;
 		}
 
-		return (usize::MAX, "");
+		return None;
 	}
 }

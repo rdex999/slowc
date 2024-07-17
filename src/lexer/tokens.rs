@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 #[allow(dead_code)]
 pub struct Token
 {
@@ -6,7 +6,7 @@ pub struct Token
 	pub span: TextSpan
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 #[allow(dead_code)]
 pub struct TextSpan
 {
@@ -14,9 +14,10 @@ pub struct TextSpan
 	pub end: usize,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum TokenKind
 {
+	None,
 	IntLit(i64),
 	Plus,
 	Minus,

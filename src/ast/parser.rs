@@ -7,48 +7,52 @@ use std::collections::HashMap;
 pub struct Parser<'a>
 {
 	ir: Root,
-	tokens_itr: Lexer<'a>,
+	lexer: Lexer<'a>,
 	current_token: Token
 }
 
 impl<'a> Parser<'a>
 {
-	pub fn new(mut lexer: Lexer<'a>) -> Self
+	pub fn new(lexer: Lexer<'a>) -> Self
 	{
-		let first = lexer.next();
 		return Self{
 			ir: Root::new(HashMap::new()),
-			tokens_itr: lexer,
-			current_token: first.unwrap()
+			lexer,
+			current_token: Token::new( 					/* Dont really need this line, but yk if rust wants it so bad.. */
+				TokenKind::None,
+				TextSpan::new(0, 0)
+			)
 		};
 	}
 
 	pub fn generate_ir(&mut self) -> &Root
 	{
-		match self.current_token.kind
+		while let Some(token) = self.advance_token()
 		{
-			TokenKind::FuncDecl =>
+			match token.kind
 			{
-				let (identifier, func) = self.parse_function();
-				self.ir.functions.insert(identifier, func);
+				TokenKind::FuncDecl =>
+				{
+					let (identifier, func) = self.parse_function();
+					self.ir.functions.insert(identifier, func);
+				}
+				
+				_ => 
+				{
+					// print_errln!(CompileError::Syntax, token.span.start, self.lexer, "Unexpected entity at global scope.");
+				},
 			}
-
-			_ => 
-			{
-				println!("Dev error line {}", line!()); 
-				std::process::exit(-1);
-			},
 		}
 
 		return &self.ir;
 	}
 
-	fn advance_token(&mut self) -> Option<&Token>
+	fn advance_token(&mut self) -> Option<Token>
 	{
-		if let Some(next_token) = self.tokens_itr.next()
+		if let Some(next_token) = self.lexer.next()
 		{
 			self.current_token = next_token;
-			return Some(&self.current_token);
+			return Some(self.current_token.clone());
 		}
 		return None;
 	}
@@ -57,35 +61,37 @@ impl<'a> Parser<'a>
 	{
 		let first_token_pos = self.current_token.span.start;
 
-		if let Some(token_func_ident) = self.advance_token()
-		{
-			if let TokenKind::Ident(identifier) = &token_func_ident.kind
-			{
-				// if let Some(token_func_type) = self.advance_token()
-				// {
-				// 	if Self::is_type(token_func_type.kind)
-				// 	{
-				// 	}
-				// }
-				
-				let stmts: Vec<Statement> = Vec::new();
+		let token_ident = self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, first_token_pos, self.lexer, "Unexpected EOF while parsing function.");
+		});
 
-				return (identifier.to_string(), Function::new(stmts));
-			} else
-			{
-				let start = token_func_ident.span.start;
-				print_errln!(CompileError::Syntax, start, self.tokens_itr, "Expected function identifier after {KEYWORD_FUNC_DECL}.");
-			}
-		} else 
+		let identifier: String;
+		if let TokenKind::Ident(ident) = token_ident.kind
 		{
-			// print_err!(CompileError::UnexpectedEof, "Started function declaration at the end of the file.");
-			print_errln!(CompileError::Syntax, first_token_pos, self.tokens_itr, "Unexpected EOF after function declaration.");
+			identifier = ident;
+		} else
+		{
+			print_errln!(CompileError::Syntax, token_ident.span.start, self.lexer, "Expected function identifier after {KEYWORD_FUNC_DECL}");
 		}
+
+		let token_return_type = self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, token_ident.span.end, self.lexer, "Unexpected EOF while parsing function.");
+		});
+
+		if !Self::is_type(&token_return_type.kind)
+		{
+			print_errln!(CompileError::Syntax, token_return_type.span.start, self.lexer, "Expected function return type after identifier.");
+		}
+
+		/* TODO: parse arguments, and curly braces */
+
+		return (identifier, Function::new(Vec::new()));
+
 	}
 
 	// checks for i32, ...
-	fn is_type(token_kind: TokenKind) -> bool
+	fn is_type(token_kind: &TokenKind) -> bool
 	{
-		return token_kind == TokenKind::I32;
+		return *token_kind == TokenKind::I32;
 	}
 }

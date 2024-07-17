@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Root
 {
 	pub functions: HashMap<String, Function>
@@ -8,18 +9,21 @@ pub struct Root
 
 // This will have a return type field, calling convenction, and other shit in the future
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct Function
 {
 	pub stmts: Vec<Statement>
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Statement
 {
 	VarDecl(VarDeclInfo),
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct VarDeclInfo
 {
 	pub identifier: String,	
@@ -27,12 +31,14 @@ pub struct VarDeclInfo
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum ExprType
 {
 	BinExprT(BinExpr),
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct BinExpr
 {
 	pub operation: BinExprOp,
@@ -41,6 +47,7 @@ pub struct BinExpr
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum BinExprOp
 {
 	BinAdd,
@@ -50,6 +57,7 @@ pub enum BinExprOp
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum BinExprPart
 {
 	Expr(Box<BinExpr>),
@@ -57,6 +65,7 @@ pub enum BinExprPart
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Value
 {
 	I32(i32),		/* (Not funny) */
@@ -65,6 +74,7 @@ pub enum Value
 
 impl Root
 {
+#[allow(dead_code)]
 	pub fn new(functions: HashMap<String, Function>) -> Self
 	{
 		return Self{
@@ -75,6 +85,7 @@ impl Root
 
 impl Function
 {
+#[allow(dead_code)]
 	pub fn new(stmts: Vec<Statement>) -> Self
 	{
 		return Self{
@@ -85,6 +96,7 @@ impl Function
 
 impl VarDeclInfo
 {
+#[allow(dead_code)]
 	pub fn new(identifier: String, expr_type: ExprType) -> Self
 	{
 		return Self{
@@ -96,6 +108,7 @@ impl VarDeclInfo
 
 impl BinExpr
 {
+#[allow(dead_code)]
 	pub fn new(operation: BinExprOp, lhs: BinExprPart, rhs: BinExprPart) -> Self
 	{
 		return Self{
