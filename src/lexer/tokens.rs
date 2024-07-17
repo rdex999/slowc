@@ -3,15 +3,15 @@
 pub struct Token
 {
 	pub kind: TokenKind,
-	pub span: TextSpan,
+	pub span: TextSpan
 }
 
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct TextSpan
 {
-	start: usize,
-	end: usize,
+	pub start: usize,
+	pub end: usize,
 }
 
 #[derive(PartialEq, Debug)]
@@ -22,13 +22,17 @@ pub enum TokenKind
 	Minus,
 	Asterisk,
 	ForwardSlash,
+	Equal,
 	// BackwardsSlash,
 	LeftParen,
 	RightParen,
+	LeftCurly,
+	RightCurly,
 	Semicolon,
 	Ident(String),
 	VarDecl,
 	FuncDecl,
+	I32,
 }
 
 impl Token

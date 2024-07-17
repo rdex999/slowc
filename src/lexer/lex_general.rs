@@ -25,35 +25,36 @@ impl<'a> Lexer<'a>
 	pub fn lex_operator(&mut self) -> Token
 	{
 		let ch = self.current.unwrap();
-		if let Some(next_ch) = self.advance()
-		{
-			let start = self.position - 1;
-			let end = self.position;
-			let kind: TokenKind;
+		let start = self.position - 1;
+		let end = self.position;
+		let kind: TokenKind;
+		self.advance();
 
-			match ch {
-				'+' => kind = TokenKind::Plus,
-				'-' => kind = TokenKind::Minus,
-				'*' => kind = TokenKind::Asterisk,
-				'/' => kind = TokenKind::ForwardSlash,
-				'(' => kind = TokenKind::LeftParen,
-				')' => kind = TokenKind::RightParen,
-				';' => kind = TokenKind::Semicolon,
-				_ => {
-					let mut op = String::from(ch);
-					if Self::is_op_start(next_ch) { op.push(next_ch);}
-					print_err!(CompileErrors::NoSuchOperator(&op[..]), "");
+		match ch {
+			'+' => kind = TokenKind::Plus,
+			'-' => kind = TokenKind::Minus,
+			'*' => kind = TokenKind::Asterisk,
+			'/' => kind = TokenKind::ForwardSlash,
+			'=' => kind = TokenKind::Equal,
+			'(' => kind = TokenKind::LeftParen,
+			')' => kind = TokenKind::RightParen,
+			'{' => kind = TokenKind::LeftCurly,
+			'}' => kind = TokenKind::RightCurly,
+			';' => kind = TokenKind::Semicolon,
+			_ => {
+				let mut op = String::from(ch);
+				if let Some(next_ch) = self.current
+				{
+					op.push(next_ch);
 				}
+				print_err!(CompileError::NoSuchOperator(&op[..]), "");
 			}
-
-			return Token::new(
-				kind,
-				TextSpan::new(start, end)
-			);
-		} else
-		{
-			print_err!(CompileErrors::UnexpectedEof, "Opetator \"{ch}\" found at the end of the file.");
 		}
+
+		return Token::new(
+			kind,
+			TextSpan::new(start, end)
+		);
 	}
 
 	pub fn lex_name(&mut self) -> Token
@@ -79,6 +80,7 @@ impl<'a> Lexer<'a>
 		match &name[..] {
 			KEYWORD_VAR_DECL 	=> kind = TokenKind::VarDecl,
 			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
+			KEYWORD_I32			=> kind = TokenKind::I32,
 			_ => kind = TokenKind::Ident(name)
 		}
 

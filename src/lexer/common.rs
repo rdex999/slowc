@@ -30,7 +30,6 @@ impl<'a> Lexer<'a>
 
 	// pub fn peek(&mut self) -> Option<char>
 	// {
-	// 	let next = self.iter.peek().cloned();
-	// 	return next;
+	// 	return self.itr.peek().cloned();
 	// }	
 }

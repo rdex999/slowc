@@ -7,7 +7,7 @@ use std::iter::Peekable;
 
 pub use tokens::*;
 
-use super::{error::CompileErrors, print_err};
+use super::{error::CompileError, print_err};
 
 macro_rules! create_keyword {
 	($heb:expr, $eng:expr) => {
@@ -23,8 +23,9 @@ macro_rules! create_keyword {
 
 // Note: variables will be declared in the following format: "create i32 my_number = 420;"
 // or "ויהי חתום32 מספר_או_משהו = 420;" read from right to left, and the semicolon if actually on the end of the sentence (at the left part)
-const KEYWORD_VAR_DECL	: &str 	= create_keyword!("ויהי", "let");
-const KEYWORD_FUNC_DECL	: &str 	= create_keyword!("פונקציה", "func");
+pub const KEYWORD_VAR_DECL	: &str = create_keyword!("ויהי", "let");
+pub const KEYWORD_FUNC_DECL	: &str = create_keyword!("פונקציה", "func");
+pub const KEYWORD_I32		: &str = create_keyword!("חתום32", "i32");
 
 pub struct Lexer<'a>
 {
@@ -96,5 +97,27 @@ impl<'a> Lexer<'a>
 		self.position += 1;
 		self.current = self.itr.next();
 		return self.current;
+	}
+
+	// Takes O(n), returns the line number and the text in the line
+	pub fn get_line_from_index(&self, index: usize) -> (usize, &str) 
+	{
+		if index >= self.source.len()
+		{
+			return (usize::MAX, "");
+		}
+
+		let mut idx_in_source: usize = 0;
+		for (i, line) in self.source.lines().enumerate()
+		{
+			idx_in_source += line.len();
+
+			if idx_in_source > index
+			{
+				return (i, line);
+			}
+		}
+
+		return (usize::MAX, "");
 	}
 }
