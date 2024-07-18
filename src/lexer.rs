@@ -140,7 +140,7 @@ impl<'a> Lexer<'a>
 				));
 			}
 			
-			index -= line.len() + 1;
+			index -= line.len();
 		}
 
 		return None;
