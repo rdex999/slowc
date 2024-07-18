@@ -29,6 +29,8 @@ pub enum TokenKind
 	RightParen,
 	LeftCurly,
 	RightCurly,
+	Arrow,
+	Comma,
 	Semicolon,
 	Ident(String),
 	VarDecl,

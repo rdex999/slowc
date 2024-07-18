@@ -28,11 +28,21 @@ impl<'a> Lexer<'a>
 		let start = self.position - 1;
 		let end = self.position;
 		let kind: TokenKind;
-		self.advance();
+		let next_ch = self.advance().unwrap_or('\0');
 
 		match ch {
 			'+' => kind = TokenKind::Plus,
-			'-' => kind = TokenKind::Minus,
+			'-' => 
+			{
+				if next_ch == '>'
+				{
+					self.advance();
+					kind = TokenKind::Arrow;
+				} else
+				{
+					kind = TokenKind::Minus;
+				}
+			},
 			'*' => kind = TokenKind::Asterisk,
 			'/' => kind = TokenKind::ForwardSlash,
 			'=' => kind = TokenKind::Equal,
@@ -41,12 +51,11 @@ impl<'a> Lexer<'a>
 			'{' => kind = TokenKind::LeftCurly,
 			'}' => kind = TokenKind::RightCurly,
 			';' => kind = TokenKind::Semicolon,
+			',' => kind = TokenKind::Comma,
+			
 			_ => {
 				let mut op = String::from(ch);
-				if let Some(next_ch) = self.current
-				{
-					op.push(next_ch);
-				}
+				op.push(next_ch);
 				print_err!(CompileError::NoSuchOperator(&op[..]), "");
 			}
 		}

@@ -24,6 +24,7 @@ fn slowc_compile_file(filepath: &str)
 
     let lexer = lexer::Lexer::new(&source);
 
+    
     let mut parser = ast::parser::Parser::new(lexer);
 
     let ir = parser.generate_ir();

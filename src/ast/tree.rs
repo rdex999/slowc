@@ -12,7 +12,8 @@ pub struct Root
 #[allow(dead_code)]
 pub struct Function
 {
-	pub stmts: Vec<Statement>
+	pub stmts: Vec<Statement>,
+	pub locals: Vec<Variable>
 }
 
 #[derive(Debug)]
@@ -72,6 +73,20 @@ pub enum Value
 
 }
 
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum Type
+{
+	I32,
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct Variable
+{
+	data_type: Type,
+}
+
 impl Root
 {
 #[allow(dead_code)]
@@ -86,10 +101,11 @@ impl Root
 impl Function
 {
 #[allow(dead_code)]
-	pub fn new(stmts: Vec<Statement>) -> Self
+	pub fn new(stmts: Vec<Statement>, locals: Vec<Variable>) -> Self
 	{
 		return Self{
 			stmts,
+			locals
 		};
 	}
 }
@@ -115,6 +131,16 @@ impl BinExpr
 			operation,
 			lhs,
 			rhs
+		};
+	}
+}
+
+impl Variable
+{
+	pub fn new(data_type: Type) -> Self 
+	{
+		return Self {
+			data_type,
 		};
 	}
 }
