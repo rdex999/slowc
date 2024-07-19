@@ -1,6 +1,7 @@
 mod function;
 mod statement;
 mod expression;
+mod variable;
 
 use super::{super::lexer::*, *};
 use std::collections::HashMap;
@@ -11,7 +12,6 @@ pub struct Parser<'a>
 	lexer: Lexer<'a>,
 	current_token: Token
 }
-
 
 impl<'a> Parser<'a>
 {

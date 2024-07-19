@@ -1,10 +1,9 @@
-use std::collections::HashMap;
 use crate::{ast::*, error::CompileError, lexer::*, print_errln};
-use super::Parser;
+use super::{Parser, variable::*};
 
 impl<'a> Parser<'a>
 {
-	pub fn parse_statement(&mut self, mut variables: &mut HashMap<String, Variable>) -> Option<Statement>
+	pub fn parse_statement(&mut self, mut variables: &mut LocalVariables) -> Option<Statement>
 	{
 		match self.current_token.kind {
 			TokenKind::VarDecl => return self.parse_var_decl(&mut variables),
@@ -13,7 +12,7 @@ impl<'a> Parser<'a>
 		}
 	}
 
-	pub fn parse_var_decl(&mut self, variables: &mut HashMap<String, Variable>) -> Option<Statement>
+	pub fn parse_var_decl(&mut self, variables: &mut LocalVariables) -> Option<Statement>
 	{
 		let stmt_pos = self.current_token.span;
 		let token_ident = self.advance_token().unwrap_or_else(|| {
@@ -38,7 +37,7 @@ impl<'a> Parser<'a>
 		}
 		let data_type = Self::kind_2_type(&token_data_type.kind);
 
-		variables.insert(identifier, Variable::new(data_type.clone()));		/* Dont kill me for using clone(), its a pure enum */
+		let new_var = variables.add_variable(identifier, data_type.clone());		/* Dont kill me for using clone(), its a pure enum */
 
 		let token_assign_or_semi = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, token_data_type.span.end, self.lexer, "While parsing variable declaration. Expected semicolon or assign operator (=).");
@@ -56,6 +55,9 @@ impl<'a> Parser<'a>
 		self.advance_token(); 	/* Skip equal token, now self.current_token is the first token of the expression */
 
 		let expr = self.parse_expression(data_type, variables);
-		return Some(Statement::Assign(expr));
+		return Some(Statement::Assign(VarUpdateInfo::new(
+			Writable::Var(new_var),
+			expr
+		)));
 	}
 }

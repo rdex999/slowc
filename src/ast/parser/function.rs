@@ -1,6 +1,5 @@
-use std::collections::HashMap;
 use crate::{ast::*, error::CompileError, lexer::*, print_errln};
-use super::Parser;
+use super::{Parser, variable::*};
 
 impl<'a> Parser<'a>
 {
@@ -70,14 +69,14 @@ impl<'a> Parser<'a>
 			break;											/* JUST FOR NOW */
 		}
 
-		let locals: Vec<Variable> = variables.values().cloned().collect();
+		let locals = variables.into_var_array();
 		return (identifier, Function::new(statements, locals, return_type));
 
 	}
 
-	pub fn parse_function_decl_parameters(&mut self) -> HashMap<String, Variable>
+	pub fn parse_function_decl_parameters(&mut self) -> LocalVariables
 	{
-		let mut args: HashMap<String, Variable> = HashMap::new();
+		let mut args = LocalVariables::new();
 
 		while let Some(token) = self.advance_token()
 		{
@@ -96,9 +95,7 @@ impl<'a> Parser<'a>
 
 					// NOTE: (to my future self getting a headache) because arguments will be pushed on the stack from right to left,
 					// The stack location (this variable will exist in the future) will just be positive
-					args.insert(identifier, Variable::new(
-						Self::kind_2_type(&token_arg_type.kind)
-					));
+					args.add_variable(identifier, Self::kind_2_type(&token_arg_type.kind));
 
 					let token_comma = self.advance_token().unwrap_or_else(|| {
 						print_errln!(CompileError::UnexpectedEof, token_arg_type.span.end, self.lexer, "While parsing function parameters.");

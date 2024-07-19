@@ -23,7 +23,22 @@ pub struct Function
 #[allow(dead_code)]
 pub enum Statement
 {
-	Assign(ExprType),
+	Assign(VarUpdateInfo),
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct VarUpdateInfo
+{
+	pub destination: Writable,
+	pub value: ExprType
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub enum Writable
+{
+	Var(Variable),
 }
 
 #[derive(Debug)]
@@ -125,6 +140,17 @@ impl Variable
 	{
 		return Self {
 			data_type,
+		};
+	}
+}
+
+impl VarUpdateInfo
+{
+	pub fn new(destination: Writable, value: ExprType) -> Self
+	{
+		return Self {
+			destination,
+			value
 		};
 	}
 }
