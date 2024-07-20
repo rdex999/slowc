@@ -39,7 +39,7 @@ pub struct Lexer<'a>
 
 impl<'a> Iterator for Lexer<'a>
 {
-	type Item = Token<'a>;
+	type Item = Token;
 	fn next(&mut self) -> Option<Self::Item> {
 		while let Some(current_ch) = self.current
 		{

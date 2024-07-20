@@ -11,7 +11,7 @@ use std::collections::HashMap;
 pub struct Parser<'a>
 {
 	ir: Root,
-	tokens: Vec<Token<'a>>,
+	tokens: Vec<Token>,
 	position: usize,
 	source: &'a str
 }
@@ -50,13 +50,6 @@ impl<'a> Parser<'a>
 				},
 
 			}
-				// if let Some(tok) = self.advance_token()
-				// {
-				// 	token = tok;
-				// } else 
-				// {
-				// 	break;
-				// }
 		}
 
 		return &self.ir;
@@ -69,12 +62,12 @@ impl<'a> Parser<'a>
 			return None;
 		}
 		self.position += 1;
-		return Some(self.tokens[self.position].clone());
+		return Some(self.tokens[self.position]);
 	}
 
 	fn current_token(&self) -> Token
 	{
-		return self.tokens[self.position].clone();
+		return self.tokens[self.position];
 	}
 	
 	// checks for i32, ...
@@ -89,6 +82,11 @@ impl<'a> Parser<'a>
 			TokenKind::I32 => return Type::I32,
 			_ => panic!("Dev error!! parser, kind_2_type() called with token of kind {:?}", token_kind)
 		};
+	}
+
+	fn get_text(&self, text_span: &TextSpan) -> &'a str
+	{
+		return &self.source[text_span.start..text_span.end];
 	}
 
 }

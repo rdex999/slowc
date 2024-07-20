@@ -1,7 +1,7 @@
 use super::*;
 impl<'a> Lexer<'a>
 {
-	pub fn lex_number(&mut self) -> Token<'a>
+	pub fn lex_number(&mut self) -> Token
 	{
 		let mut number: i64 = 0;
 		let start = self.position;
@@ -22,7 +22,7 @@ impl<'a> Lexer<'a>
 		);
 	}
 
-	pub fn lex_operator(&mut self) -> Token<'a>
+	pub fn lex_operator(&mut self) -> Token
 	{
 		let ch = self.current.unwrap();
 		let start = self.position - 1;
@@ -66,33 +66,31 @@ impl<'a> Lexer<'a>
 		);
 	}
 
-	pub fn lex_name(&mut self) -> Token<'a>
+	pub fn lex_name(&mut self) -> Token
 	{
 		let start = self.position;
 		let end: usize;
-		let mut ch = self.current.unwrap();
-		
-		loop
+		let ch = self.current.unwrap();
+		let mut name = String::from(ch);
+		while let Some(next_ch) = self.advance()
 		{
-			if !Self::is_name_part(ch)
+			if Self::is_name_part(next_ch)
+			{
+				name.push(next_ch);
+			} else
 			{
 				break;
-			}
-			if let Some(next_ch) = self.advance()
-			{
-				ch = next_ch;
-			}
-		}	
-		
+			}	
+		}
+
 		end = self.position;
 		let kind: TokenKind;
-		let name = &self.source[start..end];
 
-		match name {
+		match &name[..] {
 			KEYWORD_VAR_DECL 	=> kind = TokenKind::VarDecl,
 			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
 			KEYWORD_I32			=> kind = TokenKind::I32,
-			_ => kind = TokenKind::Ident(name)
+			_ => kind = TokenKind::Ident
 		}
 
 		return Token::new(
