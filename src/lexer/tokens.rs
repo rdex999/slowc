@@ -1,8 +1,8 @@
 #[derive(Clone, Debug)]
 #[allow(dead_code)]
-pub struct Token
+pub struct Token<'a>
 {
-	pub kind: TokenKind,
+	pub kind: TokenKind<'a>,
 	pub span: TextSpan
 }
 
@@ -15,9 +15,9 @@ pub struct TextSpan
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum TokenKind
+pub enum TokenKind<'a>
 {
-	None,
+	Eof,
 	IntLit(i64),
 	Plus,
 	Minus,
@@ -32,15 +32,15 @@ pub enum TokenKind
 	Arrow,
 	Comma,
 	Semicolon,
-	Ident(String),
+	Ident(&'a str),
 	VarDecl,
 	FuncDecl,
 	I32,
 }
 
-impl Token
+impl<'a> Token<'a>
 {
-	pub fn new(kind: TokenKind, span: TextSpan) -> Token
+	pub fn new(kind: TokenKind<'a>, span: TextSpan) -> Token
 	{
 		return Self
 		{

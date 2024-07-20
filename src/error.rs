@@ -16,6 +16,53 @@ pub enum ExitCodes
 	Syntax,
 }
 
+pub struct LineInfo
+{
+	pub line_index: usize,
+	pub column: usize,
+	pub line_contents: String	
+}
+
+impl LineInfo
+{
+	pub fn new(line_index: usize, column: usize, line_contents: String) -> Self
+	{
+		return Self {
+			line_index,
+			column,
+			line_contents
+		};
+	}
+}
+
+// Takes O(n), line, column, line_contents
+pub fn get_line_from_index(source: &str, mut index: usize) -> Option<LineInfo>
+{
+	if index >= source.len()
+	{
+		return None;
+	}
+
+	let mut idx_in_source: usize = 0;
+	for (i, line) in source.lines().enumerate()
+	{
+		idx_in_source += line.len();
+		
+		if idx_in_source > index
+		{
+			return Some(LineInfo::new(
+				i, 
+				index % idx_in_source,
+				line.to_string()
+			));
+		}
+		
+		index -= line.len();
+	}
+
+	return None;
+}
+
 
 pub fn get_exit_code(compile_error: CompileError) -> ExitCodes
 {
@@ -70,11 +117,11 @@ macro_rules! print_err
 
 #[macro_export]
 macro_rules! print_errln {
-	($compile_error:expr, $source_index:expr, $lexer:expr, $( $print_data:tt )* ) => {
+	($compile_error:expr, $source:expr, $source_index:expr, $( $print_data:tt )* ) => {
 		// Print "slow: error - " while "slow" is in bold and "error" is in red bold
 		eprint!("\x1b[1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
 		let exit_code = crate::error::get_exit_code($compile_error);
-		let line = $lexer.get_line_from_index($source_index).unwrap_or_else(|| {
+		let line = crate::error::get_line_from_index($source, $source_index).unwrap_or_else(|| {
 			panic!("Dev error!!!!\nprint_errln!, get_line_from_index() returned None.\nLine: {}", line!());
 		});
 		eprintln!($($print_data)*);

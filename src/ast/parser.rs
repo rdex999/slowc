@@ -3,36 +3,41 @@ mod statement;
 mod expression;
 mod variable;
 
+use crate::{error::CompileError, print_errln};
+
 use super::{super::lexer::*, *};
 use std::collections::HashMap;
 
 pub struct Parser<'a>
 {
 	ir: Root,
-	lexer: Lexer<'a>,
-	current_token: Token
+	tokens: Vec<Token<'a>>,
+	position: usize,
+	source: &'a str
 }
 
 impl<'a> Parser<'a>
 {
 	pub fn new(lexer: Lexer<'a>) -> Self
 	{
+		let source = lexer.source;
 		return Self{
 			ir: Root::new(HashMap::new()),
-			lexer,
-			current_token: Token::new( 					/* Dont really need this line, but yk if rust wants it so bad.. */
-				TokenKind::None,
-				TextSpan::new(0, 0)
-			)
+			tokens: lexer.collect(),
+			position: 0,
+			source
 		};
 	}
 
 	pub fn generate_ir(&mut self) -> &Root
 	{
-		while let Some(token) = self.advance_token()
+		loop
 		{
+			let token = self.current_token();
 			match token.kind
 			{
+				TokenKind::Eof => break,
+
 				TokenKind::FuncDecl =>
 				{
 					let (identifier, func) = self.parse_function_decl();
@@ -41,9 +46,17 @@ impl<'a> Parser<'a>
 				
 				_ => 
 				{
-					// print_errln!(CompileError::Syntax, token.span.start, self.lexer, "Unexpected entity at global scope.");
+					print_errln!(CompileError::Syntax, self.source, token.span.start, "Unexpected entity at global scope.");
 				},
+
 			}
+				// if let Some(tok) = self.advance_token()
+				// {
+				// 	token = tok;
+				// } else 
+				// {
+				// 	break;
+				// }
 		}
 
 		return &self.ir;
@@ -51,14 +64,19 @@ impl<'a> Parser<'a>
 
 	fn advance_token(&mut self) -> Option<Token>
 	{
-		if let Some(next_token) = self.lexer.next()
+		if self.position >= self.tokens.len() - 1
 		{
-			self.current_token = next_token;
-			return Some(self.current_token.clone());
+			return None;
 		}
-		return None;
+		self.position += 1;
+		return Some(self.tokens[self.position].clone());
 	}
 
+	fn current_token(&self) -> Token
+	{
+		return self.tokens[self.position].clone();
+	}
+	
 	// checks for i32, ...
 	fn is_type(token_kind: &TokenKind) -> bool
 	{
