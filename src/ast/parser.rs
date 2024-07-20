@@ -1,3 +1,4 @@
+mod common;
 mod function;
 mod statement;
 mod expression;
@@ -29,7 +30,7 @@ impl<'a> Parser<'a>
 		};
 	}
 
-	pub fn generate_ir(&mut self) -> &Root
+	pub fn generate_ir(mut self) -> Root
 	{
 		loop
 		{
@@ -52,7 +53,7 @@ impl<'a> Parser<'a>
 			}
 		}
 
-		return &self.ir;
+		return self.ir;
 	}
 
 	fn advance_token(&mut self) -> Option<Token>
@@ -69,24 +70,4 @@ impl<'a> Parser<'a>
 	{
 		return self.tokens[self.position];
 	}
-	
-	// checks for i32, ...
-	fn is_type(token_kind: &TokenKind) -> bool
-	{
-		return *token_kind == TokenKind::I32;
-	}
-
-	fn kind_2_type(token_kind: &TokenKind) -> Type
-	{
-		match token_kind {
-			TokenKind::I32 => return Type::I32,
-			_ => panic!("Dev error!! parser, kind_2_type() called with token of kind {:?}", token_kind)
-		};
-	}
-
-	fn get_text(&self, text_span: &TextSpan) -> &'a str
-	{
-		return &self.source[text_span.start..text_span.end];
-	}
-
 }

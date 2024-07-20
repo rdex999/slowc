@@ -28,11 +28,10 @@ impl<'a> Parser<'a>
 		let token_data_type = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing variable declaration. Expected data type.");
 		});
-		if !Self::is_type(&token_data_type.kind)
-		{
+		
+		let data_type = Self::kind_2_type(&token_data_type.kind).unwrap_or_else(|| {
 			print_errln!(CompileError::Syntax, self.source, token_data_type.span.start, "Expected data type after variable identifier.");
-		}
-		let data_type = Self::kind_2_type(&token_data_type.kind);
+		});
 
 		let new_var = variables.add_variable(identifier, data_type.clone());		/* Dont kill me for using clone(), its a pure enum */
 

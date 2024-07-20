@@ -25,10 +25,4 @@ impl LocalVariables
 	// {
 	// 	return self.variables.get(identifier);
 	// }
-
-	pub fn into_var_array(&self) -> Vec<Variable>
-	{
-		return self.variables.values().cloned().collect();
-	}
-
 }

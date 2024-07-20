@@ -15,7 +15,6 @@ pub struct Root
 pub struct Function
 {
 	pub stmts: Vec<Statement>,
-	pub locals: Vec<Variable>,
 	pub return_type: Type
 }
 
@@ -61,10 +60,10 @@ pub struct BinExpr
 #[allow(dead_code)]
 pub enum BinExprOp
 {
-	BinAdd,
-	BinSub,
-	BinMul,
-	BinDiv,
+	Add,
+	Sub,
+	Mul,
+	Div,
 }
 
 #[derive(Debug)]
@@ -83,7 +82,7 @@ pub enum Value
 	Var(Variable),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[allow(dead_code)]
 pub enum Type
 {
@@ -111,11 +110,10 @@ impl Root
 impl Function
 {
 #[allow(dead_code)]
-	pub fn new(stmts: Vec<Statement>, locals: Vec<Variable>, return_type: Type) -> Self
+	pub fn new(stmts: Vec<Statement>, return_type: Type) -> Self
 	{
 		return Self{
 			stmts,
-			locals,
 			return_type
 		};
 	}

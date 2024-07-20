@@ -43,12 +43,10 @@ impl<'a> Parser<'a>
 		let token_ret_type = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type_specifier.span.end, "While parsing function return type.");
 		});
-		if !Self::is_type(&token_ret_type.kind)
-		{
-			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected function return type after return type specifier.");
-		}
 
-		let return_type = Self::kind_2_type(&token_ret_type.kind);
+		let return_type = Self::kind_2_type(&token_ret_type.kind).unwrap_or_else(|| {
+			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected function return type after return type specifier.");
+		});
 
 		// TODO: Parse scope, right here self.current_token is a left curly bracket
 		let token_scope_start = self.advance_token().unwrap_or_else(|| {
@@ -69,13 +67,12 @@ impl<'a> Parser<'a>
 			break;											/* JUST FOR NOW */
 		}
 
-		let locals = variables.into_var_array();
 		self.advance_token();
 		self.advance_token();
 		self.advance_token();
 		self.advance_token();
 		self.advance_token();
-		return (identifier, Function::new(statements, locals, return_type));
+		return (identifier, Function::new(statements, return_type));
 
 	}
 
@@ -96,14 +93,13 @@ impl<'a> Parser<'a>
 						print_errln!(CompileError::UnexpectedEof, self.source, token_span.end, "While parsing function parameters.");
 					});
 
-					if !Self::is_type(&token_arg_type.kind)
-					{
+					let data_type = Self::kind_2_type(&token_arg_type.kind).unwrap_or_else(|| {
 						print_errln!(CompileError::Syntax, self.source, token_arg_type.span.start, "Expected parameter type after identifier.");
-					}
+					});
 
 					// NOTE: (to my future self getting a headache) because arguments will be pushed on the stack from right to left,
 					// The stack location (this variable will exist in the future) will just be positive
-					args.add_variable(ident, Self::kind_2_type(&token_arg_type.kind));
+					args.add_variable(ident, data_type);
 					
 					let token_comma = self.advance_token().unwrap_or_else(|| {
 						print_errln!(CompileError::UnexpectedEof, self.source, token_arg_type.span.end, "While parsing function parameters.");
