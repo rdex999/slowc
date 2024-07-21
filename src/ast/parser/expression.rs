@@ -18,11 +18,11 @@ impl<'a> Parser<'a>
 
 	fn parse_bin_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr
 	{
-		let expression_root = self.parse_bin_expression_part(data_type, variables);
+		let expression_root = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
 		return BinExpr::new(expression_root);
 	}
 
-	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables) -> BinExprPart
+	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
 	{
 		let start_span = self.current_token().span;	
 		let lhs = self.parse_expression_item(data_type, variables).unwrap_or_else(|| {
@@ -31,9 +31,34 @@ impl<'a> Parser<'a>
 
 		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{
-			self.parse_bin_operator();
-			let next_part = self.parse_bin_expression_part(data_type, variables);
-			return BinExprPart::Operation(Box::new(BinExprOperation::new(operator, BinExprPart::Val(lhs), next_part)));
+			if operator.precedence() >= precedence
+			{
+				self.parse_bin_operator();
+				// Ik recursion is bad, but it an advantage is this situation - 
+				// The same could be done with a stack data structure, (Vec) but this would require heap allcating memory which is slow af
+				// In this way, everything is on the stack, the because its just an expression the recursion is not big, so the stack wont commit suicide
+				let rhs = self.parse_bin_expression_part(data_type, variables, operator.precedence());
+
+				if let Some(next_operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+				{
+					if next_operator.precedence() >= precedence
+					{
+						self.parse_bin_operator();
+						let low_precedence_part = self.parse_bin_expression_part(data_type, variables, next_operator.precedence());
+						// Makes me think about my lifes deceisions
+						return BinExprPart::Operation(Box::new(BinExprOperation::new(
+							next_operator,
+							BinExprPart::Operation(Box::new(BinExprOperation::new(operator, BinExprPart::Val(lhs), rhs))),
+							low_precedence_part
+						)));
+
+					}
+				}
+				return BinExprPart::Operation(Box::new(BinExprOperation::new(operator, BinExprPart::Val(lhs), rhs)));
+			} else
+			{
+				return BinExprPart::Val(lhs);
+			}
 		} else
 		{
 			return BinExprPart::Val(lhs);

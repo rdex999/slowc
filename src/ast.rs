@@ -191,6 +191,8 @@ impl Type
 
 impl BinExprOperator
 {
+	const LOWEST_PRECEDENCE: u8 = 1;
+
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
 		match token_kind
@@ -204,7 +206,7 @@ impl BinExprOperator
 		}
 	}
 	
-	pub fn _precedence(&self) -> u8
+	pub fn precedence(&self) -> u8
 	{
 		match *self
 		{
