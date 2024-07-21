@@ -53,14 +53,29 @@ pub enum ExprType
 #[allow(dead_code)]
 pub struct BinExpr
 {
-	pub operation: BinExprOp,
-	pub lhs: BinExprPart,
-	pub rhs: BinExprPart
+	pub root: BinExprPart,
 }
 
 #[derive(Debug)]
 #[allow(dead_code)]
-pub enum BinExprOp
+pub enum BinExprPart
+{
+	Operation(Box<BinExprOperation>),
+	Val(Value),
+}
+
+#[derive(Debug)]
+#[allow(dead_code)]
+pub struct BinExprOperation
+{
+	operator: BinExprOperator,
+	lhs: BinExprPart,
+	rhs: BinExprPart,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[allow(dead_code)]
+pub enum BinExprOperator
 {
 	Add,
 	Sub,
@@ -68,15 +83,7 @@ pub enum BinExprOp
 	Div,
 }
 
-#[derive(Debug)]
-#[allow(dead_code)]
-pub enum BinExprPart
-{
-	Expr(Box<BinExpr>),
-	Val(Value),
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub enum Value
 {
@@ -91,7 +98,7 @@ pub enum Type
 	I32,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub struct Variable
 {
@@ -124,12 +131,22 @@ impl Function
 impl BinExpr
 {
 #[allow(dead_code)]
-	pub fn new(operation: BinExprOp, lhs: BinExprPart, rhs: BinExprPart) -> Self
+	pub fn new(root: BinExprPart) -> Self
 	{
-		return Self{
-			operation,
+		return Self {
+			root
+		};
+	}
+}
+
+impl BinExprOperation
+{
+	pub fn new(operator: BinExprOperator, lhs: BinExprPart, rhs: BinExprPart) -> Self
+	{
+		return Self {
+			operator,
 			lhs,
-			rhs
+			rhs,
 		};
 	}
 }
@@ -172,14 +189,27 @@ impl Type
 	}
 }
 
-impl BinExprOp
+impl BinExprOperator
 {
+	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
+	{
+		match token_kind
+		{
+			TokenKind::Plus => Some(BinExprOperator::Add),
+			TokenKind::Minus => Some(BinExprOperator::Sub),
+			TokenKind::Asterisk => Some(BinExprOperator::Mul),
+			TokenKind::ForwardSlash => Some(BinExprOperator::Div),
+
+			_ => return None
+		}
+	}
+	
 	pub fn _precedence(&self) -> u8
 	{
 		match *self
 		{
-			BinExprOp::Add | BinExprOp::Sub => return 0,
-			BinExprOp::Mul | BinExprOp::Div => return 1,
+			BinExprOperator::Add | BinExprOperator::Sub => return 1,
+			BinExprOperator::Mul | BinExprOperator::Div => return 2,
 		}
 	}
 }

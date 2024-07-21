@@ -56,18 +56,5 @@ impl<'a> Parser<'a>
 		return self.ir;
 	}
 
-	fn advance_token(&mut self) -> Option<Token>
-	{
-		if self.position >= self.tokens.len() - 1
-		{
-			return None;
-		}
-		self.position += 1;
-		return Some(self.tokens[self.position]);
-	}
 
-	fn current_token(&self) -> Token
-	{
-		return self.tokens[self.position];
-	}
 }

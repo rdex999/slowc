@@ -29,7 +29,7 @@ fn slowc_compile_file(filepath: &str)
 
     let ir = parser.generate_ir();
 
-    print_msg!("IR:\n\t{:?}", ir);
+    print_msg!("IR:\n\t{:#?}", ir);
     // while let Some(token) = lexer.next()
     // {
     //     print_msg!("{:?}", token);
