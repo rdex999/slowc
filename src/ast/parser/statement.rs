@@ -29,7 +29,7 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing variable declaration. Expected data type.");
 		});
 		
-		let data_type = Self::kind_2_type(&token_data_type.kind).unwrap_or_else(|| {
+		let data_type = Type::from_token_kind(&token_data_type.kind).unwrap_or_else(|| {
 			print_errln!(CompileError::Syntax, self.source, token_data_type.span.start, "Expected data type after variable identifier.");
 		});
 

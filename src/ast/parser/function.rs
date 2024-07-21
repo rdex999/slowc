@@ -44,7 +44,7 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type_specifier.span.end, "While parsing function return type.");
 		});
 
-		let return_type = Self::kind_2_type(&token_ret_type.kind).unwrap_or_else(|| {
+		let return_type = Type::from_token_kind(&token_ret_type.kind).unwrap_or_else(|| {
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected function return type after return type specifier.");
 		});
 
@@ -93,7 +93,7 @@ impl<'a> Parser<'a>
 						print_errln!(CompileError::UnexpectedEof, self.source, token_span.end, "While parsing function parameters.");
 					});
 
-					let data_type = Self::kind_2_type(&token_arg_type.kind).unwrap_or_else(|| {
+					let data_type = Type::from_token_kind(&token_arg_type.kind).unwrap_or_else(|| {
 						print_errln!(CompileError::Syntax, self.source, token_arg_type.span.start, "Expected parameter type after identifier.");
 					});
 

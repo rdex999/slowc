@@ -2,6 +2,8 @@ pub mod parser;
 
 use std::collections::HashMap;
 
+use crate::lexer::TokenKind;
+
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct Root
@@ -150,5 +152,34 @@ impl VarUpdateInfo
 			destination,
 			value
 		};
+	}
+}
+
+impl Type
+{
+	pub fn is_bin_expr_type(&self) -> bool
+	{
+		return *self == Type::I32;
+	}
+
+	// Will return None if the given token kind is not a type
+	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Type>
+	{
+		match token_kind {
+			TokenKind::I32 => return Some(Type::I32),
+			_ => return None
+		};
+	}
+}
+
+impl BinExprOp
+{
+	pub fn _precedence(&self) -> u8
+	{
+		match *self
+		{
+			BinExprOp::Add | BinExprOp::Sub => return 0,
+			BinExprOp::Mul | BinExprOp::Div => return 1,
+		}
 	}
 }
