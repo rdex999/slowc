@@ -41,8 +41,7 @@ impl<'a> Parser<'a>
 
 				TokenKind::FuncDecl =>
 				{
-					let (identifier, func) = self.parse_function_decl();
-					self.ir.functions.insert(identifier, func);
+					self.parse_function_decl();
 				}
 				
 				_ => 

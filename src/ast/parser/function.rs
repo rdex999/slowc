@@ -3,7 +3,7 @@ use super::{Parser, variable::*};
 
 impl<'a> Parser<'a>
 {
-	pub fn parse_function_decl(&mut self) -> (String, Function)
+	pub fn parse_function_decl(&mut self)
 	{
 		let first_token_pos = self.current_token().span.start;
 
@@ -17,7 +17,7 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Expected function identifier after {KEYWORD_FUNC_DECL}");
 		}
-		let identifier = self.get_text(&token_ident.span).to_string();
+		let identifier = self.get_text(&token_ident.span);
 
 		let token_left_paren = self.advance_token().unwrap_or_else(|| { 
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing function."); 
@@ -52,29 +52,35 @@ impl<'a> Parser<'a>
 		let token_scope_start = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type.span.end, "While parsing function declaration.");
 		});
-		if token_scope_start.kind != TokenKind::LeftCurly
+
+		self.advance_token();
+		if token_scope_start.kind == TokenKind::Semicolon
+		{
+			let mut function = Function::new(return_type);
+			function.locals = variables.into_var_array();	
+			self.ir.functions.insert(identifier.to_string(), function);
+			return;
+		} else if token_scope_start.kind != TokenKind::LeftCurly
 		{
 			print_errln!(CompileError::Syntax, self.source, token_scope_start.span.start, "Expected scope begin operator \"{{\" after function return type.");
 		}
 
-		self.advance_token();
-		
+		self.ir.functions.insert(identifier.to_string(), Function::new(return_type));
 
-		let mut statements: Vec<Statement> = Vec::new();	
 		while self.current_token().kind != TokenKind::RightCurly
 		{
 			if let Some(stmt) = self.parse_statement(&mut variables)
 			{
-				statements.push(stmt);
+				self.ir.functions.get_mut(identifier).unwrap().add_statement(stmt);
 			}
 		}
 		self.advance_token();
 		let locals = variables.into_var_array();
-		return (identifier, Function::new(return_type, locals, statements));
+		self.ir.functions.get_mut(identifier).unwrap().locals = locals;
 
 	}
 
-	pub fn parse_function_decl_parameters(&mut self) -> LocalVariables
+	fn parse_function_decl_parameters(&mut self) -> LocalVariables
 	{
 		let mut args = LocalVariables::new();
 		loop 

@@ -101,6 +101,7 @@ pub enum Type
 
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
+// TODO: add attributes, which will include is_function_parameter
 pub struct Variable
 {
 	pub data_type: Type,
@@ -121,13 +122,18 @@ impl Root
 impl Function
 {
 #[allow(dead_code)]
-	pub fn new(return_type: Type, locals: Vec<Variable>, stmts: Vec<Statement>) -> Self
+	pub fn new(return_type: Type) -> Self
 	{
 		return Self{
 			return_type,
-			locals,
-			stmts,
+			locals: Vec::new(),
+			stmts: Vec::new(),
 		};
+	}
+
+	pub fn add_statement(&mut self, statement: Statement)
+	{
+		self.stmts.push(statement);
 	}
 }
 
