@@ -35,13 +35,13 @@ pub enum Statement
 #[allow(dead_code)]
 pub struct VarUpdateInfo
 {
-	pub destination: Writable,
+	pub destination: Lvalue,
 	pub value: ExprType
 }
 
 #[derive(Debug)]
 #[allow(dead_code)]
-pub enum Writable
+pub enum Lvalue
 {
 	Var(Variable),
 }
@@ -65,7 +65,7 @@ pub struct BinExpr
 pub enum BinExprPart
 {
 	Operation(Box<BinExprOperation>),
-	Val(Value),
+	Val(Rvalue),
 }
 
 #[derive(Debug)]
@@ -89,7 +89,7 @@ pub enum BinExprOperator
 
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
-pub enum Value
+pub enum Rvalue
 {
 	I32(i32),		/* (Not funny) */
 	Var(usize),		/* The variables index in the variables array */
@@ -175,7 +175,7 @@ impl Variable
 
 impl VarUpdateInfo
 {
-	pub fn new(destination: Writable, value: ExprType) -> Self
+	pub fn new(destination: Lvalue, value: ExprType) -> Self
 	{
 		return Self {
 			destination,

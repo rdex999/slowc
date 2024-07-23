@@ -8,11 +8,13 @@ impl<'a> Parser<'a>
 		match self.current_token().kind {
 			TokenKind::VarDecl => return self.parse_var_decl(&mut variables),
 
+			// TokenKind::Ident => Some(self.parse_var_update(&mut variables)),
+
 			_ => { print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found at statement beginning."); }
 		}
 	}
 
-	pub fn parse_var_decl(&mut self, variables: &mut LocalVariables) -> Option<Statement>
+	fn parse_var_decl(&mut self, variables: &mut LocalVariables) -> Option<Statement>
 	{
 		let stmt_pos = self.current_token().span;
 		let token_ident = self.advance_token().unwrap_or_else(|| {
@@ -58,8 +60,14 @@ impl<'a> Parser<'a>
 		}
 		self.advance_token();
 		return Some(Statement::Assign(VarUpdateInfo::new(
-			Writable::Var(new_var),
+			Lvalue::Var(new_var),
 			expr
 		)));
+	}
+
+
+	fn parse_var_update(&mut self, variables: &mut LocalVariables) -> ()
+	{
+		let ident = self.get_text(&self.current_token().span);
 	}
 }
