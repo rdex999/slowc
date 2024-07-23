@@ -5,13 +5,14 @@ impl<'a> Parser<'a>
 {
 	pub fn parse_function_decl(&mut self)
 	{
-		let first_token_pos = self.current_token().span.start;
+		if let None = self.advance_token()
+		{
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.end, "While parsing function.");
+		}
 
-		let token_ident = self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, first_token_pos, "While parsing function.");
-		});
+		let attributes = self.parse_function_attributes();
 
-		// TODO: Parse attributes (global)
+		let token_ident = self.current_token();
 
 		if TokenKind::Ident != token_ident.kind
 		{
@@ -56,16 +57,16 @@ impl<'a> Parser<'a>
 		self.advance_token();
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
-			let mut function = Function::new(return_type);
+			let mut function = Function::new(return_type, attributes);
 			function.locals = variables.into_var_array();	
 			self.ir.functions.insert(identifier.to_string(), function);
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
 		{
-			print_errln!(CompileError::Syntax, self.source, token_scope_start.span.start, "Expected scope begin operator \"{{\" after function return type.");
+			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
 
-		self.ir.functions.insert(identifier.to_string(), Function::new(return_type));
+		self.ir.functions.insert(identifier.to_string(), Function::new(return_type, attributes));
 
 		while self.current_token().kind != TokenKind::RightCurly
 		{
@@ -122,4 +123,20 @@ impl<'a> Parser<'a>
 		return args;	
 
 	}
+
+	fn parse_function_attributes(&mut self) -> AttributeType
+	{
+		let mut token = self.current_token();
+		let mut attributes = 0;
+		while let Some(attr) = attribute::from_token_kind(&token.kind)
+		{
+			attributes |= attr;
+			token = self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.source.len() - 1, "While parsing function attributes.");
+			});
+		}
+
+		return attributes;
+	}
+
 }

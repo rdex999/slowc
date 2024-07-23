@@ -14,7 +14,8 @@ pub struct Parser<'a>
 	ir: Root,
 	tokens: Vec<Token>,
 	position: usize,
-	source: &'a str
+	source: &'a str,
+	has_passed_eof: bool
 }
 
 impl<'a> Parser<'a>
@@ -26,23 +27,19 @@ impl<'a> Parser<'a>
 			ir: Root::new(HashMap::new()),
 			tokens: lexer.collect(),
 			position: 0,
-			source
+			source,
+			has_passed_eof: false
 		};
 	}
 
 	pub fn generate_ir(mut self) -> Root
 	{
-		loop
+		while !self.has_passed_eof	
 		{
 			let token = self.current_token();
 			match token.kind
 			{
-				TokenKind::Eof => break,
-
-				TokenKind::FuncDecl =>
-				{
-					self.parse_function_decl();
-				}
+				TokenKind::FuncDecl => self.parse_function_decl(),
 				
 				_ => 
 				{

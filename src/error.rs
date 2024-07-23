@@ -42,31 +42,31 @@ impl LineInfo
 }
 
 // Takes O(n), line, column, line_contents
-pub fn get_line_from_index(source: &str, mut index: usize) -> Option<LineInfo>
+pub fn get_line_from_index(source: &str, index: usize) -> LineInfo
 {
-	if index >= source.len()
-	{
-		return None;
-	}
+	let mut index_in_source: usize = 0;	
 
-	let mut idx_in_source: usize = 0;
+
 	for (i, line) in source.lines().enumerate()
 	{
-		idx_in_source += line.len();
-		
-		if idx_in_source > index
+		if index_in_source + line.len() > index
 		{
-			return Some(LineInfo::new(
-				i, 
-				index % idx_in_source,
+			return LineInfo::new(
+				i,
+				(index_in_source + line.len()) - index,
 				line.to_string()
-			));
+			);
 		}
-		
-		index -= line.len();
+		index_in_source += line.len();
 	}
 
-	return None;
+	let lines: Vec<&str> = source.lines().collect();
+	let column = lines[lines.len() - 1].len();
+	return LineInfo::new(
+		lines.len() - 1,
+		column,
+		lines[lines.len() -  1].to_string()
+	);
 }
 
 
@@ -139,12 +139,10 @@ macro_rules! print_errln {
 		// Print "slow: error - " while "slow" is in bold and "error" is in red bold
 		eprint!("\x1b[1mslowc\x1b[0m: \x1b[31;1merror\x1b[0m - "); 	
 		let exit_code = crate::error::get_exit_code($compile_error);
-		let line = crate::error::get_line_from_index($source, $source_index).unwrap_or_else(|| {
-			panic!("Dev error!!!!\nprint_errln!, get_line_from_index() returned None.\nLine: {}", line!());
-		});
+		let line = crate::error::get_line_from_index($source, $source_index);
 		eprintln!($($print_data)*);
 		eprintln!("\tOn line {}: {}", line.line_index + 1, line.line_contents);
-		eprintln!("\t   {: <1$}\x1b[1mHere: <---->\x1b[0m", "", line.column);
+		eprintln!("\t  {: <1$}\x1b[1mHere: <---->\x1b[0m", "", line.column);
 		std::process::exit(exit_code as i32 + 1); 	/* +1 because error codes start from 1 and enums start from 0 */
 	};
 }

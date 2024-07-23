@@ -1,6 +1,7 @@
 pub mod parser;
 
 use std::collections::HashMap;
+use attribute::AttributeType;
 
 use crate::lexer::TokenKind;
 
@@ -11,12 +12,14 @@ pub struct Root
 	pub functions: HashMap<String, Function>
 }
 
+
 // This will have a return type field, calling convenction, and other shit in the future
 #[derive(Debug)]
 #[allow(dead_code)]
 pub struct Function
 {
 	pub return_type: Type,
+	pub attributes: AttributeType,
 	pub locals: Vec<Variable>,
 	pub stmts: Vec<Statement>,
 }
@@ -110,7 +113,7 @@ pub struct Variable
 
 impl Root
 {
-#[allow(dead_code)]
+	#[allow(dead_code)]
 	pub fn new(functions: HashMap<String, Function>) -> Self
 	{
 		return Self{
@@ -121,16 +124,16 @@ impl Root
 
 impl Function
 {
-#[allow(dead_code)]
-	pub fn new(return_type: Type) -> Self
+	pub fn new(return_type: Type, attributes: AttributeType) -> Self
 	{
 		return Self{
 			return_type,
+			attributes,
 			locals: Vec::new(),
 			stmts: Vec::new(),
 		};
 	}
-
+	
 	pub fn add_statement(&mut self, statement: Statement)
 	{
 		self.stmts.push(statement);
@@ -139,7 +142,6 @@ impl Function
 
 impl BinExpr
 {
-#[allow(dead_code)]
 	pub fn new(root: BinExprPart) -> Self
 	{
 		return Self {
@@ -188,7 +190,7 @@ impl Type
 	{
 		return *self == Type::I32;
 	}
-
+	
 	// Will return None if the given token kind is not a type
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Type>
 	{
@@ -202,7 +204,7 @@ impl Type
 impl BinExprOperator
 {
 	const LOWEST_PRECEDENCE: u8 = 1;
-
+	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
 		match token_kind
@@ -211,7 +213,7 @@ impl BinExprOperator
 			TokenKind::Minus => Some(BinExprOperator::Sub),
 			TokenKind::Asterisk => Some(BinExprOperator::Mul),
 			TokenKind::ForwardSlash => Some(BinExprOperator::Div),
-
+			
 			_ => return None
 		}
 	}
@@ -222,6 +224,25 @@ impl BinExprOperator
 		{
 			BinExprOperator::Add | BinExprOperator::Sub => return 1,
 			BinExprOperator::Mul | BinExprOperator::Div => return 2,
+		}
+	}
+}
+
+pub mod attribute
+{
+	pub type AttributeType = u16;
+	use super::*;
+	
+	const GLOBAL: AttributeType = 0b1;
+	const EXTERN: AttributeType = GLOBAL << 1;
+	
+	pub fn from_token_kind(token_kind: &TokenKind) -> Option<AttributeType>
+	{
+		match token_kind
+		{
+			TokenKind::Global => Some(GLOBAL),
+			TokenKind::Extern => Some(EXTERN),
+			_ => return None
 		}
 	}
 }

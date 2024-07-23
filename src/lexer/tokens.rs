@@ -15,7 +15,7 @@ pub struct TextSpan
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum TokenKind
 {
-	Eof,
+	// Eof,
 	IntLit(i64),
 	Plus,
 	Minus,
@@ -32,8 +32,10 @@ pub enum TokenKind
 	Semicolon,
 	Ident,
 	VarDecl,
-	FuncDecl,
 	I32,
+	FuncDecl,
+	Global,
+	Extern,
 }
 
 impl Token

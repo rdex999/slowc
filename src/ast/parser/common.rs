@@ -21,8 +21,13 @@ impl<'a> Parser<'a>
 	{
 		if self.position >= self.tokens.len() - 1
 		{
+			self.has_passed_eof = true;
 			return None;
 		}
+		// if self.tokens[self.position + 1].kind == TokenKind::Eof
+		// {
+		// 	return None;
+		// }
 		self.position += 1;
 		return Some(self.tokens[self.position]);
 	}
