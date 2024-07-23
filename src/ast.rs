@@ -246,3 +246,14 @@ pub mod attribute
 		}
 	}
 }
+
+impl Lvalue
+{
+	pub fn data_type(&self) -> Type
+	{
+		match self
+		{
+			Lvalue::Var(var) => return var.data_type,
+		}
+	}
+}

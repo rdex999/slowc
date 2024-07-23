@@ -8,7 +8,7 @@ impl<'a> Parser<'a>
 		match self.current_token().kind {
 			TokenKind::VarDecl => return self.parse_var_decl(&mut variables),
 
-			// TokenKind::Ident => Some(self.parse_var_update(&mut variables)),
+			TokenKind::Ident => Some(self.parse_var_update(&mut variables)),
 
 			_ => { print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found at statement beginning."); }
 		}
@@ -66,8 +66,25 @@ impl<'a> Parser<'a>
 	}
 
 
-	fn parse_var_update(&mut self, variables: &mut LocalVariables) -> ()
+	fn parse_var_update(&mut self, variables: &mut LocalVariables) -> Statement
 	{
-		let ident = self.get_text(&self.current_token().span);
+		let destination = self.parse_lvalue(variables);
+
+		match self.current_token().kind
+		{
+			TokenKind::Equal =>
+			{
+				self.advance_token();
+				let rvalue = self.parse_expression(destination.data_type(), variables);
+				if self.current_token().kind != TokenKind::Semicolon
+				{
+					print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
+				}
+				self.advance_token();
+				return Statement::Assign(VarUpdateInfo::new(destination, rvalue));
+			}
+
+			_ => { print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected assignment operator, such as =, +=, ..."); }
+		}
 	}
 }
