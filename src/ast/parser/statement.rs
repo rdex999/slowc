@@ -51,6 +51,12 @@ impl<'a> Parser<'a>
 		self.advance_token(); 	/* Skip equal token, now self.current_token is the first token of the expression */
 
 		let expr = self.parse_expression(data_type, variables);
+
+		if self.current_token().kind != TokenKind::Semicolon
+		{
+			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
+		}
+		self.advance_token();
 		return Some(Statement::Assign(VarUpdateInfo::new(
 			Writable::Var(new_var),
 			expr

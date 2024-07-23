@@ -61,18 +61,16 @@ impl<'a> Parser<'a>
 		
 
 		let mut statements: Vec<Statement> = Vec::new();	
-		while let Some(stmt) = self.parse_statement(&mut variables)
+		while self.current_token().kind != TokenKind::RightCurly
 		{
-			statements.push(stmt);
-			break;											/* JUST FOR NOW */
+			if let Some(stmt) = self.parse_statement(&mut variables)
+			{
+				statements.push(stmt);
+			}
 		}
-
 		self.advance_token();
-		self.advance_token();
-		self.advance_token();
-		self.advance_token();
-		self.advance_token();
-		return (identifier, Function::new(statements, return_type));
+		let locals = variables.into_var_array();
+		return (identifier, Function::new(return_type, locals, statements));
 
 	}
 
@@ -106,7 +104,7 @@ impl<'a> Parser<'a>
 					});
 
 					match token_comma.kind {
-						TokenKind::Comma => continue,
+						TokenKind::Comma => { self.advance_token(); continue; },
 						TokenKind::RightParen => break,
 						_ => { print_errln!(CompileError::Syntax, self.source, token_span.start, "Unexpected token while parsing function parameters."); }
 					}

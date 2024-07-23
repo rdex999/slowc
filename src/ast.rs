@@ -16,8 +16,9 @@ pub struct Root
 #[allow(dead_code)]
 pub struct Function
 {
+	pub return_type: Type,
+	pub locals: Vec<Variable>,
 	pub stmts: Vec<Statement>,
-	pub return_type: Type
 }
 
 #[derive(Debug)]
@@ -88,7 +89,7 @@ pub enum BinExprOperator
 pub enum Value
 {
 	I32(i32),		/* (Not funny) */
-	Var(Variable),
+	Var(usize),		/* The variables index in the variables array */
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -102,7 +103,8 @@ pub enum Type
 #[allow(dead_code)]
 pub struct Variable
 {
-	data_type: Type,
+	pub data_type: Type,
+	pub index: usize,
 }
 
 impl Root
@@ -119,11 +121,12 @@ impl Root
 impl Function
 {
 #[allow(dead_code)]
-	pub fn new(stmts: Vec<Statement>, return_type: Type) -> Self
+	pub fn new(return_type: Type, locals: Vec<Variable>, stmts: Vec<Statement>) -> Self
 	{
 		return Self{
+			return_type,
+			locals,
 			stmts,
-			return_type
 		};
 	}
 }
@@ -153,10 +156,11 @@ impl BinExprOperation
 
 impl Variable
 {
-	pub fn new(data_type: Type) -> Self 
+	pub fn new(data_type: Type, index: usize) -> Self 
 	{
 		return Self {
 			data_type,
+			index
 		};
 	}
 }

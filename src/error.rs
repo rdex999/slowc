@@ -1,3 +1,5 @@
+use super::ast::Type;
+
 pub enum CompileError<'a>
 {
 	Usage,
@@ -5,6 +7,8 @@ pub enum CompileError<'a>
 	UnexpectedEof,
 	NoSuchOperator(&'a str),
 	Syntax,
+	UnknownIdentifier(&'a str),
+	TypeError(Type, Type),			/* ExpectedType, GivenType */
 }
 
 pub enum ExitCodes
@@ -14,6 +18,8 @@ pub enum ExitCodes
 	UnexpectedEof,
 	NoSuchOperator,
 	Syntax,
+	UnknownIdentifier,
+	TypeError,
 }
 
 pub struct LineInfo
@@ -97,6 +103,18 @@ pub fn get_exit_code(compile_error: CompileError) -> ExitCodes
 			eprint!("Syntax error.\n\t");
 			return ExitCodes::Syntax;
 		},
+
+		CompileError::UnknownIdentifier(ident) =>
+		{
+			eprint!("Unknown identifier \"{ident}\".");
+			return ExitCodes::UnknownIdentifier;
+		},
+
+		CompileError::TypeError(expected, given) =>
+		{
+			eprint!("Type error. Expected {:?} but type {:?} was given.", expected, given);
+			return ExitCodes::TypeError;
+		}
 	}
 }
 

@@ -76,13 +76,27 @@ impl<'a> Parser<'a>
 		print_errln!(CompileError::Syntax, self.source, token.span.start, "None binary operator found in binary expression.");
 	}
 	
-	fn parse_expression_item(&mut self, _data_type: Type, _variables: &LocalVariables) -> Option<Value>
+	fn parse_expression_item(&mut self, data_type: Type, variables: &LocalVariables) -> Option<Value>
 	{
 		let token = self.current_token();
 		self.advance_token();
 		match token.kind {
 			TokenKind::IntLit(value) => return Some(Value::I32(value as i32)),
-
+			TokenKind::Ident => 
+			{
+				let ident = &self.get_text(&token.span);
+				if let Some(var) = variables.get_variable(ident)
+				{
+					if var.data_type != data_type
+					{
+						print_errln!(CompileError::TypeError(data_type, var.data_type), self.source, token.span.start, "When parsing variable.");
+					}
+					return Some(Value::Var(var.index));
+				} else
+				{
+					print_errln!(CompileError::UnknownIdentifier(ident), self.source, token.span.start, "No such variable.");
+				}
+			}
 			_ => return None
 		}
 	}
