@@ -25,7 +25,7 @@ impl<'a> Lexer<'a>
 	pub fn lex_operator(&mut self) -> Token
 	{
 		let ch = self.current.unwrap();
-		let start = self.position - 1;
+		let start = self.position;			/* Might need -1 */
 		let end = self.position;
 		let kind: TokenKind;
 		let next_ch = self.advance().unwrap_or('\0');

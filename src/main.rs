@@ -1,4 +1,5 @@
 mod error;
+mod preprocessor;
 mod lexer;
 mod ast;
 use error::CompileError;
@@ -11,19 +12,19 @@ fn main() {
     }
     
     slowc_compile_file(&argv[1]);
-    // let ch: char = ' ';
-    // println!("alnum: {}", lexer::Lexer::is_op_start(ch));
 }
 
 fn slowc_compile_file(filepath: &str)
 {
-    let source = std::fs::read_to_string(filepath)
+    let mut source = std::fs::read_to_string(filepath)
         .unwrap_or_else(|err| {print_err!(CompileError::NoSuchFile(filepath), "Error: {err}");});
     
     print_msg!("Compiling file: \"{filepath}\"");
 
-    let lexer = lexer::Lexer::new(&source);
+    let preprocessor = preprocessor::Preprocessor::new(source);
+    source = preprocessor.preprocess();
 
+    let lexer = lexer::Lexer::new(&source);
     
     let parser = ast::parser::Parser::new(lexer);
 
