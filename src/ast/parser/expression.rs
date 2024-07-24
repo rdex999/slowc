@@ -36,7 +36,7 @@ impl<'a> Parser<'a>
 		} else 
 		{
 			lhs = BinExprPart::Val(self.parse_rvalue(data_type, variables).unwrap_or_else(|| {
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None binary token found in binary expression.");
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
 			}));	
 		}
 

@@ -57,7 +57,7 @@ pub fn get_line_from_index(source: &str, index: usize) -> LineInfo
 				line.to_string()
 			);
 		}
-		index_in_source += line.len();
+		index_in_source += line.len() + 1;
 	}
 
 	let lines: Vec<&str> = source.lines().collect();

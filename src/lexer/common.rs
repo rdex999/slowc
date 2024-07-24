@@ -28,8 +28,8 @@ impl<'a> Lexer<'a>
 		return ch.is_alphanumeric() || ch == '_';
 	}
 
-	// pub fn peek(&mut self) -> Option<char>
-	// {
-	// 	return self.itr.peek().cloned();
-	// }	
+	pub fn peek(&mut self) -> Option<&char>
+	{
+		return self.itr.peek();
+	}
 }

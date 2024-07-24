@@ -43,9 +43,18 @@ impl<'a> Iterator for Lexer<'a>
 {
 	type Item = Token;
 	fn next(&mut self) -> Option<Self::Item> {
-		while let Some(current_ch) = self.current
+		
+		while let Some(ch) = self.current
 		{
-			if Self::is_whitespace(current_ch)
+			if ch == '/' && self.peek() != None && *self.peek().unwrap() == '/'
+			{
+				while self.current != None && self.current.unwrap() != '\n'
+				{
+					self.advance();
+				}
+				continue;
+			}
+			if Self::is_whitespace(ch)
 			{
 				self.advance();
 			} else
