@@ -23,10 +23,22 @@ impl<'a> Parser<'a>
 
 	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
 	{
-		let start_span = self.current_token().span;	
-		let lhs = self.parse_rvalue(data_type, variables).unwrap_or_else(|| {
-			print_errln!(CompileError::Syntax, self.source, start_span.start, "None binary token found in binary expression.");
-		});	
+		let lhs;
+		if self.current_token().kind == TokenKind::LeftParen
+		{
+			self.advance_token();
+			lhs = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
+			if self.current_token().kind != TokenKind::RightParen
+			{
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese. \")\"");
+			}
+			self.advance_token();
+		} else 
+		{
+			lhs = BinExprPart::Val(self.parse_rvalue(data_type, variables).unwrap_or_else(|| {
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None binary token found in binary expression.");
+			}));	
+		}
 
 		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{
@@ -47,20 +59,20 @@ impl<'a> Parser<'a>
 						// Makes me think about my lifes deceisions
 						return BinExprPart::Operation(Box::new(BinExprOperation::new(
 							next_operator,
-							BinExprPart::Operation(Box::new(BinExprOperation::new(operator, BinExprPart::Val(lhs), rhs))),
+							BinExprPart::Operation(Box::new(BinExprOperation::new(operator, lhs, rhs))),
 							low_precedence_part
 						)));
 
 					}
 				}
-				return BinExprPart::Operation(Box::new(BinExprOperation::new(operator, BinExprPart::Val(lhs), rhs)));
+				return BinExprPart::Operation(Box::new(BinExprOperation::new(operator, lhs, rhs)));
 			} else
 			{
-				return BinExprPart::Val(lhs);
+				return lhs;
 			}
 		} else
 		{
-			return BinExprPart::Val(lhs);
+			return lhs;
 		}
 	}
 
@@ -75,7 +87,7 @@ impl<'a> Parser<'a>
 		print_errln!(CompileError::Syntax, self.source, token.span.start, "None binary operator found in binary expression.");
 	}
 	
-	fn parse_rvalue(&mut self, data_type: Type, variables: &LocalVariables) -> Option<Rvalue>
+	pub fn parse_rvalue(&mut self, data_type: Type, variables: &LocalVariables) -> Option<Rvalue>
 	{
 		let token = self.current_token();
 		self.advance_token();
