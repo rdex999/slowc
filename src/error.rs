@@ -9,6 +9,7 @@ pub enum CompileError<'a>
 	Syntax,
 	UnknownIdentifier(&'a str),
 	TypeError(Type, Type),			/* ExpectedType, GivenType */
+	InvalidPreprocessorCommand(&'a str),
 }
 
 pub enum ExitCodes
@@ -20,6 +21,7 @@ pub enum ExitCodes
 	Syntax,
 	UnknownIdentifier,
 	TypeError,
+	InvalidPreprocessorCommand,
 }
 
 pub struct LineInfo
@@ -114,6 +116,12 @@ pub fn get_exit_code(compile_error: CompileError) -> ExitCodes
 		{
 			eprint!("Type error. Expected {:?} but type {:?} was given.", expected, given);
 			return ExitCodes::TypeError;
+		},
+
+		CompileError::InvalidPreprocessorCommand(command) =>
+		{
+			eprint!("Invalid preprocessor command. \"{command}\"");
+			return ExitCodes::InvalidPreprocessorCommand;
 		}
 	}
 }

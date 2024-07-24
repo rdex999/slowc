@@ -9,6 +9,7 @@ pub use tokens::*;
 
 use super::{error::CompileError, print_err};
 
+#[macro_export]
 macro_rules! create_keyword {
 	($heb:expr, $eng:expr) => {
 		if cfg!(feature = "hebrew") 

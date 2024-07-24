@@ -1,3 +1,5 @@
+#intext to_include.hslw
+
 func global main(argc i32) -> i32
 {
 	//let i i32 = 5;
