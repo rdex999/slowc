@@ -1,4 +1,4 @@
-func function_from_hslw_header() -> i32
+func foo() -> i32
 {
 	let i i32 = 5;
 }

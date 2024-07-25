@@ -23,7 +23,6 @@ fn slowc_compile_file(filepath: &str)
 
     let preprocessor = preprocessor::Preprocessor::new(source);
     source = preprocessor.preprocess();
-    println!("{source}");
 
     let lexer = lexer::Lexer::new(&source);
     

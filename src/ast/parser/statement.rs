@@ -58,9 +58,10 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
 		}
+
 		self.advance_token();
 		return Some(Statement::Assign(VarUpdateInfo::new(
-			Lvalue::Var(new_var),
+			Value::Var(new_var.index),
 			expr
 		)));
 	}
@@ -68,14 +69,14 @@ impl<'a> Parser<'a>
 
 	fn parse_var_update(&mut self, variables: &mut LocalVariables) -> Statement
 	{
-		let destination = self.parse_lvalue(variables);
+		let destination = self.parse_value(None, variables, true).unwrap();
 
 		match self.current_token().kind
 		{
 			TokenKind::Equal =>
 			{
 				self.advance_token();
-				let rvalue = self.parse_expression(destination.data_type(), variables);
+				let rvalue = self.parse_expression(self.value_type(&destination, &variables), variables);
 				if self.current_token().kind != TokenKind::Semicolon
 				{
 					print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");

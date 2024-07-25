@@ -35,7 +35,7 @@ impl<'a> Parser<'a>
 			self.advance_token();
 		} else 
 		{
-			lhs = BinExprPart::Val(self.parse_rvalue(data_type, variables).unwrap_or_else(|| {
+			lhs = BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
 				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
 			}));	
 		}
@@ -84,48 +84,55 @@ impl<'a> Parser<'a>
 		{
 			return operator;
 		} 
-		print_errln!(CompileError::Syntax, self.source, token.span.start, "None binary operator found in binary expression.");
+		print_errln!(CompileError::Syntax, self.source, token.span.start, "None-binary operator found in binary expression.");
 	}
-	
-	pub fn parse_rvalue(&mut self, data_type: Type, variables: &LocalVariables) -> Option<Rvalue>
+
+	pub fn parse_value(&mut self, data_type: Option<Type>, variables: &LocalVariables, is_lvalue: bool) -> Option<Value>
 	{
-		let token = self.current_token();
+		let first_token = self.current_token();
 		self.advance_token();
-		match token.kind {
-			TokenKind::IntLit(value) => return Some(Rvalue::I32(value as i32)),
-			TokenKind::Ident => 
+		match first_token.kind
+		{
+			TokenKind::IntLit(value) => 
 			{
-				let ident = &self.get_text(&token.span);
-				if let Some(var) = variables.get_variable(ident)
+				if is_lvalue
+				{
+					print_errln!(CompileError::Syntax, self.source, first_token.span.start, "Expected modifiable lvalue.");
+				}
+
+				if let Some(data_type) = data_type
+				{
+					match data_type {
+						Type::I32 => return Some(Value::I32(value as i32)),
+
+						#[allow(unreachable_patterns)]
+						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
+					}
+				}
+				return Some(Value::I32(value as i32));
+			},
+			
+			TokenKind::Ident =>
+			{
+				let ident = self.get_text(&first_token.span);
+				
+				let var = variables.get_variable(ident).unwrap_or_else(|| {
+					print_errln!(CompileError::UnknownIdentifier(ident), self.source, first_token.span.start, "");
+				});
+				
+				if let Some(data_type) = data_type
 				{
 					if var.data_type != data_type
 					{
-						print_errln!(CompileError::TypeError(data_type, var.data_type), self.source, token.span.start, "When parsing variable.");
+						print_errln!(CompileError::TypeError(data_type, data_type), self.source, first_token.span.start, "");
 					}
-					return Some(Rvalue::Var(var.index));
-				} else
-				{
-					print_errln!(CompileError::UnknownIdentifier(ident), self.source, token.span.start, "No such variable.");
 				}
-			}
+				return Some(Value::Var(var.index));
+			},
+
 			_ => return None
 		}
-	}
 
-	pub fn parse_lvalue(&mut self, variables: &LocalVariables) -> Lvalue
-	{
-		if self.current_token().kind != TokenKind::Ident
-		{
-			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected modifiable lvalue.");
-		}
-
-		let ident = self.get_text(&self.current_token().span);
-		let var = variables.get_variable(ident).unwrap_or_else(|| {
-			print_errln!(CompileError::UnknownIdentifier(ident), self.source, self.current_token().span.start, "");
-		});
-		self.advance_token();
-
-		return Lvalue::Var(*var);
 	}
 
 }

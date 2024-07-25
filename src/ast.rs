@@ -35,15 +35,16 @@ pub enum Statement
 #[allow(dead_code)]
 pub struct VarUpdateInfo
 {
-	pub destination: Lvalue,
+	pub destination: Value,
 	pub value: ExprType
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
-pub enum Lvalue
+pub enum Value
 {
-	Var(Variable),
+	I32(i32),		/* (Not funny) */
+	Var(usize),		/* The variables index in the variables array */
 }
 
 #[derive(Debug)]
@@ -65,7 +66,7 @@ pub struct BinExpr
 pub enum BinExprPart
 {
 	Operation(Box<BinExprOperation>),
-	Val(Rvalue),
+	Val(Value),
 }
 
 #[derive(Debug)]
@@ -87,13 +88,6 @@ pub enum BinExprOperator
 	Div,
 }
 
-#[derive(Debug, Clone, Copy)]
-#[allow(dead_code)]
-pub enum Rvalue
-{
-	I32(i32),		/* (Not funny) */
-	Var(usize),		/* The variables index in the variables array */
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 #[allow(dead_code)]
@@ -175,7 +169,7 @@ impl Variable
 
 impl VarUpdateInfo
 {
-	pub fn new(destination: Lvalue, value: ExprType) -> Self
+	pub fn new(destination: Value, value: ExprType) -> Self
 	{
 		return Self {
 			destination,
@@ -243,17 +237,6 @@ pub mod attribute
 			TokenKind::Global => Some(GLOBAL),
 			TokenKind::Extern => Some(EXTERN),
 			_ => return None
-		}
-	}
-}
-
-impl Lvalue
-{
-	pub fn data_type(&self) -> Type
-	{
-		match self
-		{
-			Lvalue::Var(var) => return var.data_type,
 		}
 	}
 }

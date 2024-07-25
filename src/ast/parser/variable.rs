@@ -29,6 +29,11 @@ impl LocalVariables
 		return self.variables.get(identifier);
 	}
 
+	pub fn get_variable_by_index(&self, index: usize) -> Option<&Variable>
+	{
+		return self.variables.values().find(|var| var.index == index);
+	}
+
 	pub fn into_var_array(self) -> Vec<Variable>
 	{
 		let mut array: Vec<Variable> = self.variables.values().cloned().collect();
