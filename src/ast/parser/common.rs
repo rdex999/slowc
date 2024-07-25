@@ -9,14 +9,14 @@ impl<'a> Parser<'a>
 		return &self.source[text_span.start..text_span.end];
 	}
 
-	pub fn _peek(&self, offset: usize) -> Option<Token>
+	pub fn peek(&self, offset: isize) -> Option<Token>
 	{
-		if self.position + offset >= self.tokens.len()
+		if (self.position as isize + offset) as usize >= self.tokens.len()
 		{
 			return None;
 		}
 
-		return Some(self.tokens[self.position + offset]);
+		return Some(self.tokens[(self.position as isize + offset) as usize]);
 	}
 
 	pub fn advance_token(&mut self) -> Option<Token>

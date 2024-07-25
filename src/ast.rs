@@ -19,9 +19,10 @@ pub struct Root
 pub struct Function
 {
 	pub identifier: String,
-	pub index: usize,
+	pub index: u8,
 	pub return_type: Type,
 	pub attributes: AttributeType,
+	pub parameter_count: u8,
 	pub locals: Vec<Variable>,
 	pub stmts: Vec<Statement>,
 }
@@ -31,6 +32,7 @@ pub struct Function
 pub enum Statement
 {
 	Assign(VarUpdateInfo),
+	FunctionCall(FunctionCallInfo),
 }
 
 #[derive(Debug, Clone)]
@@ -41,12 +43,20 @@ pub struct VarUpdateInfo
 	pub value: ExprType
 }
 
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct FunctionCallInfo
+{
+	index: u8,
+	arguments: Vec<ExprType>,
+}
+
 #[derive(Debug, Clone, Copy)]
 #[allow(dead_code)]
 pub enum Value
 {
 	I32(i32),		/* (Not funny) */
-	Var(usize),		/* The variables index in the variables array */
+	Var(u8),		/* The variables index in the variables array */
 }
 
 #[derive(Debug, Clone)]
@@ -104,7 +114,8 @@ pub enum Type
 pub struct Variable
 {
 	pub data_type: Type,
-	pub index: usize,
+	pub attributes: AttributeType,
+	pub index: u8,
 }
 
 impl Root
@@ -124,10 +135,11 @@ impl Function
 	{
 		return Self{
 			identifier,
-			index: usize::MAX,
+			index: u8::MAX,
 			return_type,
 			attributes,
 			locals: Vec::new(),
+			parameter_count: 0,
 			stmts: Vec::new(),
 		};
 	}
@@ -135,6 +147,17 @@ impl Function
 	pub fn add_statement(&mut self, statement: Statement)
 	{
 		self.stmts.push(statement);
+	}
+}
+
+impl FunctionCallInfo
+{
+	pub fn new(index: u8, arguments: Vec<ExprType>) -> Self
+	{
+		return Self {
+			index,
+			arguments,
+		};
 	}
 }
 
@@ -162,10 +185,11 @@ impl BinExprOperation
 
 impl Variable
 {
-	pub fn new(data_type: Type, index: usize) -> Self 
+	pub fn new(data_type: Type, attributes: AttributeType, index: u8) -> Self 
 	{
 		return Self {
 			data_type,
+			attributes,
 			index
 		};
 	}
@@ -231,8 +255,9 @@ pub mod attribute
 	pub type AttributeType = u16;
 	use super::*;
 	
-	const GLOBAL: AttributeType = 0b1;
-	const EXTERN: AttributeType = GLOBAL << 1;
+	pub const GLOBAL: 				AttributeType = 0b1;
+	pub const EXTERN: 				AttributeType = GLOBAL << 1;
+	pub const FUNCTION_PARAMETER: 	AttributeType = EXTERN << 2;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<AttributeType>
 	{

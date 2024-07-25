@@ -26,10 +26,9 @@ impl<'a> Lexer<'a>
 	{
 		let ch = self.current.unwrap();
 		let start = self.position;			/* Might need -1 */
-		let end = self.position;
 		let kind: TokenKind;
 		let next_ch = self.advance().unwrap_or('\0');
-
+		
 		match ch {
 			'+' => kind = TokenKind::Plus,
 			'-' => 
@@ -59,7 +58,8 @@ impl<'a> Lexer<'a>
 				print_err!(CompileError::NoSuchOperator(&op[..]), "");
 			}
 		}
-
+		
+		let end = self.position;
 		return Token::new(
 			kind,
 			TextSpan::new(start, end)

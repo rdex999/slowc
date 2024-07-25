@@ -8,7 +8,19 @@ impl<'a> Parser<'a>
 		match self.current_token().kind {
 			TokenKind::VarDecl => return self.parse_var_decl(&mut variables),
 
-			TokenKind::Ident => Some(self.parse_var_update(&mut variables)),
+			TokenKind::Ident => 
+			{
+				if let Some(next_token) = self.peek(1)
+				{
+					if next_token.kind == TokenKind::LeftParen
+					{
+						let stmt = Some(Statement::FunctionCall(self.parse_function_call(variables)));
+						self.advance_token();
+						return stmt;
+					}
+				}
+				return Some(self.parse_var_update(&mut variables));
+			},
 
 			_ => { print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found at statement beginning."); }
 		}
@@ -35,7 +47,7 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::Syntax, self.source, token_data_type.span.start, "Expected data type after variable identifier.");
 		});
 
-		let new_var = variables.add_variable(identifier, data_type.clone());		/* Dont kill me for using clone(), its a pure enum */
+		let new_var = variables.add_variable(identifier, 0, data_type.clone());		/* Dont kill me for using clone(), its a pure enum */
 
 		let token_assign_or_semi = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_data_type.span.end, "While parsing variable declaration. Expected semicolon or assign operator (=).");

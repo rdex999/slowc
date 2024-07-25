@@ -3,7 +3,7 @@ use super::{Parser, variable::*};
 
 pub struct FunctionManager
 {
-	index: usize,
+	index: u8,
 	functions: HashMap<String, Function>,
 }
 
@@ -18,12 +18,17 @@ impl FunctionManager
 	}
 
 	// Returns the index of the new function
-	pub fn add(&mut self, mut function: Function) -> usize
+	pub fn add(&mut self, mut function: Function) -> u8
 	{
 		function.index = self.index;
 		self.functions.insert(function.identifier.clone(), function);
 		self.index += 1;
 		return self.index - 1;
+	}
+
+	pub fn get(&self, identifier: &str) -> Option<&Function>
+	{
+		return self.functions.get(identifier);
 	}
 
 	pub fn into_function_array(self) -> Vec<Function>
@@ -43,7 +48,7 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.end, "While parsing function.");
 		}
 
-		let attributes = self.parse_function_attributes();
+		let attributes = self.parse_function_decl_attributes();
 
 		let token_ident = self.current_token();
 
@@ -71,7 +76,7 @@ impl<'a> Parser<'a>
 
 		if token_ret_type_specifier.kind != TokenKind::Arrow
 		{
-			print_errln!(CompileError::Syntax, self.source, token_ret_type_specifier.span.start, "Expected return type specifier after parameter list in function declaration.");
+			print_errln!(CompileError::Syntax, self.source, token_ret_type_specifier.span.start, "Expected return type specifier (Arrow operator \"->\") after parameter list in function declaration.");
 		}
 
 		let token_ret_type = self.advance_token().unwrap_or_else(|| {
@@ -88,9 +93,11 @@ impl<'a> Parser<'a>
 		});
 
 		self.advance_token();
+		let mut function = Function::new(identifier.to_string(), return_type, attributes);
+		function.parameter_count = variables.get_variable_count();
+
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
-			let mut function = Function::new(identifier.to_string(), return_type, attributes);
 			function.locals = variables.into_var_array();	
 			self.func_manager.add(function);
 			return;
@@ -99,7 +106,6 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
 
-		let mut function = Function::new(identifier.to_string(), return_type, attributes);
 		while self.current_token().kind != TokenKind::RightCurly
 		{
 			if let Some(stmt) = self.parse_statement(&mut variables)
@@ -137,8 +143,8 @@ impl<'a> Parser<'a>
 
 					// NOTE: (to my future self getting a headache) because arguments will be pushed on the stack from right to left,
 					// The stack location (this variable will exist in the future) will just be positive
-					args.add_variable(ident, data_type);
-					
+					args.add_variable(ident, attribute::FUNCTION_PARAMETER, data_type);
+
 					let token_comma = self.advance_token().unwrap_or_else(|| {
 						print_errln!(CompileError::UnexpectedEof, self.source, token_arg_type.span.end, "While parsing function parameters.");
 					});
@@ -157,7 +163,7 @@ impl<'a> Parser<'a>
 
 	}
 
-	fn parse_function_attributes(&mut self) -> AttributeType
+	fn parse_function_decl_attributes(&mut self) -> AttributeType
 	{
 		let mut token = self.current_token();
 		let mut attributes = 0;
@@ -170,6 +176,82 @@ impl<'a> Parser<'a>
 		}
 
 		return attributes;
+	}
+
+	pub fn parse_function_call(&mut self, variables: &LocalVariables) -> FunctionCallInfo
+	{
+		let identifier = self.get_text(&self.current_token().span);
+		let function = self.func_manager.get(identifier).unwrap_or_else(|| {
+			print_errln!(CompileError::UnknownIdentifier(identifier), self.source, self.current_token().span.start, "No such function.");
+		});
+		let func_param_count = function.parameter_count;
+		let func_parameters = function.locals.clone();
+		let func_index = function.index;
+		let func_ident = function.identifier.clone();
+
+		let token_left_paren = self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function.");
+		});
+		if token_left_paren.kind != TokenKind::LeftParen
+		{
+			print_errln!(CompileError::Syntax, self.source, token_left_paren.span.start, "Expected open parenthese.");
+		}
+
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function call.");
+		});
+
+		let mut arguments: Vec<ExprType> = Vec::with_capacity(func_param_count as usize);
+		for parameter in func_parameters
+		{
+			if self.current_token().kind == TokenKind::RightParen
+			{
+				break;
+			}
+			if parameter.attributes & attribute::FUNCTION_PARAMETER == 0
+			{
+				print_errln!(CompileError::Syntax, 
+					self.source, 
+					token_left_paren.span.start,
+					"The Function \"{}\" takes {} parameters but more were given.", func_ident, func_param_count
+				);
+			}
+			
+			let data_type = parameter.data_type;
+			let argument = self.parse_expression(data_type, variables);
+			arguments.push(argument);
+
+			if self.current_token().kind == TokenKind::RightParen
+			{
+				break;
+			}
+
+			if self.current_token().kind != TokenKind::Comma
+			{
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected argument seperator \",\" or closing parenthese.");
+			}
+
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function call arguments.");
+			});
+		}
+		
+		if arguments.len() != func_param_count as usize
+		{
+			print_errln!(
+				CompileError::Syntax, 
+				self.source, 
+				token_left_paren.span.start,
+				"The function \"{}\" takes {} parameters but {} were given.", func_ident, func_param_count, arguments.len()
+			);
+		}
+		
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "After function call.");
+		});
+
+		return FunctionCallInfo::new(func_index, arguments);
+
 	}
 
 }
