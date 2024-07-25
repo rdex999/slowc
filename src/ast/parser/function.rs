@@ -1,6 +1,39 @@
 use crate::{ast::*, error::CompileError, lexer::*, print_errln};
 use super::{Parser, variable::*};
 
+pub struct FunctionManager
+{
+	index: usize,
+	functions: HashMap<String, Function>,
+}
+
+impl FunctionManager
+{
+	pub fn new() -> Self
+	{
+		return Self {
+			index: 0,
+			functions: HashMap::new(),
+		};
+	}
+
+	// Returns the index of the new function
+	pub fn add(&mut self, mut function: Function) -> usize
+	{
+		function.index = self.index;
+		self.functions.insert(function.identifier.clone(), function);
+		self.index += 1;
+		return self.index - 1;
+	}
+
+	pub fn into_function_array(self) -> Vec<Function>
+	{
+		let mut array: Vec<Function> = self.functions.into_values().collect();
+		array.sort_by_cached_key(|function| function.index);
+		return array;
+	}
+}
+
 impl<'a> Parser<'a>
 {
 	pub fn parse_function_decl(&mut self)
@@ -57,27 +90,27 @@ impl<'a> Parser<'a>
 		self.advance_token();
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
-			let mut function = Function::new(return_type, attributes);
+			let mut function = Function::new(identifier.to_string(), return_type, attributes);
 			function.locals = variables.into_var_array();	
-			self.ir.functions.insert(identifier.to_string(), function);
+			self.func_manager.add(function);
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
 
-		self.ir.functions.insert(identifier.to_string(), Function::new(return_type, attributes));
-
+		let mut function = Function::new(identifier.to_string(), return_type, attributes);
 		while self.current_token().kind != TokenKind::RightCurly
 		{
 			if let Some(stmt) = self.parse_statement(&mut variables)
 			{
-				self.ir.functions.get_mut(identifier).unwrap().add_statement(stmt);
+				function.add_statement(stmt);
 			}
 		}
 		self.advance_token();
 		let locals = variables.into_var_array();
-		self.ir.functions.get_mut(identifier).unwrap().locals = locals;
+		function.locals = locals;
+		self.func_manager.add(function);
 
 	}
 

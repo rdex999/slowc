@@ -4,14 +4,15 @@ mod statement;
 mod expression;
 mod variable;
 
+use function::FunctionManager;
 use crate::{error::CompileError, print_errln};
 
 use super::{super::lexer::*, *};
-use std::collections::HashMap;
 
 pub struct Parser<'a>
 {
 	ir: Root,
+	func_manager: FunctionManager,
 	tokens: Vec<Token>,
 	position: usize,
 	source: &'a str,
@@ -24,7 +25,8 @@ impl<'a> Parser<'a>
 	{
 		let source = lexer.source;
 		return Self{
-			ir: Root::new(HashMap::new()),
+			ir: Root::new(Vec::new()),
+			func_manager: FunctionManager::new(),
 			tokens: lexer.collect(),
 			position: 0,
 			source,
@@ -48,7 +50,7 @@ impl<'a> Parser<'a>
 
 			}
 		}
-
+		self.ir.functions = self.func_manager.into_function_array();
 		return self.ir;
 	}
 

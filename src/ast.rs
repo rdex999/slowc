@@ -9,29 +9,31 @@ use crate::lexer::TokenKind;
 #[allow(dead_code)]
 pub struct Root
 {
-	pub functions: HashMap<String, Function>
+	pub functions: Vec<Function>
 }
 
 
 // This will have a return type field, calling convenction, and other shit in the future
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct Function
 {
+	pub identifier: String,
+	pub index: usize,
 	pub return_type: Type,
 	pub attributes: AttributeType,
 	pub locals: Vec<Variable>,
 	pub stmts: Vec<Statement>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Statement
 {
 	Assign(VarUpdateInfo),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct VarUpdateInfo
 {
@@ -47,21 +49,21 @@ pub enum Value
 	Var(usize),		/* The variables index in the variables array */
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum ExprType
 {
 	BinExprT(BinExpr),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BinExpr
 {
 	pub root: BinExprPart,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum BinExprPart
 {
@@ -69,7 +71,7 @@ pub enum BinExprPart
 	Val(Value),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct BinExprOperation
 {
@@ -108,7 +110,7 @@ pub struct Variable
 impl Root
 {
 	#[allow(dead_code)]
-	pub fn new(functions: HashMap<String, Function>) -> Self
+	pub fn new(functions: Vec<Function>) -> Self
 	{
 		return Self{
 			functions,
@@ -118,9 +120,11 @@ impl Root
 
 impl Function
 {
-	pub fn new(return_type: Type, attributes: AttributeType) -> Self
+	pub fn new(identifier: String, return_type: Type, attributes: AttributeType) -> Self
 	{
 		return Self{
+			identifier,
+			index: usize::MAX,
 			return_type,
 			attributes,
 			locals: Vec::new(),

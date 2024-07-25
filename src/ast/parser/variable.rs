@@ -36,7 +36,7 @@ impl LocalVariables
 
 	pub fn into_var_array(self) -> Vec<Variable>
 	{
-		let mut array: Vec<Variable> = self.variables.values().cloned().collect();
+		let mut array: Vec<Variable> = self.variables.into_values().collect();
 		array.sort_by_cached_key(|var| var.index);
 		return array;
 	}
