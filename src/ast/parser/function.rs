@@ -31,6 +31,11 @@ impl FunctionManager
 		return self.functions.get(identifier);
 	}
 
+	pub fn get_by_index(&self, index: u8) -> Option<&Function>
+	{
+		return self.functions.values().find(|function| function.index == index);
+	}
+
 	pub fn into_function_array(self) -> Vec<Function>
 	{
 		let mut array: Vec<Function> = self.functions.into_values().collect();

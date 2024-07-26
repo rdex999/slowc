@@ -51,12 +51,13 @@ pub struct FunctionCallInfo
 	arguments: Vec<ExprType>,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum Value
 {
 	I32(i32),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
+	FuncCall(FunctionCallInfo),
 }
 
 #[derive(Debug, Clone)]

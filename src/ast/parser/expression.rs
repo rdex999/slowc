@@ -90,11 +90,11 @@ impl<'a> Parser<'a>
 	pub fn parse_value(&mut self, data_type: Option<Type>, variables: &LocalVariables, is_lvalue: bool) -> Option<Value>
 	{
 		let first_token = self.current_token();
-		self.advance_token();
 		match first_token.kind
 		{
 			TokenKind::IntLit(value) => 
 			{
+				self.advance_token();
 				if is_lvalue
 				{
 					print_errln!(CompileError::Syntax, self.source, first_token.span.start, "Expected modifiable lvalue.");
@@ -114,6 +114,26 @@ impl<'a> Parser<'a>
 			
 			TokenKind::Ident =>
 			{
+				if let Some(next_token) = self.peek(1)
+				{
+					if next_token.kind == TokenKind::LeftParen
+					{
+						let function_call = Value::FuncCall(self.parse_function_call(variables));
+						let func_ret_type = self.value_type(&function_call, variables);
+						if data_type != None && func_ret_type != data_type.unwrap()
+						{
+							print_errln!(
+								CompileError::TypeError(data_type.unwrap(), func_ret_type), 
+								self.source, 
+								first_token.span.start, 
+								"When parsing function call."
+							);
+						}
+						return Some(function_call);
+					}
+				}
+
+				self.advance_token();
 				let ident = self.get_text(&first_token.span);
 				
 				let var = variables.get_variable(ident).unwrap_or_else(|| {

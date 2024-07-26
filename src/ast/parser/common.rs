@@ -44,7 +44,8 @@ impl<'a> Parser<'a>
 			{
 				let var = variables.get_variable_by_index(*index).unwrap();
 				return var.data_type;
-			}
+			},
+			Value::FuncCall(func_call) => return self.func_manager.get_by_index(func_call.index).unwrap().return_type,
 		}
 	}
 }
