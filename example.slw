@@ -2,5 +2,4 @@
 
 func global main(argc i32) -> i32
 {
-	let function_call_result i32 = (foo((2+3)*10, 420) + 5) / foo(1, 6);
 }

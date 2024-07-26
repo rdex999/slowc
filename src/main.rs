@@ -2,6 +2,7 @@ mod error;
 mod preprocessor;
 mod lexer;
 mod ast;
+mod codegen;
 use error::CompileError;
 
 fn main() {
@@ -30,7 +31,11 @@ fn slowc_compile_file(filepath: &str)
 
     let ir = parser.generate_ir();
 
-    print_msg!("IR:\n\t{:#?}", ir);
+    let code_generator = codegen::CodeGen::new(ir);
+
+    code_generator.generate();
+
+    // print_msg!("IR:\n\t{:#?}", ir);
     // while let Some(token) = lexer.next()
     // {
     //     print_msg!("{:?}", token);
