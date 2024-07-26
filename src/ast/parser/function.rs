@@ -181,13 +181,11 @@ impl<'a> Parser<'a>
 	pub fn parse_function_call(&mut self, variables: &LocalVariables) -> FunctionCallInfo
 	{
 		let identifier = self.get_text(&self.current_token().span);
-		let function = self.func_manager.get(identifier).unwrap_or_else(|| {
+
+		// Could clone the value, but i just love pointers sooo much (i do)
+		let function: *const Function = self.func_manager.get(identifier).unwrap_or_else(|| {
 			print_errln!(CompileError::UnknownIdentifier(identifier), self.source, self.current_token().span.start, "No such function.");
 		});
-		let func_param_count = function.parameter_count;
-		let func_parameters = function.locals.clone();
-		let func_index = function.index;
-		let func_ident = function.identifier.clone();
 
 		let token_left_paren = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function.");
@@ -201,56 +199,60 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function call.");
 		});
 
-		let mut arguments: Vec<ExprType> = Vec::with_capacity(func_param_count as usize);
-		for parameter in func_parameters
+		unsafe 
 		{
-			if self.current_token().kind == TokenKind::RightParen
+			let mut arguments: Vec<ExprType> = Vec::with_capacity((*function).locals.len() as usize);
+			for parameter in &(*function).locals[..(*function).parameter_count as usize]
 			{
-				break;
-			}
-			if parameter.attributes & attribute::FUNCTION_PARAMETER == 0
-			{
-				print_errln!(CompileError::Syntax, 
-					self.source, 
-					token_left_paren.span.start,
-					"The Function \"{}\" takes {} parameters but more were given.", func_ident, func_param_count
-				);
+				if self.current_token().kind == TokenKind::RightParen
+				{
+					break;
+				}
+				
+				let data_type = parameter.data_type;
+				let argument = self.parse_expression(data_type, variables);
+				arguments.push(argument);
+
+				if self.current_token().kind == TokenKind::RightParen
+				{
+					break;
+				}
+
+				if self.current_token().kind != TokenKind::Comma
+				{
+					print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected argument seperator \",\" or closing parenthese.");
+				}
+
+				self.advance_token().unwrap_or_else(|| {
+					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function call arguments.");
+				});
 			}
 			
-			let data_type = parameter.data_type;
-			let argument = self.parse_expression(data_type, variables);
-			arguments.push(argument);
-
-			if self.current_token().kind == TokenKind::RightParen
+			if self.current_token().kind != TokenKind::RightParen
 			{
-				break;
+				print_errln!(
+					CompileError::Syntax, 
+					self.source, 
+					token_left_paren.span.start, 
+					"The function \"{}\" takes {} parameters but more were given.", (*function).identifier, (*function).parameter_count
+				);
 			}
 
-			if self.current_token().kind != TokenKind::Comma
+			if arguments.len() != (*function).parameter_count as usize 
 			{
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected argument seperator \",\" or closing parenthese.");
+				print_errln!(
+					CompileError::Syntax, 
+					self.source, 
+					token_left_paren.span.start,
+					"The function \"{}\" takes {} parameters but {} were given.", (*function).identifier, (*function).parameter_count, arguments.len()
+				);
 			}
-
 			self.advance_token().unwrap_or_else(|| {
-				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function call arguments.");
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "After function call.");
 			});
+			
+			return FunctionCallInfo::new((*function).index, arguments);
 		}
-		
-		if arguments.len() != func_param_count as usize
-		{
-			print_errln!(
-				CompileError::Syntax, 
-				self.source, 
-				token_left_paren.span.start,
-				"The function \"{}\" takes {} parameters but {} were given.", func_ident, func_param_count, arguments.len()
-			);
-		}
-		
-		self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "After function call.");
-		});
-
-		return FunctionCallInfo::new(func_index, arguments);
 
 	}
 

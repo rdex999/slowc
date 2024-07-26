@@ -15,6 +15,10 @@ impl<'a> Parser<'a>
 					if next_token.kind == TokenKind::LeftParen
 					{
 						let stmt = Some(Statement::FunctionCall(self.parse_function_call(variables)));
+						if self.current_token().kind != TokenKind::Semicolon
+						{
+							print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
+						}	
 						self.advance_token();
 						return stmt;
 					}

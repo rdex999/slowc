@@ -2,5 +2,5 @@
 
 func global main(argc i32) -> i32
 {
-	foo((2+3)*10, 5);
+	foo((2+3)*10, 420);
 }
