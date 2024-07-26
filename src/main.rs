@@ -31,7 +31,7 @@ fn slowc_compile_file(filepath: &str)
 
     let ir = parser.generate_ir();
 
-    let code_generator = codegen::CodeGen::new(ir);
+    let code_generator = codegen::CodeGen::new(&ir);
 
     code_generator.generate();
 

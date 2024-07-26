@@ -10,6 +10,7 @@ pub enum CompileError<'a>
 	UnknownIdentifier(&'a str),
 	TypeError(Type, Type),			/* ExpectedType, GivenType */
 	InvalidPreprocessorCommand(&'a str),
+	FileWriteError(&'a str),
 }
 
 pub enum ExitCodes
@@ -22,6 +23,7 @@ pub enum ExitCodes
 	UnknownIdentifier,
 	TypeError,
 	InvalidPreprocessorCommand,
+	FileWriteError,
 }
 
 pub struct LineInfo
@@ -122,6 +124,12 @@ pub fn get_exit_code(compile_error: CompileError) -> ExitCodes
 		{
 			eprint!("Invalid preprocessor command. \"{command}\"");
 			return ExitCodes::InvalidPreprocessorCommand;
+		},
+
+		CompileError::FileWriteError(file_path) =>
+		{
+			eprint!("Could not write to file \"{file_path}\".");
+			return ExitCodes::FileWriteError;
 		}
 	}
 }
