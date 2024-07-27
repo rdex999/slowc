@@ -1,7 +1,9 @@
 mod common;
 mod instructions;
-use instructions::*;
+mod register_allocator;
 
+use instructions::*;
+use register_allocator::RegisterAllocator;
 use super::{ast::*, CompileError, print_err};
 
 const _OUT_OBJECT_FILE_PATH: &str = "/tmp/slowc_compiled.obj";
@@ -10,9 +12,11 @@ const OUT_ASM_FILE_PATH: &str = "/tmp/slowc_compiled.asm";
 pub struct CodeGen<'a>
 {
 	ir: &'a Root,
+	register_allocator: RegisterAllocator,
 	attribute_segment: String,
 	data_segment: String,
 	text_segment: String,
+
 }
 
 impl<'a> CodeGen<'a>
@@ -25,6 +29,7 @@ impl<'a> CodeGen<'a>
 
 		return Self {
 			ir,
+			register_allocator: RegisterAllocator::new(),
 			attribute_segment: String::new(),
 			data_segment,
 			text_segment,

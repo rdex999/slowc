@@ -22,6 +22,8 @@ pub enum Source
 	Constant(i64),
 }
 
+// Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
+// For getting the amount of values in an enum
 #[derive(Debug)]
 pub enum Register
 {
@@ -121,6 +123,25 @@ impl LocationExpr
 			base_multiplier,
 			offset,
 		};
+	}
+}
+
+impl Register
+{
+	pub const COUNT: u8 = 68;
+}
+
+impl TryFrom<u8> for Register
+{
+	type Error = ();
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		if value >= Register::COUNT
+		{
+			return Err(());
+		}
+
+		return unsafe { Ok(std::mem::transmute(value)) };
 	}
 }
 
