@@ -22,46 +22,33 @@ pub enum Source
 	Constant(i64),
 }
 
-pub struct Register
-{
-	kind: RegKind,
-	size: RegSize
-}
-
 #[derive(Debug)]
-pub enum RegKind
+pub enum Register
 {
-	RAX,
-	RBX,
-	RCX,
-	RDX,
-	RSI,
-	RDI,
-	RSP,
-	RBP,
-	R8,
-	R9,
-	R10,
-	R11,
-	R12,
-	R13,
-	R14,
-	R15,
-}
+	RAX, EAX, AX, AL, AH,
+	RBX, EBX, BX, BL, BH,
+	RCX, ECX, CX, CL, CH,
+	RDX, EDX, DX, DL, DH,
 
-pub enum RegSize
-{
-	L64,
-	L32,
-	L16,
-	L8,
-	H8
+	RSI, ESI, SI, SIL,
+	RDI, EDI, DI, DIL,
+	RSP, ESP, SP, SPL,
+	RBP, EBP, BP, BPL,
+
+	R8, R8D, R8W, R8B,
+	R9, R9D, R9W, R9B,
+	R10, R10D, R10W, R10B,
+	R11, R11D, R11W, R11B,
+	R12, R12D, R12W, R12B,
+	R13, R13D, R13W, R13B,
+	R14, R14D, R14W, R14B,
+	R15, R15D, R15W, R15B,
 }
 
 pub struct LocationExpr
 {
 	base: Register,
-	base_multiplier: Option<isize>,
+	base_multiplier: Option<usize>,
 	offset: isize,
 }
 
@@ -85,7 +72,7 @@ impl std::fmt::Display for Source
 		match self {
 			Source::Reg(register) => write!(f, "{register}"),
 			Source::Constant(value) => write!(f, "{value}"),
-			Source::Location(_)	=> todo!(),
+			Source::Location(location)	=> write!(f, "{location}"),
 		}
 	}
 }
@@ -94,48 +81,7 @@ impl std::fmt::Display for Register
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
 	{
-		let mut name = format!("{:?}", self.kind).to_lowercase();
-		match self.kind 
-		{
-			RegKind::RAX | RegKind::RBX | RegKind::RCX | RegKind::RDX =>
-			{
-				match self.size
-				{
-					RegSize::L64 	=> (),
-					RegSize::L32 	=> name.replace_range(0..1, "e"),
-					RegSize::L16 	=> {name.remove(0);},
-					RegSize::L8 	=> {name.remove(0); name.replace_range(1..2, "l");},
-					RegSize::H8 	=> {name.remove(0); name.replace_range(1..2, "h");},
-				}	
-			},
-			
-			
-			RegKind::RDI | RegKind::RSI | RegKind::RSP | RegKind::RBP =>
-			{
-				match self.size 
-				{
-					RegSize::L64 	=> (),
-					RegSize::L32 	=> name.replace_range(0..1, "e"),
-					RegSize::L16 	=> {name.remove(0);},
-					RegSize::L8 	=> {name.remove(0); name.push('l');},
-					_ 				=> {panic!("Dev error! tried to use high 8 bits of register {name}.");}
-				}	
-			},
-
-			RegKind::R8 | RegKind::R9 | RegKind::R10 | RegKind::R11 
-			| RegKind::R12 | RegKind::R13 | RegKind::R14 | RegKind::R15 =>
-			{
-				match self.size
-				{
-					RegSize::L64	=> (),
-					RegSize::L32	=> {name.push('d');},
-					RegSize::L16	=> {name.push('w');},
-					RegSize::L8		=> {name.push('b');},
-					_				=> {panic!("Dev error! tried to high 8 bits of register {name}.");}
-				}
-			}
-		}
-		let _ = write!(f, "{name}");
+		let _ = write!(f, "{}", format!("{:?}", self).to_lowercase());
 		return Ok(());
 	
 	}
@@ -145,32 +91,36 @@ impl std::fmt::Display for OpSize
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
 	{
-		write!(f, "{}", format!("{:?}", self).to_lowercase());
+		let _ = write!(f, "{}", format!("{:?}", self).to_lowercase());
 		return Ok(());
 	}
 }
 
-impl Register
+impl std::fmt::Display for LocationExpr
 {
-	pub fn new(kind: RegKind, size: RegSize) -> Self
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
 	{
-		return Self {
-			kind,
-			size,
-		};
+		if let Some(multiplier) = self.base_multiplier
+		{
+			let _ = write!(f, "[{} * {multiplier} + {}]", self.base, self.offset);
+		} else
+		{
+			let _ = write!(f, "[{} + {}]", self.base, self.offset);
+		}
+
+		return Ok(());
 	}
 }
 
-impl RegSize
+impl LocationExpr
 {
-	pub fn _to_op_size(&self) -> OpSize
+	pub fn new(base: Register, base_multiplier: Option<usize>, offset: isize) -> Self
 	{
-		match self {
-			RegSize::L64 				=> OpSize::Qword,	
-			RegSize::L32 				=> OpSize::Dword,	
-			RegSize::L16 				=> OpSize::Word,	
-			RegSize::L8 | RegSize::H8 	=> OpSize::Byte,	
-		}
+		return Self {
+			base,
+			base_multiplier,
+			offset,
+		};
 	}
 }
 

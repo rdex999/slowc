@@ -53,11 +53,22 @@ impl<'a> CodeGen<'a>
 	{
 		self.decl_attribute(&function.identifier, function.attributes);
 		self.write_lable_text_seg(&function.identifier);
-		self.instr_mov(Destination::Reg(Register::new(RegKind::RAX, RegSize::L64)), Source::Constant(1234), OpSize::Qword);
-		self.instr_mov(Destination::Reg(Register::new(RegKind::RAX, RegSize::L32)), Source::Constant(1234), OpSize::Dword);
-		self.instr_mov(Destination::Reg(Register::new(RegKind::RAX, RegSize::L16)), Source::Constant(1234), OpSize::Word);
-		self.instr_mov(Destination::Reg(Register::new(RegKind::RAX, RegSize::L8)), Source::Constant(1234), OpSize::Byte);
-		self.instr_mov(Destination::Reg(Register::new(RegKind::RAX, RegSize::H8)), Source::Constant(69), OpSize::Byte);
+		self.instr_mov(
+			Destination::Reg(Register::RAX), 
+			Source::Location(
+				LocationExpr::new(
+				Register::RAX,
+				Some(4),
+				-3
+			)),
+			OpSize::Qword
+		);
+
+
+		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(1234), OpSize::Dword);
+		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(1234), OpSize::Word);
+		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(1234), OpSize::Byte);
+		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(69), OpSize::Byte);
 		// self.gen_code_block(&function.statements);
 	}
 
