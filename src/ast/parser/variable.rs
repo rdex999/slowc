@@ -42,7 +42,28 @@ impl LocalVariables
 	pub fn into_var_array(self) -> Vec<Variable>
 	{
 		let mut array: Vec<Variable> = self.variables.into_values().collect();
-		array.sort_by_cached_key(|var| var.index);
+		let mut total_size: usize = 0;
+		array.sort_by_cached_key(|var| {
+			if var.attributes & attribute::FUNCTION_PARAMETER == 0
+			{
+				total_size += var.data_type.size() as usize;
+			}
+			return var.index;
+		});
+
+		let mut current_location = total_size as isize * -1;
+		let mut parameters_location: isize = 8 + 8;		/* First thing on the stack is the base pointer, then the return address, so skip them */
+		for variable in &mut array
+		{
+			if variable.attributes & attribute::FUNCTION_PARAMETER != 0
+			{
+				variable.location = parameters_location;
+				parameters_location += variable.data_type.size() as isize;
+				continue;
+			}
+			variable.location = current_location;
+			current_location += variable.data_type.size() as isize;
+		}
 		return array;
 	}
 }

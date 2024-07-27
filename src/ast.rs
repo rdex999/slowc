@@ -1,6 +1,6 @@
 pub mod parser;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, isize};
 use attribute::AttributeType;
 
 use crate::lexer::TokenKind;
@@ -115,6 +115,7 @@ pub struct Variable
 	pub data_type: Type,
 	pub attributes: AttributeType,
 	pub index: u8,
+	pub location: isize,
 }
 
 impl Root
@@ -189,7 +190,8 @@ impl Variable
 		return Self {
 			data_type,
 			attributes,
-			index
+			index,
+			location: 0,		/* Doesnt realy matter */
 		};
 	}
 }
@@ -219,6 +221,14 @@ impl Type
 			TokenKind::I32 => return Some(Type::I32),
 			_ => return None
 		};
+	}
+
+	pub fn size(&self) -> u16
+	{
+		match self
+		{
+			Type::I32 => return 4,
+		}
 	}
 }
 

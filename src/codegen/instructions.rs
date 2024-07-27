@@ -126,8 +126,28 @@ impl LocationExpr
 
 impl<'a> CodeGen<'a>
 {
+	pub fn instr_add_spacing(&mut self)
+	{
+		self.write_text_segment("\n");
+	}
+
 	pub fn instr_mov(&mut self, destination: Destination, source: Source, size: OpSize)
 	{
 		self.write_text_segment(&format!("\n\tmov {size} {destination}, {source}"));
+	}
+
+	pub fn instr_push(&mut self, source: Source, size: OpSize)
+	{
+		self.write_text_segment(&format!("\n\tpush {size} {source}"));
+	}
+
+	pub fn instr_pop(&mut self, destination: Destination, size: OpSize)
+	{
+		self.write_text_segment(&format!("\n\tpop {size} {destination}"));
+	}
+
+	pub fn instr_ret(&mut self)
+	{
+		self.write_text_segment("\n\tret");
 	}
 }

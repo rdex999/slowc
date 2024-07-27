@@ -53,23 +53,54 @@ impl<'a> CodeGen<'a>
 	{
 		self.decl_attribute(&function.identifier, function.attributes);
 		self.write_lable_text_seg(&function.identifier);
-		self.instr_mov(
-			Destination::Reg(Register::RAX), 
-			Source::Location(
-				LocationExpr::new(
-				Register::RAX,
-				Some(4),
-				-3
-			)),
-			OpSize::Qword
-		);
 
+		self.instr_push(Source::Reg(Register::RBP), OpSize::Qword);
+		self.instr_mov(Destination::Reg(Register::RBP), Source::Reg(Register::RSP), OpSize::Qword);
+		self.instr_add_spacing();
 
-		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(1234), OpSize::Dword);
-		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(1234), OpSize::Word);
-		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(1234), OpSize::Byte);
-		self.instr_mov(Destination::Reg(Register::RAX), Source::Constant(69), OpSize::Byte);
-		// self.gen_code_block(&function.statements);
+		self.gen_code_block(&function.statements, &function.locals);
+	
+		self.gen_function_return();
 	}
 
+	fn gen_function_return(&mut self)
+	{
+		self.instr_mov(Destination::Reg(Register::RSP), Source::Reg(Register::RBP), OpSize::Qword);
+		self.instr_pop(Destination::Reg(Register::RBP), OpSize::Qword);
+		self.instr_ret();
+	}
+
+	fn gen_code_block(&mut self, statements: &Vec<Statement>, locals: &Vec<Variable>)
+	{
+		for statement in statements
+		{
+			self.gen_statement(&statement, locals);
+		}
+	}
+
+	fn gen_statement(&mut self, statement: &Statement, locals: &Vec<Variable>)
+	{
+		match statement
+		{
+			Statement::Assign(assign_data) => self.gen_assign_stmt(assign_data, locals),
+			_ => todo!(),
+		}
+	}
+
+	fn gen_assign_stmt(&mut self, assign_data: &VarUpdateInfo, locals: &Vec<Variable>)
+	{
+		self.gen_expression(&assign_data.value, locals);
+	}
+
+	fn gen_expression(&mut self, expression: &ExprType, locals: &Vec<Variable>)
+	{
+		match expression {
+			ExprType::BinExprT(bin_expr) => self.gen_bin_expr(bin_expr, locals),
+		}
+	}
+
+	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>)
+	{
+
+	}
 }
