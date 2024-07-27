@@ -6,7 +6,6 @@ use attribute::AttributeType;
 use crate::lexer::TokenKind;
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Root
 {
 	pub functions: Vec<Function>
@@ -15,7 +14,6 @@ pub struct Root
 
 // This will have a return type field, calling convenction, and other shit in the future
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct Function
 {
 	pub identifier: String,
@@ -24,7 +22,7 @@ pub struct Function
 	pub attributes: AttributeType,
 	pub parameter_count: u8,
 	pub locals: Vec<Variable>,
-	pub stmts: Vec<Statement>,
+	pub statements: Vec<Statement>,
 }
 
 #[derive(Debug, Clone)]
@@ -141,13 +139,13 @@ impl Function
 			attributes,
 			locals: Vec::new(),
 			parameter_count: 0,
-			stmts: Vec::new(),
+			statements: Vec::new(),
 		};
 	}
 	
 	pub fn add_statement(&mut self, statement: Statement)
 	{
-		self.stmts.push(statement);
+		self.statements.push(statement);
 	}
 }
 
