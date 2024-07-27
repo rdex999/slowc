@@ -24,7 +24,7 @@ pub enum Source
 
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
 // For getting the amount of values in an enum
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Register
 {
 	RAX, EAX, AX, AL, AH,
@@ -129,6 +129,38 @@ impl LocationExpr
 impl Register
 {
 	pub const COUNT: u8 = 68;
+	pub const COUNT_FULL: u8 = 16;
+
+	// The size of the register in bytes
+	pub fn size(&self) -> u16
+	{
+		match self {
+			Register::RAX | Register::RBX | Register::RCX | Register::RDX |
+			Register::RSI | Register::RDI | Register::RSP | Register::RBP |
+			Register::R8  | Register::R9  | Register::R10 | Register::R11 |
+			Register::R12 | Register::R13 | Register::R14 | Register::R15 =>
+			{
+				return 8;
+			},
+
+			Register::EAX | Register::EBX | Register::ECX | Register::EDX |
+			Register::ESI | Register::EDI | Register::ESP | Register::EBP |
+			Register::R8D  | Register::R9D  | Register::R10D | Register::R11D |
+			Register::R12D | Register::R13D | Register::R14D | Register::R15D =>
+			{
+				return 4;
+			},
+
+			Register::AX | Register::BX | Register::CX | Register::DX |
+			Register::SI | Register::DI | Register::SP | Register::BP |
+			Register::R8W  | Register::R9W  | Register::R10W | Register::R11W |
+			Register::R12W | Register::R13W | Register::R14W | Register::R15W =>
+			{
+				return 2;
+			},
+			_ => return 1,
+		}
+	}
 }
 
 impl TryFrom<u8> for Register
