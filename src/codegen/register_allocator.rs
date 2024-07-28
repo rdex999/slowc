@@ -43,7 +43,7 @@ impl RegisterInfo
 	}
 
 	// Size - in bytes
-	pub fn allocate_sub_reg(&mut self, size: u16) -> Option<Register>
+	pub fn allocate_sub_reg(&mut self, size: u8) -> Option<Register>
 	{
 		if !self.is_free
 		{
@@ -77,6 +77,17 @@ impl RegisterInfo
 		}
 		return Some(Register::try_from(self.register as u8 + (3 - (size as u8).trailing_zeros() as u8) ).unwrap())
 	}
+
+	pub fn free_sub_reg(&mut self, register: Register)
+	{
+		self.is_free = true;
+		if register as u8 - self.register as u8 == 4 	/* Means it was a high 8 bits register (AH, BH, CH, DH) */
+		{
+			self.is_h8_free = Some(true);
+			return;
+		}
+		self.is_l8_free = true;
+	}
 }
 
 impl RegisterAllocator
@@ -104,7 +115,7 @@ impl RegisterAllocator
 		};
 	}
 
-	pub fn allocate(&mut self, size: u16) -> Option<Register>
+	pub fn allocate(&mut self, size: u8) -> Option<Register>
 	{
 		for register in &mut self.registers
 		{
@@ -114,5 +125,20 @@ impl RegisterAllocator
 			}
 		}	
 		return None;
+	}
+
+	pub fn free(&mut self, register: Register)
+	{
+		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
+		let last_sub_reg_offset = if register as u8 >= Register::RAX as u8 && register as u8 <= Register::DH as u8 { 4 } else { 3 };
+
+		for reg in &mut self.registers
+		{
+			if register as u8 >= reg.register as u8 && register as u8 <= reg.register as u8 + last_sub_reg_offset
+			{
+				reg.free_sub_reg(register);
+				return;
+			}
+		}
 	}
 }
