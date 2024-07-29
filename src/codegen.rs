@@ -154,8 +154,17 @@ impl<'a> CodeGen<'a>
 				{
 					todo!();
 				}
-			}
-			_ => todo!(),
+			},
+			BinExprOperator::Div =>
+			{
+				if signed
+				{
+					self.instr_idiv(rhs);
+				} else
+				{
+					todo!();
+				}
+			},
 		}
 		return Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
 	}

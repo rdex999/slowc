@@ -9,6 +9,7 @@ pub enum OpSize
 	Qword,
 }
 
+#[derive(Clone, Copy)]
 pub struct Placeholder
 {
 	pub kind: PlaceholderKind,
@@ -16,6 +17,7 @@ pub struct Placeholder
 }
 
 #[allow(dead_code)]
+#[derive(Clone, Copy)]
 pub enum PlaceholderKind
 {
 	Reg(Register),
@@ -49,6 +51,7 @@ pub enum Register
 	R15, R15D, R15W, R15B,
 }
 
+#[derive(Clone, Copy)]
 pub struct LocationExpr
 {
 	base: Register,
@@ -199,6 +202,15 @@ impl Placeholder
 			size,
 		};
 	}
+
+	pub fn is_constant(&self) -> bool
+	{
+		match self.kind
+		{
+			PlaceholderKind::I32(_) => return true,
+			_ => return false,
+		}
+	}
 }
 
 impl<'a> CodeGen<'a>
@@ -241,5 +253,39 @@ impl<'a> CodeGen<'a>
 	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
 		self.write_text_segment(&format!("\n\timul {} {destination}, {source}", destination.size));
+	}
+
+	pub fn instr_idiv(&mut self, source: &Placeholder)
+	{
+		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
+		self.reg_alloc_allocate_forced(rdx_allocated);
+
+		let rdx_placeholder = Placeholder::new(
+			PlaceholderKind::Reg(rdx_allocated), 
+			source.size
+		);
+
+		self.instr_xor(&rdx_placeholder, &rdx_placeholder);
+
+		if source.is_constant()
+		{
+			let source_reg = self.reg_alloc_allocate(source.size.bytes()).unwrap();
+			let source_placeholder = Placeholder::new(
+				PlaceholderKind::Reg(source_reg), 
+				source.size
+			);
+			self.instr_mov(&source_placeholder, source);
+			self.write_text_segment(&format!("\n\tidiv {} {}", source.size, source_placeholder));
+			self.reg_alloc_free(source_reg);
+		} else
+		{
+			self.write_text_segment(&format!("\n\tidiv {} {source}", source.size));
+		}
+		self.reg_alloc_free(rdx_allocated);
+	}
+
+	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", destination.size));
 	}
 }
