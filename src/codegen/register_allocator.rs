@@ -5,7 +5,6 @@ const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3;
 pub struct RegisterAllocator
 {
 	registers: [RegisterInfo; ALLOCATABLE_REGS_COUNT],
-
 }
 
 #[derive(Debug)]
@@ -88,6 +87,15 @@ impl RegisterInfo
 		}
 		self.is_l8_free = true;
 	}
+
+	pub fn is_all_sub_regs_free(&self) -> bool
+	{
+		if self.is_h8_free != None && !self.is_h8_free.unwrap()
+		{
+			return false;
+		}
+		return self.is_free && self.is_l8_free;
+	}
 }
 
 impl RegisterAllocator
@@ -138,6 +146,17 @@ impl RegisterAllocator
 			{
 				reg.free_sub_reg(register);
 				return;
+			}
+		}
+	}
+
+	pub fn check_leaks(&self)
+	{
+		for register in &self.registers
+		{
+			if !register.is_all_sub_regs_free()
+			{
+				println!("Found allocated register:\n{:#?}", register);
 			}
 		}
 	}

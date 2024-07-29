@@ -16,7 +16,6 @@ pub struct CodeGen<'a>
 	attribute_segment: String,
 	data_segment: String,
 	text_segment: String,
-
 }
 
 impl<'a> CodeGen<'a>
@@ -41,6 +40,11 @@ impl<'a> CodeGen<'a>
 		for function in &self.ir.functions
 		{
 			self.gen_function(&function);
+		}
+
+		if cfg!(debug_assertions)
+		{
+			self.register_allocator.check_leaks();
 		}
 
 		let mut final_asm = String::with_capacity(self.attribute_segment.len() + self.data_segment.len() + self.text_segment.len() + 1);
