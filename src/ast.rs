@@ -70,6 +70,7 @@ pub enum ExprType
 pub struct BinExpr
 {
 	pub root: BinExprPart,
+	pub signed: bool
 }
 
 #[derive(Debug, Clone)]
@@ -163,10 +164,11 @@ impl FunctionCallInfo
 
 impl BinExpr
 {
-	pub fn new(root: BinExprPart) -> Self
+	pub fn new(root: BinExprPart, signed: bool) -> Self
 	{
 		return Self {
-			root
+			root,
+			signed
 		};
 	}
 }
@@ -229,6 +231,14 @@ impl Type
 		{
 			Type::I32 => return 4,
 		}
+	}
+
+	pub fn is_signed(&self) -> bool
+	{
+		match self
+		{
+			Type::I32 => return true,
+		};
 	}
 }
 

@@ -231,4 +231,14 @@ impl<'a> CodeGen<'a>
 	{
 		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", destination.size));
 	}
+
+	pub fn instr_sub(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", destination.size));
+	}
+
+	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\timul {} {destination}, {source}", destination.size));
+	}
 }

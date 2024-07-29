@@ -18,7 +18,7 @@ impl<'a> Parser<'a>
 	fn parse_bin_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr
 	{
 		let expression_root = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
-		return BinExpr::new(expression_root);
+		return BinExpr::new(expression_root, data_type.is_signed());
 	}
 
 	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart

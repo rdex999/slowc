@@ -120,7 +120,7 @@ impl<'a> CodeGen<'a>
 		match &bin_expr.root
 		{
 			BinExprPart::Val(value) => return self.gen_value(value, locals),
-			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals)
+			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals, bin_expr.signed)
 		}
 	}
 
@@ -133,21 +133,32 @@ impl<'a> CodeGen<'a>
 		}	
 	}
 
-	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder) -> Placeholder 
+	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder, signed: bool) -> Placeholder 
 	{
 		// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
 		let rax = Register::from_op_size(Register::RAX, lhs.size);
-		let destination = &Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
-		self.instr_mov(destination, lhs);
+		let destination = Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
+		self.instr_mov(&destination, lhs);
 
 		match operator {
-			BinExprOperator::Add => self.instr_add(destination, rhs),
+			BinExprOperator::Add => self.instr_add(&destination, rhs),
+			BinExprOperator::Sub => self.instr_sub(&destination, rhs),
+			BinExprOperator::Mul =>
+			{
+				if signed
+				{
+					self.instr_imul(&destination, rhs);
+				} else
+				{
+					todo!();
+				}
+			}
 			_ => todo!(),
 		}
 		return Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
 	}
 
-	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>) -> Placeholder
+	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>, signed: bool) -> Placeholder
 	{
 		match &operation.lhs
 		{
@@ -159,12 +170,12 @@ impl<'a> CodeGen<'a>
 					{
 						let lhs = self.gen_value(lhs, locals);
 						let rhs = self.gen_value(rhs, locals);
-						return self.gen_bin_operation(operation.operator, &lhs, &rhs);
+						return self.gen_bin_operation(operation.operator, &lhs, &rhs, signed);
 					},
 
 					BinExprPart::Operation(op) =>
 					{
-						let rhs = self.gen_bin_expr_recurse(&op, locals);
+						let rhs = self.gen_bin_expr_recurse(&op, locals, signed);
 						let register = self.register_allocator.allocate(rhs.size.bytes()).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.size);
 						self.instr_mov(
@@ -174,7 +185,7 @@ impl<'a> CodeGen<'a>
 						
 						let lhs = self.gen_value(lhs, locals);
 
-						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder);
+						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder, signed);
 						self.register_allocator.free(register);
 						return result;
 					}
@@ -183,7 +194,7 @@ impl<'a> CodeGen<'a>
 
 			BinExprPart::Operation(op) =>
 			{
-				let lhs = self.gen_bin_expr_recurse(&op, locals);
+				let lhs = self.gen_bin_expr_recurse(&op, locals, signed);
 				let register = self.register_allocator.allocate(lhs.size.bytes()).unwrap();
 				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.size);
 				let result;
@@ -197,13 +208,13 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Val(value) => 
 					{
 						let rhs = self.gen_value(value, locals);
-						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs);
+						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs, signed);
 					},
 
 					BinExprPart::Operation(rhs_op) => 
 					{
-						let rhs = self.gen_bin_expr_recurse(rhs_op, locals);
-						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs);
+						let rhs = self.gen_bin_expr_recurse(rhs_op, locals, signed);
+						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs, signed);
 					}
 				}
 				self.register_allocator.free(register);
