@@ -30,7 +30,7 @@ impl<'a> CodeGen<'a>
 
 		return Self {
 			ir,
-			registers: Self::init_register_allocator(),
+			registers: Self::reg_alloc_init(),
 			attribute_segment: String::new(),
 			data_segment,
 			text_segment,
@@ -46,7 +46,7 @@ impl<'a> CodeGen<'a>
 
 		if cfg!(debug_assertions)
 		{
-			self.check_leaks();
+			self.reg_alloc_check_leaks();
 		}
 
 		let mut final_asm = String::with_capacity(self.attribute_segment.len() + self.data_segment.len() + self.text_segment.len() + 1);
@@ -178,7 +178,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(op) =>
 					{
 						let rhs = self.gen_bin_expr_recurse(&op, locals, signed);
-						let register = self.allocate(rhs.size.bytes()).unwrap();
+						let register = self.reg_alloc_allocate(rhs.size.bytes()).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.size);
 						self.instr_mov(
 							&rhs_placeholder, 
@@ -188,7 +188,7 @@ impl<'a> CodeGen<'a>
 						let lhs = self.gen_value(lhs, locals);
 
 						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder, signed);
-						self.free(register);
+						self.reg_alloc_free(register);
 						return result;
 					}
 				}
@@ -197,7 +197,7 @@ impl<'a> CodeGen<'a>
 			BinExprPart::Operation(op) =>
 			{
 				let lhs = self.gen_bin_expr_recurse(&op, locals, signed);
-				let register = self.allocate(lhs.size.bytes()).unwrap();
+				let register = self.reg_alloc_allocate(lhs.size.bytes()).unwrap();
 				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.size);
 				let result;
 				self.instr_mov(
@@ -216,10 +216,14 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(rhs_op) => 
 					{
 						let rhs = self.gen_bin_expr_recurse(rhs_op, locals, signed);
-						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs, signed);
+						let rhs_reg = self.reg_alloc_allocate(rhs.size.bytes()).unwrap();
+						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.size);
+						self.instr_mov(&rhs_placeholder, &rhs);
+						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder, signed);
+						self.reg_alloc_free(rhs_reg);
 					}
 				}
-				self.free(register);
+				self.reg_alloc_free(register);
 				return result;
 			}
 		}

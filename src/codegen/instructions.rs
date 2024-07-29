@@ -15,6 +15,7 @@ pub struct Placeholder
 	pub size: OpSize,
 }
 
+#[allow(dead_code)]
 pub enum PlaceholderKind
 {
 	Reg(Register),

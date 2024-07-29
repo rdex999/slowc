@@ -42,7 +42,7 @@ impl RegisterInfo
 
 impl<'a> CodeGen<'a>
 {
-	pub fn init_register_allocator() -> [RegisterInfo; ALLOCATABLE_REGS_COUNT]
+	pub fn reg_alloc_init() -> [RegisterInfo; ALLOCATABLE_REGS_COUNT]
 	{
 		let mut register_index: u8 = 0;
 		let registers: [RegisterInfo; ALLOCATABLE_REGS_COUNT] = core::array::from_fn(|_| {
@@ -63,11 +63,11 @@ impl<'a> CodeGen<'a>
     	return registers;
 	}
 	
-	pub fn allocate(&mut self, size: u8) -> Option<Register>
+	pub fn reg_alloc_allocate(&mut self, size: u8) -> Option<Register>
 	{
 		for i in 0..self.registers.len()
 		{
-			if let Some(allocated_register) = self.allocate_sub_reg(i, size)
+			if let Some(allocated_register) = self.reg_alloc_allocate_sub_reg(i, size)
 			{
 				return Some(allocated_register);
 			}
@@ -75,7 +75,7 @@ impl<'a> CodeGen<'a>
 		return None;
 	}
 	
-	pub fn free(&mut self, register: Register)
+	pub fn reg_alloc_free(&mut self, register: Register)
 	{
 		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
 		let last_sub_reg_offset = if register as u8 >= Register::RAX as u8 && register as u8 <= Register::DH as u8 { 4 } else { 3 };
@@ -85,24 +85,24 @@ impl<'a> CodeGen<'a>
 			let reg_info = self.registers[i];
 			if register as u8 >= reg_info.register as u8 && register as u8 <= reg_info.register as u8 + last_sub_reg_offset
 			{
-				self.free_sub_reg(i, register);
+				self.reg_alloc_free_sub_reg(i, register);
 				return;
 			}
 		}
 	}
 	
-	pub fn check_leaks(&self)
+	pub fn reg_alloc_check_leaks(&self)
 	{
 		for i in 0..self.registers.len()
 		{
-			if !self.is_all_sub_regs_free(i)
+			if !self.reg_alloc_is_all_sub_regs_free(i)
 			{
 				println!("Found allocated register:\n{:#?}", self.registers[i]);
 			}
 		}
 	}
 	// Size - in bytes
-	fn allocate_sub_reg(&mut self, reg_info_idx: usize, size: u8) -> Option<Register>
+	fn reg_alloc_allocate_sub_reg(&mut self, reg_info_idx: usize, size: u8) -> Option<Register>
 	{
 		let reg_info = &mut self.registers[reg_info_idx];
 
@@ -140,9 +140,9 @@ impl<'a> CodeGen<'a>
 	}
 	
 	// Returns whether should save the register (push)
-	fn _allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
+	fn _reg_alloc_allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
 	{
-		if let Some(_) = self.allocate_sub_reg(reg_info_idx, register.size() as u8)
+		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size() as u8)
 		{
 			return;
 		}
@@ -156,7 +156,7 @@ impl<'a> CodeGen<'a>
 	}
 	
 	// Returns whether should pop the register
-	fn free_sub_reg(&mut self, reg_info_idx: usize, register: Register)
+	fn reg_alloc_free_sub_reg(&mut self, reg_info_idx: usize, register: Register)
 	{
 		if self.registers[reg_info_idx].push_count != 0
 		{
@@ -181,7 +181,7 @@ impl<'a> CodeGen<'a>
 		return;
 	}
 	
-	fn is_all_sub_regs_free(&self, reg_info_idx: usize) -> bool
+	fn reg_alloc_is_all_sub_regs_free(&self, reg_info_idx: usize) -> bool
 	{
 		let reg_info = self.registers[reg_info_idx];
 
