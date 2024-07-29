@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum OpSize
 {
 	Byte,
@@ -9,21 +9,22 @@ pub enum OpSize
 	Qword,
 }
 
-pub enum Destination
+pub struct Placeholder
 {
-	Reg(Register),
-	Location(LocationExpr)
+	pub kind: PlaceholderKind,
+	pub size: OpSize,
 }
 
-pub enum Source
+pub enum PlaceholderKind
 {
 	Reg(Register),
 	Location(LocationExpr),
-	Constant(i64),
+	I32(i32),
 }
 
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
 // For getting the amount of values in an enum
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub enum Register
 {
@@ -54,27 +55,14 @@ pub struct LocationExpr
 	offset: isize,
 }
 
-impl std::fmt::Display for Destination
+impl std::fmt::Display for Placeholder
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
 	{
-		let _ = match self
-		{
-			Destination::Reg(register) => write!(f, "{register}"),
-			Destination::Location(_) => todo!(),
-		};
-		return Ok(());
-	}
-}
-
-impl std::fmt::Display for Source
-{
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
-	{
-		match self {
-			Source::Reg(register) => write!(f, "{register}"),
-			Source::Constant(value) => write!(f, "{value}"),
-			Source::Location(location)	=> write!(f, "{location}"),
+		match &self.kind {
+			PlaceholderKind::Reg(register) => write!(f, "{register}"),
+			PlaceholderKind::I32(value) => write!(f, "{value}"),
+			PlaceholderKind::Location(location)	=> write!(f, "{location}"),
 		}
 	}
 }
@@ -116,7 +104,7 @@ impl std::fmt::Display for LocationExpr
 
 impl LocationExpr
 {
-	pub fn new(base: Register, base_multiplier: Option<usize>, offset: isize) -> Self
+	pub fn _new(base: Register, base_multiplier: Option<usize>, offset: isize) -> Self
 	{
 		return Self {
 			base,
@@ -161,6 +149,11 @@ impl Register
 			_ => return 1,
 		}
 	}
+
+	pub fn from_op_size(base_register: Register, op_size: OpSize) -> Self
+	{
+		return Register::try_from(base_register as u8 + 4 - (op_size as u8 + 1)).unwrap();
+	}
 }
 
 impl TryFrom<u8> for Register
@@ -177,6 +170,36 @@ impl TryFrom<u8> for Register
 	}
 }
 
+impl OpSize
+{
+	pub fn from_size(size: u16) -> Self
+	{
+		match size {
+			1 => return OpSize::Byte,
+			2 => return OpSize::Word,
+			4 => return OpSize::Dword,
+			8 => return OpSize::Qword,
+			_ => panic!("Dev error! OpSize::from_size() called with size that is not a power of 2."),
+		}
+	}
+
+	pub fn bytes(&self) -> u8
+	{
+		return 2u8.pow(*self as u32);
+	}
+}
+
+impl Placeholder
+{
+	pub fn new(kind: PlaceholderKind, size: OpSize) -> Self
+	{
+		return Self {
+			kind,
+			size,
+		};
+	}
+}
+
 impl<'a> CodeGen<'a>
 {
 	pub fn instr_add_spacing(&mut self)
@@ -184,23 +207,28 @@ impl<'a> CodeGen<'a>
 		self.write_text_segment("\n");
 	}
 
-	pub fn instr_mov(&mut self, destination: Destination, source: Source, size: OpSize)
+	pub fn instr_mov(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tmov {size} {destination}, {source}"));
+		self.write_text_segment(&format!("\n\tmov {} {destination}, {source}", destination.size));
 	}
 
-	pub fn instr_push(&mut self, source: Source, size: OpSize)
+	pub fn instr_push(&mut self, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tpush {size} {source}"));
+		self.write_text_segment(&format!("\n\tpush {} {source}", source.size));
 	}
 
-	pub fn instr_pop(&mut self, destination: Destination, size: OpSize)
+	pub fn instr_pop(&mut self, destination: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tpop {size} {destination}"));
+		self.write_text_segment(&format!("\n\tpop {} {destination}", destination.size));
 	}
 
 	pub fn instr_ret(&mut self)
 	{
 		self.write_text_segment("\n\tret");
+	}
+
+	pub fn instr_add(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", destination.size));
 	}
 }

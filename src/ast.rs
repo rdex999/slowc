@@ -45,8 +45,8 @@ pub struct VarUpdateInfo
 #[allow(dead_code)]
 pub struct FunctionCallInfo
 {
-	index: u8,
-	arguments: Vec<ExprType>,
+	pub index: u8,
+	pub arguments: Vec<ExprType>,
 }
 
 #[derive(Debug, Clone)]
@@ -84,9 +84,9 @@ pub enum BinExprPart
 #[allow(dead_code)]
 pub struct BinExprOperation
 {
-	operator: BinExprOperator,
-	lhs: BinExprPart,
-	rhs: BinExprPart,
+	pub operator: BinExprOperator,
+	pub lhs: BinExprPart,
+	pub rhs: BinExprPart,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]

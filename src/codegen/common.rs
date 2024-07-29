@@ -29,4 +29,15 @@ impl<'a> CodeGen<'a>
 	{
 		self.write_text_segment(&format!("\n{lable}:"));
 	}
+
+	// Returns the size of a value, in bytes
+	pub fn _sizeof_value(&self, value: &Value, locals: &Vec<Variable>) -> u16
+	{
+		match value
+		{
+			Value::I32(_) => return 4,
+			Value::Var(index) => return locals[*index as usize].data_type.size(),
+			Value::FuncCall(info) => return self.ir.functions[info.index as usize].return_type.size()
+		}
+	}
 }

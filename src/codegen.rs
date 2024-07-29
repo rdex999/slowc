@@ -59,8 +59,12 @@ impl<'a> CodeGen<'a>
 		self.decl_attribute(&function.identifier, function.attributes);
 		self.write_lable_text_seg(&function.identifier);
 
-		self.instr_push(Source::Reg(Register::RBP), OpSize::Qword);
-		self.instr_mov(Destination::Reg(Register::RBP), Source::Reg(Register::RSP), OpSize::Qword);
+		self.instr_push(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword));
+		self.instr_mov(
+			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword),
+			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword)
+		);
+
 		self.instr_add_spacing();
 
 		self.gen_code_block(&function.statements, &function.locals);
@@ -70,8 +74,11 @@ impl<'a> CodeGen<'a>
 
 	fn gen_function_return(&mut self)
 	{
-		self.instr_mov(Destination::Reg(Register::RSP), Source::Reg(Register::RBP), OpSize::Qword);
-		self.instr_pop(Destination::Reg(Register::RBP), OpSize::Qword);
+		self.instr_mov(
+			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword),
+			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword)
+		);
+		self.instr_pop(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword));
 		self.instr_ret();
 	}
 
@@ -97,15 +104,107 @@ impl<'a> CodeGen<'a>
 		self.gen_expression(&assign_data.value, locals);
 	}
 
-	fn gen_expression(&mut self, expression: &ExprType, locals: &Vec<Variable>)
+	fn gen_expression(&mut self, expression: &ExprType, locals: &Vec<Variable>) -> Placeholder
 	{
 		match expression {
-			ExprType::BinExprT(bin_expr) => self.gen_bin_expr(bin_expr, locals),
+			ExprType::BinExprT(bin_expr) => return self.gen_bin_expr(bin_expr, locals),
 		}
 	}
 
-	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>)
+	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
+		match &bin_expr.root
+		{
+			BinExprPart::Val(value) => return self.gen_value(value, locals),
+			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals)
+		}
+	}
 
+	fn gen_value(&mut self, value: &Value, _locals: &Vec<Variable>) -> Placeholder 
+	{
+		match value
+		{
+			Value::I32(number) => return Placeholder::new(PlaceholderKind::I32(*number), OpSize::Dword),
+			_ => todo!(),
+		}	
+	}
+
+	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder) -> Placeholder 
+	{
+		// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
+		let rax = Register::from_op_size(Register::RAX, lhs.size);
+		let destination = &Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
+		self.instr_mov(destination, lhs);
+
+		match operator {
+			BinExprOperator::Add => self.instr_add(destination, rhs),
+			_ => todo!(),
+		}
+		return Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
+	}
+
+	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>) -> Placeholder
+	{
+		match &operation.lhs
+		{
+			BinExprPart::Val(lhs) =>
+			{
+				match &operation.rhs
+				{
+					BinExprPart::Val(rhs) =>
+					{
+						let lhs = self.gen_value(lhs, locals);
+						let rhs = self.gen_value(rhs, locals);
+						return self.gen_bin_operation(operation.operator, &lhs, &rhs);
+					},
+
+					BinExprPart::Operation(op) =>
+					{
+						let rhs = self.gen_bin_expr_recurse(&op, locals);
+						let register = self.register_allocator.allocate(rhs.size.bytes()).unwrap();
+						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.size);
+						self.instr_mov(
+							&rhs_placeholder, 
+							&rhs
+						);
+						
+						let lhs = self.gen_value(lhs, locals);
+
+						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder);
+						self.register_allocator.free(register);
+						return result;
+					}
+				}
+			},
+
+			BinExprPart::Operation(op) =>
+			{
+				let lhs = self.gen_bin_expr_recurse(&op, locals);
+				let register = self.register_allocator.allocate(lhs.size.bytes()).unwrap();
+				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.size);
+				let result;
+				self.instr_mov(
+					&lhs_placeholder, 
+					&lhs
+				);
+
+				match &operation.rhs
+				{
+					BinExprPart::Val(value) => 
+					{
+						let rhs = self.gen_value(value, locals);
+						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs);
+					},
+
+					BinExprPart::Operation(rhs_op) => 
+					{
+						let rhs = self.gen_bin_expr_recurse(rhs_op, locals);
+						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs);
+					}
+				}
+				self.register_allocator.free(register);
+				return result;
+			}
+		}
 	}
 }
