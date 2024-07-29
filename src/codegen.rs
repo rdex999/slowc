@@ -3,16 +3,18 @@ mod instructions;
 mod register_allocator;
 
 use instructions::*;
-use register_allocator::RegisterAllocator;
+use register_allocator::*;
 use super::{ast::*, CompileError, print_err};
 
 const _OUT_OBJECT_FILE_PATH: &str = "/tmp/slowc_compiled.obj";
 const OUT_ASM_FILE_PATH: &str = "/tmp/slowc_compiled.asm";
 
+const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3;
+
 pub struct CodeGen<'a>
 {
 	ir: &'a Root,
-	register_allocator: RegisterAllocator,
+	registers: [RegisterInfo; ALLOCATABLE_REGS_COUNT],
 	attribute_segment: String,
 	data_segment: String,
 	text_segment: String,
@@ -28,7 +30,7 @@ impl<'a> CodeGen<'a>
 
 		return Self {
 			ir,
-			register_allocator: RegisterAllocator::new(),
+			registers: Self::init_register_allocator(),
 			attribute_segment: String::new(),
 			data_segment,
 			text_segment,
@@ -44,7 +46,7 @@ impl<'a> CodeGen<'a>
 
 		if cfg!(debug_assertions)
 		{
-			self.register_allocator.check_leaks();
+			self.check_leaks();
 		}
 
 		let mut final_asm = String::with_capacity(self.attribute_segment.len() + self.data_segment.len() + self.text_segment.len() + 1);
@@ -176,7 +178,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(op) =>
 					{
 						let rhs = self.gen_bin_expr_recurse(&op, locals, signed);
-						let register = self.register_allocator.allocate(rhs.size.bytes()).unwrap();
+						let register = self.allocate(rhs.size.bytes()).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.size);
 						self.instr_mov(
 							&rhs_placeholder, 
@@ -186,7 +188,7 @@ impl<'a> CodeGen<'a>
 						let lhs = self.gen_value(lhs, locals);
 
 						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder, signed);
-						self.register_allocator.free(register);
+						self.free(register);
 						return result;
 					}
 				}
@@ -195,7 +197,7 @@ impl<'a> CodeGen<'a>
 			BinExprPart::Operation(op) =>
 			{
 				let lhs = self.gen_bin_expr_recurse(&op, locals, signed);
-				let register = self.register_allocator.allocate(lhs.size.bytes()).unwrap();
+				let register = self.allocate(lhs.size.bytes()).unwrap();
 				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.size);
 				let result;
 				self.instr_mov(
@@ -217,7 +219,7 @@ impl<'a> CodeGen<'a>
 						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs, signed);
 					}
 				}
-				self.register_allocator.free(register);
+				self.free(register);
 				return result;
 			}
 		}
