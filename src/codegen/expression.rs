@@ -18,13 +18,31 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	fn gen_value(&mut self, value: &Value, _locals: &Vec<Variable>) -> Placeholder 
+	fn gen_value(&mut self, value: &Value, locals: &Vec<Variable>) -> Placeholder 
 	{
 		match value
 		{
 			Value::I32(number) => return Placeholder::new(PlaceholderKind::I32(*number), OpSize::Dword),
+			Value::Var(_) => return self.gen_value_access(locals, value),
 			_ => todo!(),
 		}	
+	}
+
+	// Will return a pointer to the result
+	pub fn gen_value_access(&mut self, locals: &Vec<Variable>, value: &Value) -> Placeholder
+	{
+		match value
+		{
+			Value::Var(variable_index) =>
+			{
+				let variable = locals[*variable_index as usize];
+				return Placeholder::new(
+					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
+					OpSize::from_size(variable.data_type.size())
+				);
+			}, 
+			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
+		}
 	}
 
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder, signed: bool) -> Placeholder 

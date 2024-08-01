@@ -129,22 +129,4 @@ impl<'a> CodeGen<'a>
 
 		self.reg_alloc_free(src_reg);
 	}
-
-	// Will return a pointer to the result
-	fn gen_value_access(&mut self, locals: &Vec<Variable>, value: &Value) -> Placeholder
-	{
-		match value
-		{
-			Value::Var(variable_index) =>
-			{
-				let variable = locals[*variable_index as usize];
-				return Placeholder::new(
-					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
-					OpSize::from_size(variable.data_type.size())
-				);
-			}, 
-			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
-		}
-
-	}
 }
