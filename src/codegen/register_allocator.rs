@@ -77,7 +77,7 @@ impl<'a> CodeGen<'a>
 
 	pub fn reg_alloc_allocate_forced(&mut self, register: Register)
 	{
-		let index = Self::reg_alloc_register_2_index(Register::R15);
+		let index = Self::reg_alloc_register_2_index(register);
 		self.reg_alloc_allocate_sub_reg_forced(index, register);
 	}
 	
