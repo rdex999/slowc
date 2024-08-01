@@ -108,6 +108,23 @@ impl<'a> CodeGen<'a>
 
 	fn gen_assign_stmt(&mut self, assign_data: &VarUpdateInfo, locals: &Vec<Variable>)
 	{
-		self.gen_expression(&assign_data.value, locals);
+		let source = self.gen_expression(&assign_data.value, locals);
+		let	src_reg = self.reg_alloc_allocate(source.size.bytes()).unwrap();
+		let src_placeholder = Placeholder::new(
+			PlaceholderKind::Reg(src_reg), 
+			source.size
+		);
+
+		let destination = self.gen_value_access(&assign_data.destination);
+
+		// self.instr_mov(&destination, &src_placeholder);
+
+		// self.reg_alloc_free(src_reg);
+	}
+
+	// Will return a pointer to the result
+	fn gen_value_access(&mut self, value: &Value) -> ()
+	{
+
 	}
 }

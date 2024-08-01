@@ -103,7 +103,8 @@ impl<'a> Parser<'a>
 
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
-			function.locals = variables.into_var_array();	
+			let locals = variables.get_variables_info();	
+			function.locals = locals.vars;
 			self.func_manager.add(function);
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
@@ -119,8 +120,8 @@ impl<'a> Parser<'a>
 			}
 		}
 		self.advance_token();
-		let locals = variables.into_var_array();
-		function.locals = locals;
+		let locals = variables.get_variables_info();
+		function.locals = locals.vars;
 		self.func_manager.add(function);
 
 	}

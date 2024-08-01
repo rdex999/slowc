@@ -6,6 +6,25 @@ pub struct LocalVariables
 	variables: HashMap<String, Variable>
 }
 
+pub struct LocalVariablesInfo
+{
+	pub vars: Vec<Variable>,
+	
+	// The amount of bytes to subtract from the RSP register
+	pub stack_size: usize,			
+}
+
+impl LocalVariablesInfo
+{
+	pub fn new(vars: Vec<Variable>, stack_size: usize) -> Self
+	{
+		return Self {
+			vars,
+			stack_size
+		};
+	}
+}
+
 impl LocalVariables
 {
 	pub fn new() -> Self
@@ -39,7 +58,7 @@ impl LocalVariables
 		return self.index;
 	}
 
-	pub fn into_var_array(self) -> Vec<Variable>
+	pub fn get_variables_info(self) -> LocalVariablesInfo
 	{
 		let mut array: Vec<Variable> = self.variables.into_values().collect();
 		let mut total_size: usize = 0;
@@ -64,6 +83,9 @@ impl LocalVariables
 			variable.location = current_location;
 			current_location += variable.data_type.size() as isize;
 		}
-		return array;
+		return LocalVariablesInfo::new(
+			array, 
+			total_size
+		);
 	}
 }
