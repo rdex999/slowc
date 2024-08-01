@@ -23,6 +23,7 @@ pub enum PlaceholderKind
 	Reg(Register),
 	Location(LocationExpr),
 	I32(i32),
+	U64(u64),
 }
 
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
@@ -66,6 +67,7 @@ impl std::fmt::Display for Placeholder
 		match &self.kind {
 			PlaceholderKind::Reg(register) => write!(f, "{register}"),
 			PlaceholderKind::I32(value) => write!(f, "{value}"),
+			PlaceholderKind::U64(value) => write!(f, "{value}"),
 			PlaceholderKind::Location(location)	=> write!(f, "{location}"),
 		}
 	}
@@ -108,7 +110,7 @@ impl std::fmt::Display for LocationExpr
 
 impl LocationExpr
 {
-	pub fn _new(base: Register, base_multiplier: Option<usize>, offset: isize) -> Self
+	pub fn new(base: Register, base_multiplier: Option<usize>, offset: isize) -> Self
 	{
 		return Self {
 			base,

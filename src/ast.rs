@@ -22,6 +22,7 @@ pub struct Function
 	pub attributes: AttributeType,
 	pub parameter_count: u8,
 	pub locals: Vec<Variable>,
+	pub stack_size: usize,
 	pub statements: Vec<Statement>,
 }
 
@@ -140,6 +141,7 @@ impl Function
 			return_type,
 			attributes,
 			locals: Vec::new(),
+			stack_size: 0,
 			parameter_count: 0,
 			statements: Vec::new(),
 		};

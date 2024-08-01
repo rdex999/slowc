@@ -105,6 +105,7 @@ impl<'a> Parser<'a>
 		{
 			let locals = variables.get_variables_info();	
 			function.locals = locals.vars;
+			function.stack_size = locals.stack_size;
 			self.func_manager.add(function);
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
@@ -122,6 +123,7 @@ impl<'a> Parser<'a>
 		self.advance_token();
 		let locals = variables.get_variables_info();
 		function.locals = locals.vars;
+		function.stack_size = locals.stack_size;
 		self.func_manager.add(function);
 
 	}

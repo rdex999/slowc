@@ -71,6 +71,13 @@ impl<'a> CodeGen<'a>
 			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword),
 			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword)
 		);
+		if function.stack_size != 0
+		{
+			self.instr_sub(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword),
+				&Placeholder::new(PlaceholderKind::U64(function.stack_size as u64), OpSize::Qword), 
+			);
+		}
 
 		self.instr_add_spacing();
 
@@ -114,17 +121,30 @@ impl<'a> CodeGen<'a>
 			PlaceholderKind::Reg(src_reg), 
 			source.size
 		);
+		self.instr_mov(&src_placeholder, &source);
 
-		let destination = self.gen_value_access(&assign_data.destination);
+		let destination = self.gen_value_access(locals, &assign_data.destination);
 
-		// self.instr_mov(&destination, &src_placeholder);
+		self.instr_mov(&destination, &src_placeholder);
 
-		// self.reg_alloc_free(src_reg);
+		self.reg_alloc_free(src_reg);
 	}
 
 	// Will return a pointer to the result
-	fn gen_value_access(&mut self, value: &Value) -> ()
+	fn gen_value_access(&mut self, locals: &Vec<Variable>, value: &Value) -> Placeholder
 	{
+		match value
+		{
+			Value::Var(variable_index) =>
+			{
+				let variable = locals[*variable_index as usize];
+				return Placeholder::new(
+					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
+					OpSize::from_size(variable.data_type.size())
+				);
+			}, 
+			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
+		}
 
 	}
 }
