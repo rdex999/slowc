@@ -27,16 +27,14 @@ pub struct Function
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum Statement
 {
 	Assign(VarUpdateInfo),
 	FunctionCall(FunctionCallInfo),
-	Return(ExprType),
+	Return(Option<ExprType>),
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct VarUpdateInfo
 {
 	pub destination: Value,
@@ -44,7 +42,6 @@ pub struct VarUpdateInfo
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct FunctionCallInfo
 {
 	pub index: u8,
@@ -52,7 +49,6 @@ pub struct FunctionCallInfo
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum Value
 {
 	I32(i32),		/* (Not funny) */
@@ -61,14 +57,12 @@ pub enum Value
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum ExprType
 {
 	BinExprT(BinExpr),
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct BinExpr
 {
 	pub root: BinExprPart,
@@ -76,7 +70,6 @@ pub struct BinExpr
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum BinExprPart
 {
 	Operation(Box<BinExprOperation>),
@@ -84,7 +77,6 @@ pub enum BinExprPart
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct BinExprOperation
 {
 	pub operator: BinExprOperator,
@@ -93,7 +85,6 @@ pub struct BinExprOperation
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-#[allow(dead_code)]
 pub enum BinExprOperator
 {
 	Add,
@@ -104,15 +95,13 @@ pub enum BinExprOperator
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-#[allow(dead_code)]
 pub enum Type
 {
+	Void,
 	I32,
 }
 
 #[derive(Debug, Clone, Copy)]
-#[allow(dead_code)]
-// TODO: add attributes, which will include is_function_parameter
 pub struct Variable
 {
 	pub data_type: Type,
@@ -223,8 +212,9 @@ impl Type
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Type>
 	{
 		match token_kind {
-			TokenKind::I32 => return Some(Type::I32),
-			_ => return None
+			TokenKind::I32 	=> return Some(Type::I32),
+			TokenKind::Void => return Some(Type::Void),
+			_ 				=> return None
 		};
 	}
 
@@ -232,6 +222,7 @@ impl Type
 	{
 		match self
 		{
+			Type::Void => return 0,
 			Type::I32 => return 4,
 		}
 	}
@@ -240,6 +231,7 @@ impl Type
 	{
 		match self
 		{
+			Type::Void => return false,
 			Type::I32 => return true,
 		};
 	}

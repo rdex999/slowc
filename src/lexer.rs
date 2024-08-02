@@ -26,6 +26,7 @@ macro_rules! create_keyword {
 // or "ויהי חתום32 מספר_או_משהו = 420;" read from right to left, and the semicolon if actually on the end of the sentence (at the left part)
 pub const KEYWORD_VAR_DECL	: &str = create_keyword!("ויהי", "let");
 pub const KEYWORD_I32		: &str = create_keyword!("חתום32", "i32");
+pub const KEYWORD_VOID		: &str = create_keyword!("כלום", "void");
 pub const KEYWORD_FUNC_DECL	: &str = create_keyword!("פונקציה", "func");
 pub const KEYWORD_RETURN	: &str = create_keyword!("החזר", "return");
 pub const KEYWORD_GLOBAL	: &str = create_keyword!("גלובלי", "global");

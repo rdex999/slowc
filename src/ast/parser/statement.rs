@@ -111,13 +111,20 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_RETURN} statement.");
 		});
 
-		let expr = self.parse_expression(function.return_type, variables);
+		let mut stmt = Statement::Return(None);
+
+		if function.return_type != Type::Void
+		{
+			let expr = self.parse_expression(function.return_type, variables);
+			stmt = Statement::Return(Some(expr));
+		}
+
 		if self.current_token().kind != TokenKind::Semicolon
 		{
 			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
 		}
 		self.advance_token();
 
-		return Statement::Return(expr);
+		return stmt;
 	}
 }

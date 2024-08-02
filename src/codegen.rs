@@ -131,9 +131,19 @@ impl<'a> CodeGen<'a>
 		self.reg_alloc_free(src_reg);
 	}
 
-	fn gen_return_stmt(&mut self, locals: &Vec<Variable>, expression: &ExprType)
+	fn gen_return_stmt(&mut self, locals: &Vec<Variable>, expression: &Option<ExprType>)
 	{
-		let expr_placeholder = self.gen_expression(expression, locals);
+		let expr;
+		if let Some(exp) = expression
+		{
+			expr = exp;
+		} else
+		{
+			self.gen_function_return();
+			return;
+		}
+
+		let expr_placeholder = self.gen_expression(expr, locals);
 		let rax = Register::from_op_size(Register::RAX, expr_placeholder.size);
 
 		// I hate Rust

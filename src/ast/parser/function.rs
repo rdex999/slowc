@@ -113,13 +113,26 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
 
+		let mut has_return_stmt = false;
 		while self.current_token().kind != TokenKind::RightCurly
 		{
 			if let Some(stmt) = self.parse_statement(&mut variables, &mut function)
 			{
+				if function.return_type != Type::Void
+				{
+					if let Statement::Return(_) = stmt
+					{
+						has_return_stmt = true;
+					}
+				}
 				function.add_statement(stmt);
 			}
 		}
+		if function.return_type != Type::Void && !has_return_stmt
+		{
+			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected return statement because of the functions return type.");
+		}
+
 		self.advance_token();
 		let locals = variables.get_variables_info();
 		function.locals = locals.vars;

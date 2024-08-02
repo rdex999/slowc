@@ -32,6 +32,7 @@ pub enum TokenKind
 	Semicolon,
 	Ident,
 	VarDecl,
+	Void,
 	I32,
 	FuncDecl,
 	Return,
