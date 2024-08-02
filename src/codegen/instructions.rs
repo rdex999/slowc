@@ -29,7 +29,7 @@ pub enum PlaceholderKind
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
 // For getting the amount of values in an enum
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum Register
 {
 	RAX, EAX, AX, AL, AH,

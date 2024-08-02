@@ -109,6 +109,7 @@ impl<'a> CodeGen<'a>
 		match statement
 		{
 			Statement::Assign(assign_data) => self.gen_assign_stmt(assign_data, locals),
+			Statement::Return(expression) => self.gen_return_stmt(locals, expression),
 			_ => todo!(),
 		}
 	}
@@ -128,5 +129,31 @@ impl<'a> CodeGen<'a>
 		self.instr_mov(&destination, &src_placeholder);
 
 		self.reg_alloc_free(src_reg);
+	}
+
+	fn gen_return_stmt(&mut self, locals: &Vec<Variable>, expression: &ExprType)
+	{
+		let expr_placeholder = self.gen_expression(expression, locals);
+		let rax = Register::from_op_size(Register::RAX, expr_placeholder.size);
+
+		// I hate Rust
+		if let PlaceholderKind::Reg(reg) = expr_placeholder.kind
+		{
+			if reg != rax
+			{
+				self.instr_mov(
+					&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.size), 
+					&expr_placeholder
+				);
+			}
+		} else 
+		{
+			self.instr_mov(
+				&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.size), 
+				&expr_placeholder
+			);
+		}
+
+		self.gen_function_return();
 	}
 }
