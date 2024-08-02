@@ -1,6 +1,10 @@
 #!/bin/bash
 
 cargo run --features english -- example.slw
+if (( $? != 0 )); then
+	exit
+fi
+
 nasm -felf64 -g -o a.o /tmp/slowc_compiled.asm
 ld -e main -o a.out a.o
 gdb a.out\

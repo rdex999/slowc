@@ -3,7 +3,5 @@
 func global main(argc i32) -> void
 {
 	let num i32 = 2 * 3 * 8 + 9 / 3 - 2;
-	let num_plus_2 i32 = num + 2;
-	let num1 i32 = num_plus_2 * 2;
-
+	foo(5, 10);
 }

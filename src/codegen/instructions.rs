@@ -290,4 +290,9 @@ impl<'a> CodeGen<'a>
 	{
 		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", destination.size));
 	}
+
+	pub fn instr_call(&mut self, identifier: &str)
+	{
+		self.write_text_segment(&format!("\n\tcall {identifier}"));
+	}
 }

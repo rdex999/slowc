@@ -23,6 +23,7 @@ pub struct Function
 	pub parameter_count: u8,
 	pub locals: Vec<Variable>,
 	pub stack_size: usize,
+	pub parameters_stack_size: usize,
 	pub statements: Vec<Statement>,
 }
 
@@ -123,7 +124,7 @@ impl Root
 
 impl Function
 {
-	pub fn new(identifier: String, return_type: Type, attributes: AttributeType) -> Self
+	pub fn new(identifier: String, return_type: Type, attributes: AttributeType, parameters_stack_size: usize) -> Self
 	{
 		return Self{
 			identifier,
@@ -132,6 +133,7 @@ impl Function
 			attributes,
 			locals: Vec::new(),
 			stack_size: 0,
+			parameters_stack_size,
 			parameter_count: 0,
 			statements: Vec::new(),
 		};

@@ -3,7 +3,8 @@ use crate::ast::*;
 pub struct LocalVariables
 {
 	index: u8,
-	variables: HashMap<String, Variable>
+	variables: HashMap<String, Variable>,
+	pub parameters_stack_size: usize,	
 }
 
 pub struct LocalVariablesInfo
@@ -31,6 +32,7 @@ impl LocalVariables
 	{
 		return Self {
 			index: 0,
+			parameters_stack_size: 0,
 			variables: HashMap::new(),
 		};
 	}
@@ -38,6 +40,11 @@ impl LocalVariables
 	pub fn add_variable(&mut self, identifier: String, attributes: AttributeType, data_type: Type) -> Variable
 	{
 		let var = Variable::new(data_type, attributes, self.index);	
+		if attributes & attribute::FUNCTION_PARAMETER != 0
+		{
+			self.parameters_stack_size += data_type.size() as usize;
+		}
+
 		self.index += 1;
 		self.variables.insert(identifier, var.clone());
 		return var;

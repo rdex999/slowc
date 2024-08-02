@@ -26,11 +26,6 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	pub fn gen_function_call(&mut self, locals: &Vec<Variable>, function_call_info: &FunctionCallInfo) -> ()//Option<Placeholder>
-	{
-		
-	}
-
 	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
 		match &bin_expr.root
