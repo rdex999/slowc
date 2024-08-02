@@ -38,6 +38,10 @@ impl RegisterInfo
 		};
 	}
 
+	pub fn is_used(&self) -> bool
+	{
+		return !self.is_free || !self.is_l8_free || (self.is_h8_free != None && !self.is_h8_free.unwrap());
+	}
 }
 
 impl<'a> CodeGen<'a>
@@ -101,6 +105,34 @@ impl<'a> CodeGen<'a>
 			if !self.reg_alloc_is_all_sub_regs_free(i)
 			{
 				println!("Found allocated register:\n{:#?}", self.registers[i]);
+			}
+		}
+	}
+
+	pub fn reg_alloc_save_used(&mut self)
+	{
+		for register_info in self.registers
+		{
+			if register_info.is_used()
+			{
+				self.instr_push(&Placeholder::new(
+					PlaceholderKind::Reg(register_info.register), 
+					OpSize::from_size(register_info.register.size())
+				));
+			}
+		}
+	}
+
+	pub fn reg_alloc_free_used(&mut self)
+	{
+		for i in (0..self.registers.len()).rev()
+		{
+			if self.registers[i].is_used()
+			{
+				self.instr_pop(&Placeholder::new(
+					PlaceholderKind::Reg(self.registers[i].register), 
+					OpSize::from_size(self.registers[i].register.size())
+				));
 			}
 		}
 	}

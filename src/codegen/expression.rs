@@ -8,6 +8,28 @@ impl<'a> CodeGen<'a>
 			ExprType::BinExprT(bin_expr) => return self.gen_bin_expr(bin_expr, locals),
 		}
 	}
+	
+	// Will return a pointer to the result
+	pub fn gen_value_access(&mut self, locals: &Vec<Variable>, value: &Value) -> Placeholder
+	{
+		match value
+		{
+			Value::Var(variable_index) =>
+			{
+				let variable = locals[*variable_index as usize];
+				return Placeholder::new(
+					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
+					OpSize::from_size(variable.data_type.size())
+				);
+			}, 
+			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
+		}
+	}
+
+	pub fn gen_function_call(&mut self, locals: &Vec<Variable>, function_call_info: &FunctionCallInfo) -> ()//Option<Placeholder>
+	{
+		
+	}
 
 	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
@@ -28,22 +50,6 @@ impl<'a> CodeGen<'a>
 		}	
 	}
 
-	// Will return a pointer to the result
-	pub fn gen_value_access(&mut self, locals: &Vec<Variable>, value: &Value) -> Placeholder
-	{
-		match value
-		{
-			Value::Var(variable_index) =>
-			{
-				let variable = locals[*variable_index as usize];
-				return Placeholder::new(
-					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
-					OpSize::from_size(variable.data_type.size())
-				);
-			}, 
-			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
-		}
-	}
 
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder, signed: bool) -> Placeholder 
 	{

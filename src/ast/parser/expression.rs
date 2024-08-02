@@ -14,6 +14,73 @@ impl<'a> Parser<'a>
 			todo!("Dev error!! parse_expression() - None binary expressions are not yet supported.");
 		}
 	}
+	
+	pub fn parse_value(&mut self, data_type: Option<Type>, variables: &LocalVariables, is_lvalue: bool) -> Option<Value>
+	{
+		let first_token = self.current_token();
+		match first_token.kind
+		{
+			TokenKind::IntLit(value) => 
+			{
+				self.advance_token();
+				if is_lvalue
+				{
+					print_errln!(CompileError::Syntax, self.source, first_token.span.start, "Expected modifiable lvalue.");
+				}
+	
+				if let Some(data_type) = data_type
+				{
+					match data_type {
+						Type::I32 => return Some(Value::I32(value as i32)),
+	
+						#[allow(unreachable_patterns)]
+						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
+					}
+				}
+				return Some(Value::I32(value as i32));
+			},
+			
+			TokenKind::Ident =>
+			{
+				if let Some(next_token) = self.peek(1)
+				{
+					if next_token.kind == TokenKind::LeftParen
+					{
+						let function_call = Value::FuncCall(self.parse_function_call(variables));
+						let func_ret_type = self.value_type(&function_call, variables);
+						if data_type != None && func_ret_type != data_type.unwrap()
+						{
+							print_errln!(
+								CompileError::TypeError(data_type.unwrap(), func_ret_type), 
+								self.source, 
+								first_token.span.start, 
+								"When parsing function call."
+							);
+						}
+						return Some(function_call);
+					}
+				}
+	
+				self.advance_token();
+				let ident = self.get_text(&first_token.span);
+				
+				let var = variables.get_variable(ident).unwrap_or_else(|| {
+					print_errln!(CompileError::UnknownIdentifier(ident), self.source, first_token.span.start, "");
+				});
+				
+				if let Some(data_type) = data_type
+				{
+					if var.data_type != data_type
+					{
+						print_errln!(CompileError::TypeError(data_type, data_type), self.source, first_token.span.start, "");
+					}
+				}
+				return Some(Value::Var(var.index));
+			},
+	
+			_ => return None
+		}
+	}
 
 	fn parse_bin_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr
 	{
@@ -75,7 +142,7 @@ impl<'a> Parser<'a>
 			return lhs;
 		}
 	}
-
+	
 	fn parse_bin_operator(&mut self) -> BinExprOperator
 	{
 		let token = self.current_token();
@@ -87,72 +154,5 @@ impl<'a> Parser<'a>
 		print_errln!(CompileError::Syntax, self.source, token.span.start, "None-binary operator found in binary expression.");
 	}
 
-	pub fn parse_value(&mut self, data_type: Option<Type>, variables: &LocalVariables, is_lvalue: bool) -> Option<Value>
-	{
-		let first_token = self.current_token();
-		match first_token.kind
-		{
-			TokenKind::IntLit(value) => 
-			{
-				self.advance_token();
-				if is_lvalue
-				{
-					print_errln!(CompileError::Syntax, self.source, first_token.span.start, "Expected modifiable lvalue.");
-				}
-
-				if let Some(data_type) = data_type
-				{
-					match data_type {
-						Type::I32 => return Some(Value::I32(value as i32)),
-
-						#[allow(unreachable_patterns)]
-						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
-					}
-				}
-				return Some(Value::I32(value as i32));
-			},
-			
-			TokenKind::Ident =>
-			{
-				if let Some(next_token) = self.peek(1)
-				{
-					if next_token.kind == TokenKind::LeftParen
-					{
-						let function_call = Value::FuncCall(self.parse_function_call(variables));
-						let func_ret_type = self.value_type(&function_call, variables);
-						if data_type != None && func_ret_type != data_type.unwrap()
-						{
-							print_errln!(
-								CompileError::TypeError(data_type.unwrap(), func_ret_type), 
-								self.source, 
-								first_token.span.start, 
-								"When parsing function call."
-							);
-						}
-						return Some(function_call);
-					}
-				}
-
-				self.advance_token();
-				let ident = self.get_text(&first_token.span);
-				
-				let var = variables.get_variable(ident).unwrap_or_else(|| {
-					print_errln!(CompileError::UnknownIdentifier(ident), self.source, first_token.span.start, "");
-				});
-				
-				if let Some(data_type) = data_type
-				{
-					if var.data_type != data_type
-					{
-						print_errln!(CompileError::TypeError(data_type, data_type), self.source, first_token.span.start, "");
-					}
-				}
-				return Some(Value::Var(var.index));
-			},
-
-			_ => return None
-		}
-
-	}
 
 }

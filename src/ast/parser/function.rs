@@ -195,7 +195,7 @@ impl<'a> Parser<'a>
 				print_errln!(CompileError::UnexpectedEof, self.source, self.source.len() - 1, "While parsing function attributes.");
 			});
 		}
-
+		attributes |= attribute::CDECL; 	/* Just for now, in the future there will be more calling convenctions */
 		return attributes;
 	}
 

@@ -271,7 +271,8 @@ pub mod attribute
 	
 	pub const GLOBAL: 				AttributeType = 0b1;
 	pub const EXTERN: 				AttributeType = GLOBAL << 1;
-	pub const FUNCTION_PARAMETER: 	AttributeType = EXTERN << 2;
+	pub const CDECL: 				AttributeType = EXTERN << 2;
+	pub const FUNCTION_PARAMETER: 	AttributeType = CDECL << 3;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<AttributeType>
 	{
