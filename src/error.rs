@@ -116,7 +116,7 @@ pub fn get_exit_code(compile_error: CompileError) -> ExitCodes
 
 		CompileError::TypeError(expected, given) =>
 		{
-			eprint!("Type error. Expected {:?} but type {:?} was given.", expected, given);
+			eprint!("Type error. Expected {:?} but type {:?} was given. ", expected, given);
 			return ExitCodes::TypeError;
 		},
 

@@ -42,6 +42,10 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Expected identifier after {KEYWORD_VAR_DECL}.");
 		}
+		if let Some(_) = variables.get_variable(&identifier[..])
+		{
+			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Variable \"{identifier}\" was already declared.");
+		}
 
 		let token_data_type = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing variable declaration. Expected data type.");
@@ -50,6 +54,16 @@ impl<'a> Parser<'a>
 		let data_type = Type::from_token_kind(&token_data_type.kind).unwrap_or_else(|| {
 			print_errln!(CompileError::Syntax, self.source, token_data_type.span.start, "Expected data type after variable identifier.");
 		});
+
+		if data_type == Type::Void
+		{
+			print_errln!(
+				CompileError::TypeError(Type::I32, Type::Void), 
+				self.source, 
+				token_data_type.span.start, 
+				"Cannot declare variable of type \"{KEYWORD_VOID}\", it makes no sense."
+			);
+		}
 
 		let new_var = variables.add_variable(identifier, 0, data_type.clone());		/* Dont kill me for using clone(), its a pure enum */
 
