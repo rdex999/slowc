@@ -31,11 +31,11 @@ fn slowc_compile_file(filepath: &str)
 
     let ir = parser.generate_ir();
 
-    let code_generator = codegen::CodeGen::new(&ir);
+    // let code_generator = codegen::CodeGen::new(&ir);
 
-    code_generator.generate();
+    // code_generator.generate();
 
-    // print_msg!("IR:\n\t{:#?}", ir);
+    print_msg!("IR:\n\t{:#?}", ir);
     // while let Some(token) = lexer.next()
     // {
     //     print_msg!("{:?}", token);

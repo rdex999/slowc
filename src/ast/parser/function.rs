@@ -115,7 +115,7 @@ impl<'a> Parser<'a>
 
 		while self.current_token().kind != TokenKind::RightCurly
 		{
-			if let Some(stmt) = self.parse_statement(&mut variables)
+			if let Some(stmt) = self.parse_statement(&mut variables, &mut function)
 			{
 				function.add_statement(stmt);
 			}

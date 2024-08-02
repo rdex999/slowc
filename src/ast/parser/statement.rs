@@ -3,11 +3,11 @@ use super::{Parser, variable::*};
 
 impl<'a> Parser<'a>
 {
-	pub fn parse_statement(&mut self, mut variables: &mut LocalVariables) -> Option<Statement>
+	pub fn parse_statement(&mut self, mut variables: &mut LocalVariables, function: &mut Function) -> Option<Statement>
 	{
 		match self.current_token().kind {
 			TokenKind::VarDecl => return self.parse_var_decl(&mut variables),
-
+			TokenKind::Return => return Some(self.parse_return_stmt(variables, function)),
 			TokenKind::Ident => 
 			{
 				if let Some(next_token) = self.peek(1)
@@ -103,5 +103,21 @@ impl<'a> Parser<'a>
 
 			_ => { print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected assignment operator, such as =, +=, ..."); }
 		}
+	}
+
+	fn parse_return_stmt(&mut self, variables: &mut LocalVariables, function: &mut Function) -> Statement
+	{
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_RETURN} statement.");
+		});
+
+		let expr = self.parse_expression(function.return_type, variables);
+		if self.current_token().kind != TokenKind::Semicolon
+		{
+			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
+		}
+		self.advance_token();
+
+		return Statement::Return(expr);
 	}
 }

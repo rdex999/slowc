@@ -32,6 +32,7 @@ pub enum Statement
 {
 	Assign(VarUpdateInfo),
 	FunctionCall(FunctionCallInfo),
+	Return(ExprType),
 }
 
 #[derive(Debug, Clone)]

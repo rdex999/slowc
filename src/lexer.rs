@@ -27,6 +27,7 @@ macro_rules! create_keyword {
 pub const KEYWORD_VAR_DECL	: &str = create_keyword!("ויהי", "let");
 pub const KEYWORD_I32		: &str = create_keyword!("חתום32", "i32");
 pub const KEYWORD_FUNC_DECL	: &str = create_keyword!("פונקציה", "func");
+pub const KEYWORD_RETURN	: &str = create_keyword!("החזר", "return");
 pub const KEYWORD_GLOBAL	: &str = create_keyword!("גלובלי", "global");
 pub const KEYWORD_EXTERN 	: &str = create_keyword!("חיצוני", "extern");
 
