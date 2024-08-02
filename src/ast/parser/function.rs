@@ -162,6 +162,16 @@ impl<'a> Parser<'a>
 						print_errln!(CompileError::Syntax, self.source, token_arg_type.span.start, "Expected parameter type after identifier.");
 					});
 
+					if data_type == Type::Void
+					{
+						print_errln!(
+							CompileError::TypeError(Type::I32, Type::Void), 
+							self.source, 
+							token_arg_type.span.start, 
+							"Cannot declare variable of type \"{KEYWORD_VOID}\", it makes no sense."
+						);
+					}
+
 					// NOTE: (to my future self getting a headache) because arguments will be pushed on the stack from right to left,
 					// The stack location (this variable will exist in the future) will just be positive
 					args.add_variable(ident, attribute::FUNCTION_PARAMETER, data_type);

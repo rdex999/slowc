@@ -6,8 +6,12 @@ if (( $? != 0 )); then
 fi
 
 nasm -felf64 -g -o a.o /tmp/slowc_compiled.asm
+if (( $? != 0 )); then
+	exit
+fi
+
 ld -e main -o a.out a.o
-gdb a.out\
+gdb a.out \
 	-ex "lay src" \
 	-ex "lay regs" \
 	-ex "br main" \

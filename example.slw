@@ -3,5 +3,5 @@
 func global main(argc i32) -> void
 {
 	let num i32 = 2 * 3 * 8 + 9 / 3 - 2;
-	foo(5, 10);
+	let result i32 = foo(num, 10) * 5;
 }

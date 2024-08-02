@@ -6,11 +6,11 @@
 	"configurations": [
 		{
 			"name": "(debug) Launch",
-            "type": "lldb",
-            "request": "launch",
-            "program": "${workspaceRoot}/target/debug/slowc",
-            "args": ["example.slw",],
-            "cwd": "${workspaceRoot}",
+			"type": "lldb",
+			"request": "launch",
+			"program": "${workspaceRoot}/target/debug/slowc",
+			"args": ["example.slw",],
+			"cwd": "${workspaceRoot}",
 		}
 	]
 }

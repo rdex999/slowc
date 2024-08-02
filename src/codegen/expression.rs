@@ -26,6 +26,16 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
+	fn gen_value(&mut self, value: &Value, locals: &Vec<Variable>) -> Placeholder 
+	{
+		match value
+		{
+			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::I32(*number), OpSize::Dword),
+			Value::Var(_) 											=> return self.gen_value_access(locals, value),
+			Value::FuncCall(function_call_info) 	=> return self.gen_function_call(locals, function_call_info).unwrap(),
+		}	
+	}
+
 	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
 		match &bin_expr.root
@@ -34,17 +44,6 @@ impl<'a> CodeGen<'a>
 			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals, bin_expr.signed)
 		}
 	}
-
-	fn gen_value(&mut self, value: &Value, locals: &Vec<Variable>) -> Placeholder 
-	{
-		match value
-		{
-			Value::I32(number) => return Placeholder::new(PlaceholderKind::I32(*number), OpSize::Dword),
-			Value::Var(_) => return self.gen_value_access(locals, value),
-			_ => todo!(),
-		}	
-	}
-
 
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder, signed: bool) -> Placeholder 
 	{

@@ -224,7 +224,20 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_mov(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tmov {} {destination}, {source}", destination.size));
+		let mut source_placeholder = *source;
+		if let PlaceholderKind::Location(_) = destination.kind
+		{
+			if let PlaceholderKind::Location(_) = source.kind
+			{
+				source_placeholder = Placeholder::new(
+					PlaceholderKind::Reg(Register::from_op_size(Register::RAX, source.size)), 
+					source.size
+				);
+				self.instr_mov(&source_placeholder, source);
+			}
+		}
+
+		self.write_text_segment(&format!("\n\tmov {} {destination}, {}", destination.size, source_placeholder));
 	}
 
 	pub fn instr_push(&mut self, source: &Placeholder)
