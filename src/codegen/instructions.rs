@@ -1,10 +1,16 @@
 use super::*;
 
+pub type OpSize = u8;
+pub const OP_BYTE: OpSize = 1;
+pub const OP_WORD: OpSize = 2;
+pub const OP_DWORD: OpSize = 4;
+pub const OP_QWORD: OpSize = 8;
+
 #[derive(Clone, Copy)]
 pub struct Placeholder
 {
 	pub kind: PlaceholderKind,
-	pub size: u8,		/* In bytes */
+	pub size: OpSize,		/* In bytes */
 }
 
 #[allow(dead_code)]
@@ -108,7 +114,7 @@ impl Register
 	pub const COUNT_FULL: u8 = 16;
 
 	// The size of the register in bytes
-	pub fn size(&self) -> u8
+	pub fn size(&self) -> OpSize
 	{
 		match self {
 			Register::RAX | Register::RBX | Register::RCX | Register::RDX |
@@ -138,17 +144,17 @@ impl Register
 		}
 	}
 
-	pub fn from_op_size(base_register: Register, op_size: u8) -> Self
+	pub fn from_op_size(base_register: Register, op_size: OpSize) -> Self
 	{
-		return Register::try_from(base_register as u8 + 4 - (op_size.trailing_zeros() as u8 + 1)).unwrap();
+		return Register::try_from(base_register as OpSize + 4 - (op_size.trailing_zeros() as OpSize + 1)).unwrap();
 	}
 }
 
-impl TryFrom<u8> for Register
+impl TryFrom<OpSize> for Register
 {
 	type Error = ();
 
-	fn try_from(value: u8) -> Result<Self, Self::Error> {
+	fn try_from(value: OpSize) -> Result<Self, Self::Error> {
 		if value >= Register::COUNT
 		{
 			return Err(());
@@ -159,7 +165,7 @@ impl TryFrom<u8> for Register
 }
 impl Placeholder
 {
-	pub fn new(kind: PlaceholderKind, size: u8) -> Self
+	pub fn new(kind: PlaceholderKind, size: OpSize) -> Self
 	{
 		return Self {
 			kind,
@@ -221,14 +227,14 @@ impl PartialEq for Placeholder
 
 impl<'a> CodeGen<'a>
 {
-	fn size_2_opsize<'b>(size: u8) -> &'b str
+	fn size_2_opsize<'b>(size: OpSize) -> &'b str
 	{
 		match size
 		{
-			1 => return "byte",
-			2 => return "word",
-			4 => return "dword",
-			8 => return "qword",
+			OP_BYTE => return "byte",
+			OP_WORD	=> return "word",
+			OP_DWORD => return "dword",
+			OP_QWORD => return "qword",
 			_ => panic!("Dev error! size_2_opsize({size}) called with a size thats not a power of 2."),
 		}
 	}

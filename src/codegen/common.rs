@@ -31,11 +31,11 @@ impl<'a> CodeGen<'a>
 	}
 
 	// Returns the size of a value, in bytes
-	pub fn _sizeof_value(&self, value: &Value, locals: &Vec<Variable>) -> u8
+	pub fn _sizeof_value(&self, value: &Value, locals: &Vec<Variable>) -> OpSize
 	{
 		match value
 		{
-			Value::I32(_) => return 4,
+			Value::I32(_) => return OP_DWORD,
 			Value::Var(index) => return locals[*index as usize].data_type.size(),
 			Value::FuncCall(info) => return self.ir.functions[info.index as usize].return_type.size()
 		}

@@ -30,7 +30,7 @@ impl<'a> CodeGen<'a>
 	{
 		match value
 		{
-			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::I32(*number), 4),
+			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::I32(*number), OP_DWORD),
 			Value::Var(_) 											=> return self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> return self.gen_function_call(locals, function_call_info).unwrap(),
 		}	

@@ -67,7 +67,7 @@ impl<'a> CodeGen<'a>
     	return registers;
 	}
 	
-	pub fn reg_alloc_allocate(&mut self, size: u8) -> Option<Register>
+	pub fn reg_alloc_allocate(&mut self, size: OpSize) -> Option<Register>
 	{
 		for i in 0..self.registers.len()
 		{
@@ -90,7 +90,7 @@ impl<'a> CodeGen<'a>
 		for i in 0..self.registers.len()
 		{
 			let reg_info = self.registers[i];
-			if register as u8 >= reg_info.register as u8 && register as u8 <= reg_info.register as u8 + Self::reg_alloc_get_last_sub_reg_offset(register)
+			if register as OpSize >= reg_info.register as OpSize && register as OpSize <= reg_info.register as OpSize + Self::reg_alloc_get_last_sub_reg_offset(register)
 			{
 				self.reg_alloc_free_sub_reg(i, register);
 				return;
@@ -153,8 +153,8 @@ impl<'a> CodeGen<'a>
 	}
 
 
-	// Size - in bytes
-	fn reg_alloc_allocate_sub_reg(&mut self, reg_info_idx: usize, size: u8) -> Option<Register>
+	// OpSize - in bytes
+	fn reg_alloc_allocate_sub_reg(&mut self, reg_info_idx: usize, size: OpSize) -> Option<Register>
 	{
 		let reg_info = &mut self.registers[reg_info_idx];
 
@@ -168,12 +168,12 @@ impl<'a> CodeGen<'a>
 			if reg_info.is_l8_free
 			{
 				reg_info.is_l8_free = false;
-				return Some(Register::try_from(reg_info.register as u8 + 3).unwrap());
+				return Some(Register::try_from(reg_info.register as OpSize + 3).unwrap());
 			}
 			if reg_info.is_h8_free != None && reg_info.is_h8_free.unwrap()
 			{
 				reg_info.is_h8_free = Some(false);
-				return Some(Register::try_from(reg_info.register as u8 + 4).unwrap());
+				return Some(Register::try_from(reg_info.register as OpSize + 4).unwrap());
 			}
 		}
 	
@@ -184,22 +184,22 @@ impl<'a> CodeGen<'a>
 	
 		reg_info.is_free = false;
 		// Pink jelly in skull hurts
-		if reg_info.register as u8 >= Register::RAX as u8 && reg_info.register as u8 <= Register::DH as u8
+		if reg_info.register as OpSize >= Register::RAX as OpSize && reg_info.register as OpSize <= Register::DH as OpSize  
 		{
-			return Some(Register::try_from(reg_info.register as u8 + (3 - (size as u8).trailing_zeros() as u8)).unwrap())
+			return Some(Register::try_from(reg_info.register as OpSize + (3 - size.trailing_zeros() as OpSize)).unwrap())
 		}
-		return Some(Register::try_from(reg_info.register as u8 + (3 - (size as u8).trailing_zeros() as u8) ).unwrap())
+		return Some(Register::try_from(reg_info.register as OpSize + (3 - size.trailing_zeros() as OpSize) ).unwrap())
 	}
 	
-	fn reg_alloc_get_last_sub_reg_offset(register: Register) -> u8
+	fn reg_alloc_get_last_sub_reg_offset(register: Register) ->OpSize 
 	{
 		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
-		return if register as u8 >= Register::RAX as u8 && register as u8 <= Register::DH as u8 { 4 } else { 3 };
+		return if register as OpSize >= Register::RAX as OpSize && register as OpSize <= Register::DH as OpSize { 4 } else { 3 };
 	}
 
 	fn reg_alloc_allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
 	{
-		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size() as u8)
+		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size())
 		{
 			return;
 		}
@@ -237,7 +237,7 @@ impl<'a> CodeGen<'a>
 		let reg_info = &mut self.registers[reg_info_idx];
 
 		reg_info.is_free = true;
-		if register as u8 - reg_info.register as u8 == 4 	/* Means it was a high 8 bits register (AH, BH, CH, DH) */
+		if register as OpSize - reg_info.register as OpSize == 4 	/* Means it was a high 8 bits register (AH, BH, CH, DH) */
 		{
 			reg_info.is_h8_free = Some(true);
 			return;
