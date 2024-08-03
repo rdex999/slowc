@@ -36,7 +36,7 @@ impl<'a> CodeGen<'a>
 		{
 			self.instr_sub(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OP_QWORD), 
-				&Placeholder::new(PlaceholderKind::U64(function.parameters_stack_size as u64), OP_QWORD)
+				&Placeholder::new(PlaceholderKind::Constant(function.parameters_stack_size as u64), OP_QWORD)
 			);
 		}
 
@@ -61,7 +61,7 @@ impl<'a> CodeGen<'a>
 		{
 			self.instr_add(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OP_QWORD), 
-				&Placeholder::new(PlaceholderKind::U64(function.parameters_stack_size as u64), OP_QWORD)
+				&Placeholder::new(PlaceholderKind::Constant(function.parameters_stack_size as u64), OP_QWORD)
 			);
 		}
 	}

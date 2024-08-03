@@ -76,7 +76,7 @@ impl<'a> CodeGen<'a>
 		{
 			self.instr_sub(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
-				&Placeholder::new(PlaceholderKind::U64(function.stack_size as u64), 8), 
+				&Placeholder::new(PlaceholderKind::Constant(function.stack_size as u64), 8), 
 			);
 		}
 

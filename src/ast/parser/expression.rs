@@ -32,6 +32,7 @@ impl<'a> Parser<'a>
 				{
 					match data_type {
 						Type::I32 => return Some(Value::I32(value as i32)),
+						Type::U32 => return Some(Value::U32(value as u32)),
 	
 						#[allow(unreachable_patterns)]
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }

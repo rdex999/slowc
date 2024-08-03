@@ -40,6 +40,7 @@ impl<'a> Parser<'a>
 	{
 		match value {
 			Value::I32(_) => Type::I32,
+			Value::U32(_) => Type::U32,
 			Value::Var(index) => 
 			{
 				let var = variables.get_variable_by_index(*index).unwrap();

@@ -4,4 +4,6 @@ func global main(argc i32) -> void
 {
 	let num i32 = 2 * 3 * 8 + 9 / 3 - 2;
 	let result i32 = foo(num, 10) * 5;
+
+	let negative_as_unsigned u32 = ((500 - 501) * 500) / 2;
 }

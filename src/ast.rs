@@ -53,6 +53,7 @@ pub struct FunctionCallInfo
 pub enum Value
 {
 	I32(i32),		/* (Not funny) */
+	U32(u32),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
 	FuncCall(FunctionCallInfo),
 }
@@ -100,6 +101,7 @@ pub enum Type
 {
 	Void,
 	I32,
+	U32,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -113,7 +115,6 @@ pub struct Variable
 
 impl Root
 {
-	#[allow(dead_code)]
 	pub fn new(functions: Vec<Function>) -> Self
 	{
 		return Self{
@@ -207,15 +208,20 @@ impl Type
 {
 	pub fn is_bin_expr_type(&self) -> bool
 	{
-		return *self == Type::I32;
+		return match self
+		{
+			Type::I32 | Type::U32 => true,
+			_ => false,
+		}
 	}
 	
 	// Will return None if the given token kind is not a type
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Type>
 	{
 		match token_kind {
-			TokenKind::I32 	=> return Some(Type::I32),
 			TokenKind::Void => return Some(Type::Void),
+			TokenKind::I32 	=> return Some(Type::I32),
+			TokenKind::U32 	=> return Some(Type::U32),
 			_ 				=> return None
 		};
 	}
@@ -224,18 +230,18 @@ impl Type
 	{
 		match self
 		{
-			Type::Void => return 0,
-			Type::I32 => return 4,
+			Type::Void 				=> return 0,
+			Type::I32 | Type::U32	=> return 4,
 		}
 	}
 
 	pub fn is_signed(&self) -> bool
 	{
-		match self
+		return match self
 		{
-			Type::Void => return false,
-			Type::I32 => return true,
-		};
+			Type::I32 => true,
+			_ => false,
+		}
 	}
 }
 

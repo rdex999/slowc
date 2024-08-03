@@ -30,7 +30,8 @@ impl<'a> CodeGen<'a>
 	{
 		match value
 		{
-			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::I32(*number), OP_DWORD),
+			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),
+			Value::U32(number) 								=> return Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),
 			Value::Var(_) 											=> return self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> return self.gen_function_call(locals, function_call_info).unwrap(),
 		}	
@@ -62,7 +63,7 @@ impl<'a> CodeGen<'a>
 					self.instr_imul(&destination, rhs);
 				} else
 				{
-					todo!();
+					self.instr_mul(rhs);
 				}
 			},
 			BinExprOperator::Div =>
@@ -72,7 +73,7 @@ impl<'a> CodeGen<'a>
 					self.instr_idiv(rhs);
 				} else
 				{
-					todo!();
+					self.instr_div(rhs);
 				}
 			},
 		}

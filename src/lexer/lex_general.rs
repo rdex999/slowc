@@ -88,8 +88,9 @@ impl<'a> Lexer<'a>
 
 		match &name[..] {
 			KEYWORD_VAR_DECL 	=> kind = TokenKind::VarDecl,
-			KEYWORD_I32			=> kind = TokenKind::I32,
 			KEYWORD_VOID		=> kind = TokenKind::Void,
+			KEYWORD_I32			=> kind = TokenKind::I32,
+			KEYWORD_U32			=> kind = TokenKind::U32,
 			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
 			KEYWORD_RETURN		=> kind = TokenKind::Return,
 			KEYWORD_GLOBAL		=> kind = TokenKind::Global,

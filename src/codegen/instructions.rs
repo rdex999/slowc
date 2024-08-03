@@ -13,14 +13,12 @@ pub struct Placeholder
 	pub size: OpSize,		/* In bytes */
 }
 
-#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub enum PlaceholderKind
 {
 	Reg(Register),
 	Location(LocationExpr),
-	I32(i32),
-	U64(u64),
+	Constant(u64),
 }
 
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
@@ -63,8 +61,7 @@ impl std::fmt::Display for Placeholder
 	{
 		match &self.kind {
 			PlaceholderKind::Reg(register) => write!(f, "{register}"),
-			PlaceholderKind::I32(value) => write!(f, "{value}"),
-			PlaceholderKind::U64(value) => write!(f, "{value}"),
+			PlaceholderKind::Constant(value) => write!(f, "{value}"),
 			PlaceholderKind::Location(location)	=> write!(f, "{location}"),
 		}
 	}
@@ -177,9 +174,18 @@ impl Placeholder
 	{
 		match self.kind
 		{
-			PlaceholderKind::I32(_) => return true,
+			PlaceholderKind::Constant(_) => return true,
 			_ => return false,
 		}
+	}
+
+	pub fn is_register(&self) -> bool
+	{
+		return match self.kind
+		{
+			PlaceholderKind::Reg(_) => true,
+			_ => false,
+		};
 	}
 }
 
@@ -197,17 +203,9 @@ impl PartialEq for Placeholder
 				}
 			}
 
-			PlaceholderKind::I32(value) =>
+			PlaceholderKind::Constant(value) =>
 			{
-				if let PlaceholderKind::I32(other_value) = other.kind
-				{
-					return value == other_value;
-				}
-			}
-
-			PlaceholderKind::U64(value) =>
-			{
-				if let PlaceholderKind::U64(other_value) = other.kind
+				if let PlaceholderKind::Constant(other_value) = other.kind
 				{
 					return value == other_value;
 				}
@@ -299,15 +297,11 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_idiv(&mut self, source: &Placeholder)
 	{
-		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
-		self.reg_alloc_allocate_forced(rdx_allocated);
-
-		let rdx_placeholder = Placeholder::new(
-			PlaceholderKind::Reg(rdx_allocated), 
-			source.size
-		);
-
-		self.instr_xor(&rdx_placeholder, &rdx_placeholder);
+		match source.size
+		{
+			4 => self.instr_cdq(),
+			_ => ()
+		}	
 
 		if source.is_constant()
 		{
@@ -323,6 +317,49 @@ impl<'a> CodeGen<'a>
 		{
 			self.write_text_segment(&format!("\n\tidiv {} {source}", Self::size_2_opsize(source.size)));
 		}
+	}
+
+	pub fn instr_mul(&mut self, source: &Placeholder)
+	{
+		if !source.is_register()
+		{
+			let register = self.reg_alloc_allocate(source.size).unwrap();
+			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.size);
+			self.instr_mov(&src_placeholder, source);
+
+			self.write_text_segment(&format!("\n\tmul {} {src_placeholder}", Self::size_2_opsize(src_placeholder.size)));
+			self.reg_alloc_free(register);
+			return;
+		}
+
+		self.write_text_segment(&format!("\n\tmul {} {source}", Self::size_2_opsize(source.size)));
+	}
+
+	pub fn instr_div(&mut self, source: &Placeholder)
+	{
+		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
+		self.reg_alloc_allocate_forced(rdx_allocated);
+
+		let rdx_placeholder = Placeholder::new(
+			PlaceholderKind::Reg(rdx_allocated), 
+			source.size
+		);
+
+		self.instr_xor(&rdx_placeholder, &rdx_placeholder);
+
+		if !source.is_register()
+		{
+			let register = self.reg_alloc_allocate(source.size).unwrap();
+			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.size);
+			self.instr_mov(&src_placeholder, source);
+
+			self.write_text_segment(&format!("\n\tdiv {} {src_placeholder}", Self::size_2_opsize(src_placeholder.size)));
+			self.reg_alloc_free(register);
+			self.reg_alloc_free(rdx_allocated);
+			return;
+		}
+
+		self.write_text_segment(&format!("\n\tdiv {} {source}", Self::size_2_opsize(source.size)));
 		self.reg_alloc_free(rdx_allocated);
 	}
 
@@ -334,5 +371,10 @@ impl<'a> CodeGen<'a>
 	pub fn instr_call(&mut self, identifier: &str)
 	{
 		self.write_text_segment(&format!("\n\tcall {identifier}"));
+	}
+
+	pub fn instr_cdq(&mut self)
+	{
+		self.write_text_segment("\n\tcdq");
 	}
 }
