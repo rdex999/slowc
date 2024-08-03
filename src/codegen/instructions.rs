@@ -300,7 +300,8 @@ impl<'a> CodeGen<'a>
 		match source.size
 		{
 			4 => self.instr_cdq(),
-			_ => ()
+			8 => self.instr_cqo(),
+			_ => todo!("Unimplemented Sign convertion."),
 		}	
 
 		if source.is_constant()
@@ -376,5 +377,10 @@ impl<'a> CodeGen<'a>
 	pub fn instr_cdq(&mut self)
 	{
 		self.write_text_segment("\n\tcdq");
+	}
+
+	pub fn instr_cqo(&mut self)
+	{
+		self.write_text_segment("\n\tcqo");
 	}
 }

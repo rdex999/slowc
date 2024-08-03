@@ -54,6 +54,7 @@ pub enum Value
 {
 	I32(i32),		/* (Not funny) */
 	U32(u32),		/* (Not funny) */
+	I64(i64),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
 	FuncCall(FunctionCallInfo),
 }
@@ -102,6 +103,7 @@ pub enum Type
 	Void,
 	I32,
 	U32,
+	I64,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -210,7 +212,7 @@ impl Type
 	{
 		return match self
 		{
-			Type::I32 | Type::U32 => true,
+			Type::I32 | Type::U32 | Type::I64 => true,
 			_ => false,
 		}
 	}
@@ -222,16 +224,18 @@ impl Type
 			TokenKind::Void => return Some(Type::Void),
 			TokenKind::I32 	=> return Some(Type::I32),
 			TokenKind::U32 	=> return Some(Type::U32),
+			TokenKind::I64 	=> return Some(Type::I64),
 			_ 				=> return None
 		};
 	}
 
 	pub fn size(&self) -> u8
 	{
-		match self
+		return match self
 		{
-			Type::Void 				=> return 0,
-			Type::I32 | Type::U32	=> return 4,
+			Type::Void 				=> 0,
+			Type::I32 | Type::U32	=> 4,
+			Type::I64				=> 8,
 		}
 	}
 
@@ -239,9 +243,18 @@ impl Type
 	{
 		return match self
 		{
-			Type::I32 => true,
+			Type::I32 | Type::I64 => true,
 			_ => false,
 		}
+	}
+}
+
+impl std::fmt::Display for Type
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+	{
+		let _ = write!(f, "{}", format!("{:?}", self).to_lowercase());
+		return Ok(());
 	}
 }
 

@@ -33,8 +33,8 @@ impl<'a> Parser<'a>
 					match data_type {
 						Type::I32 => return Some(Value::I32(value as i32)),
 						Type::U32 => return Some(Value::U32(value as u32)),
+						Type::I64 => return Some(Value::I64(value)),
 	
-						#[allow(unreachable_patterns)]
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
 					}
 				}
@@ -73,7 +73,7 @@ impl<'a> Parser<'a>
 				{
 					if var.data_type != data_type
 					{
-						print_errln!(CompileError::TypeError(data_type, data_type), self.source, first_token.span.start, "");
+						print_errln!(CompileError::TypeError(data_type, var.data_type), self.source, first_token.span.start, "");
 					}
 				}
 				return Some(Value::Var(var.index));

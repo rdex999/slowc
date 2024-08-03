@@ -35,6 +35,7 @@ pub enum TokenKind
 	Void,
 	I32,
 	U32,
+	I64,
 	FuncDecl,
 	Return,
 	Global,

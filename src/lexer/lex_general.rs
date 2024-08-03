@@ -91,6 +91,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_VOID		=> kind = TokenKind::Void,
 			KEYWORD_I32			=> kind = TokenKind::I32,
 			KEYWORD_U32			=> kind = TokenKind::U32,
+			KEYWORD_I64			=> kind = TokenKind::I64,
 			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
 			KEYWORD_RETURN		=> kind = TokenKind::Return,
 			KEYWORD_GLOBAL		=> kind = TokenKind::Global,

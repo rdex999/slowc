@@ -1,5 +1,5 @@
-func foo(num1 i32, num2 i32) -> i32
+func foo(num1 u32, num2 u32) -> u32
 {
-	let result i32 = num1 + num2;
+	let result u32 = num1 + num2;
 	return result;
 }
