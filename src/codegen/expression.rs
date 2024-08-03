@@ -33,6 +33,7 @@ impl<'a> CodeGen<'a>
 			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),
 			Value::U32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),
 			Value::I64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_QWORD),
+			Value::U64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_QWORD),
 			Value::Var(_) 											=> self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
 		}	

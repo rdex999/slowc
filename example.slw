@@ -2,5 +2,5 @@
 
 func global main(argc i32) -> void
 {
-	let result i64 = (0 - 40) / 4;
+	let result u64 = 10 * (4294967295 + 1);
 }

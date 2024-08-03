@@ -34,6 +34,7 @@ impl<'a> Parser<'a>
 						Type::I32 => return Some(Value::I32(value as i32)),
 						Type::U32 => return Some(Value::U32(value as u32)),
 						Type::I64 => return Some(Value::I64(value)),
+						Type::U64 => return Some(Value::U64(value as u64)),
 	
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
 					}

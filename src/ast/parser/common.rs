@@ -42,6 +42,7 @@ impl<'a> Parser<'a>
 			Value::I32(_) => Type::I32,
 			Value::U32(_) => Type::U32,
 			Value::I64(_) => Type::I64,
+			Value::U64(_) => Type::U64,
 			Value::Var(index) => 
 			{
 				let var = variables.get_variable_by_index(*index).unwrap();

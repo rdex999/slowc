@@ -36,7 +36,7 @@ impl<'a> CodeGen<'a>
 		return match value
 		{
 			Value::I32(_) | Value::U32(_) 				=> OP_DWORD,
-			Value::I64(_)								=> OP_QWORD,
+			Value::I64(_) | Value::U64(_)				=> OP_QWORD,
 			Value::Var(index) 						=> locals[*index as usize].data_type.size(),
 			Value::FuncCall(info)	=> self.ir.functions[info.index as usize].return_type.size()
 		}
