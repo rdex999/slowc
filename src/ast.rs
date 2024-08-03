@@ -220,7 +220,7 @@ impl Type
 		};
 	}
 
-	pub fn size(&self) -> u16
+	pub fn size(&self) -> u8
 	{
 		match self
 		{

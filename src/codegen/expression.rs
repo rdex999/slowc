@@ -19,7 +19,7 @@ impl<'a> CodeGen<'a>
 				let variable = locals[*variable_index as usize];
 				return Placeholder::new(
 					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
-					OpSize::from_size(variable.data_type.size())
+					variable.data_type.size()
 				);
 			}, 
 			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
@@ -30,7 +30,7 @@ impl<'a> CodeGen<'a>
 	{
 		match value
 		{
-			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::I32(*number), OpSize::Dword),
+			Value::I32(number) 								=> return Placeholder::new(PlaceholderKind::I32(*number), 4),
 			Value::Var(_) 											=> return self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> return self.gen_function_call(locals, function_call_info).unwrap(),
 		}	
@@ -97,7 +97,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(op) =>
 					{
 						let rhs = self.gen_bin_expr_recurse(&op, locals, signed);
-						let register = self.reg_alloc_allocate(rhs.size.bytes()).unwrap();
+						let register = self.reg_alloc_allocate(rhs.size).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.size);
 						self.instr_mov(
 							&rhs_placeholder, 
@@ -116,7 +116,7 @@ impl<'a> CodeGen<'a>
 			BinExprPart::Operation(op) =>
 			{
 				let lhs = self.gen_bin_expr_recurse(&op, locals, signed);
-				let register = self.reg_alloc_allocate(lhs.size.bytes()).unwrap();
+				let register = self.reg_alloc_allocate(lhs.size).unwrap();
 				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.size);
 				let result;
 				self.instr_mov(
@@ -135,7 +135,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(rhs_op) => 
 					{
 						let rhs = self.gen_bin_expr_recurse(rhs_op, locals, signed);
-						let rhs_reg = self.reg_alloc_allocate(rhs.size.bytes()).unwrap();
+						let rhs_reg = self.reg_alloc_allocate(rhs.size).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.size);
 						self.instr_mov(&rhs_placeholder, &rhs);
 						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder, signed);

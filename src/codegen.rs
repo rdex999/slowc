@@ -67,16 +67,16 @@ impl<'a> CodeGen<'a>
 		self.decl_attribute(&function.identifier, function.attributes);
 		self.write_lable_text_seg(&function.identifier);
 
-		self.instr_push(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword));
+		self.instr_push(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8));
 		self.instr_mov(
-			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword),
-			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword)
+			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8),
+			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8)
 		);
 		if function.stack_size != 0
 		{
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword),
-				&Placeholder::new(PlaceholderKind::U64(function.stack_size as u64), OpSize::Qword), 
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
+				&Placeholder::new(PlaceholderKind::U64(function.stack_size as u64), 8), 
 			);
 		}
 
@@ -90,10 +90,10 @@ impl<'a> CodeGen<'a>
 	fn gen_function_return(&mut self)
 	{
 		self.instr_mov(
-			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword),
-			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword)
+			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
+			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8)
 		);
-		self.instr_pop(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), OpSize::Qword));
+		self.instr_pop(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8));
 		self.instr_ret();
 	}
 
@@ -118,7 +118,7 @@ impl<'a> CodeGen<'a>
 	fn gen_assign_stmt(&mut self, assign_data: &VarUpdateInfo, locals: &Vec<Variable>)
 	{
 		let source = self.gen_expression(&assign_data.value, locals);
-		let	src_reg = self.reg_alloc_allocate(source.size.bytes()).unwrap();
+		let	src_reg = self.reg_alloc_allocate(source.size).unwrap();
 		let src_placeholder = Placeholder::new(
 			PlaceholderKind::Reg(src_reg), 
 			source.size

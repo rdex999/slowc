@@ -31,7 +31,7 @@ impl<'a> CodeGen<'a>
 	}
 
 	// Returns the size of a value, in bytes
-	pub fn _sizeof_value(&self, value: &Value, locals: &Vec<Variable>) -> u16
+	pub fn _sizeof_value(&self, value: &Value, locals: &Vec<Variable>) -> u8
 	{
 		match value
 		{

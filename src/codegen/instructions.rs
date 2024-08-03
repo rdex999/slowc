@@ -1,19 +1,10 @@
 use super::*;
 
-#[derive(Debug, Clone, Copy)]
-pub enum OpSize
-{
-	Byte,
-	Word,
-	Dword,
-	Qword,
-}
-
 #[derive(Clone, Copy)]
 pub struct Placeholder
 {
 	pub kind: PlaceholderKind,
-	pub size: OpSize,
+	pub size: u8,		/* In bytes */
 }
 
 #[allow(dead_code)]
@@ -52,7 +43,7 @@ pub enum Register
 	R15, R15D, R15W, R15B,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct LocationExpr
 {
 	base: Register,
@@ -80,15 +71,6 @@ impl std::fmt::Display for Register
 		let _ = write!(f, "{}", format!("{:?}", self).to_lowercase());
 		return Ok(());
 	
-	}
-}
-
-impl std::fmt::Display for OpSize
-{
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
-	{
-		let _ = write!(f, "{}", format!("{:?}", self).to_lowercase());
-		return Ok(());
 	}
 }
 
@@ -126,7 +108,7 @@ impl Register
 	pub const COUNT_FULL: u8 = 16;
 
 	// The size of the register in bytes
-	pub fn size(&self) -> u16
+	pub fn size(&self) -> u8
 	{
 		match self {
 			Register::RAX | Register::RBX | Register::RCX | Register::RDX |
@@ -156,9 +138,9 @@ impl Register
 		}
 	}
 
-	pub fn from_op_size(base_register: Register, op_size: OpSize) -> Self
+	pub fn from_op_size(base_register: Register, op_size: u8) -> Self
 	{
-		return Register::try_from(base_register as u8 + 4 - (op_size as u8 + 1)).unwrap();
+		return Register::try_from(base_register as u8 + 4 - (op_size.trailing_zeros() as u8 + 1)).unwrap();
 	}
 }
 
@@ -175,29 +157,9 @@ impl TryFrom<u8> for Register
 		return unsafe { Ok(std::mem::transmute(value)) };
 	}
 }
-
-impl OpSize
-{
-	pub fn from_size(size: u16) -> Self
-	{
-		match size {
-			1 => return OpSize::Byte,
-			2 => return OpSize::Word,
-			4 => return OpSize::Dword,
-			8 => return OpSize::Qword,
-			_ => panic!("Dev error! OpSize::from_size() called with size that is not a power of 2."),
-		}
-	}
-
-	pub fn bytes(&self) -> u8
-	{
-		return 2u8.pow(*self as u32);
-	}
-}
-
 impl Placeholder
 {
-	pub fn new(kind: PlaceholderKind, size: OpSize) -> Self
+	pub fn new(kind: PlaceholderKind, size: u8) -> Self
 	{
 		return Self {
 			kind,
@@ -215,8 +177,62 @@ impl Placeholder
 	}
 }
 
+impl PartialEq for Placeholder
+{
+	fn eq(&self, other: &Self) -> bool 
+	{
+		match self.kind
+		{
+			PlaceholderKind::Reg(register) =>
+			{
+				if let PlaceholderKind::Reg(other_register) = other.kind
+				{
+					return register == other_register;
+				}
+			}
+
+			PlaceholderKind::I32(value) =>
+			{
+				if let PlaceholderKind::I32(other_value) = other.kind
+				{
+					return value == other_value;
+				}
+			}
+
+			PlaceholderKind::U64(value) =>
+			{
+				if let PlaceholderKind::U64(other_value) = other.kind
+				{
+					return value == other_value;
+				}
+			}
+
+			PlaceholderKind::Location(location) =>
+			{
+				if let PlaceholderKind::Location(other_location) = other.kind
+				{
+					return location == other_location;
+				}
+			}
+		} 
+		return false;
+	}
+}
+
 impl<'a> CodeGen<'a>
 {
+	fn size_2_opsize<'b>(size: u8) -> &'b str
+	{
+		match size
+		{
+			1 => return "byte",
+			2 => return "word",
+			4 => return "dword",
+			8 => return "qword",
+			_ => panic!("Dev error! size_2_opsize({size}) called with a size thats not a power of 2."),
+		}
+	}
+
 	pub fn instr_add_spacing(&mut self)
 	{
 		self.write_text_segment("\n");
@@ -237,17 +253,22 @@ impl<'a> CodeGen<'a>
 			}
 		}
 
-		self.write_text_segment(&format!("\n\tmov {} {destination}, {}", destination.size, source_placeholder));
+		if destination == source
+		{
+			return;
+		}
+
+		self.write_text_segment(&format!("\n\tmov {} {destination}, {}", Self::size_2_opsize(destination.size), source_placeholder));
 	}
 
 	pub fn instr_push(&mut self, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tpush {} {source}", source.size));
+		self.write_text_segment(&format!("\n\tpush {} {source}", Self::size_2_opsize(source.size)));
 	}
 
 	pub fn instr_pop(&mut self, destination: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tpop {} {destination}", destination.size));
+		self.write_text_segment(&format!("\n\tpop {} {destination}", Self::size_2_opsize(destination.size)));
 	}
 
 	pub fn instr_ret(&mut self)
@@ -257,17 +278,17 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_add(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", destination.size));
+		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", Self::size_2_opsize(destination.size)));
 	}
 
 	pub fn instr_sub(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", destination.size));
+		self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", Self::size_2_opsize(destination.size)));
 	}
 
 	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\timul {} {destination}, {source}", destination.size));
+		self.write_text_segment(&format!("\n\timul {} {destination}, {source}", Self::size_2_opsize(destination.size)));
 	}
 
 	pub fn instr_idiv(&mut self, source: &Placeholder)
@@ -284,24 +305,24 @@ impl<'a> CodeGen<'a>
 
 		if source.is_constant()
 		{
-			let source_reg = self.reg_alloc_allocate(source.size.bytes()).unwrap();
+			let source_reg = self.reg_alloc_allocate(source.size).unwrap();
 			let source_placeholder = Placeholder::new(
 				PlaceholderKind::Reg(source_reg), 
 				source.size
 			);
 			self.instr_mov(&source_placeholder, source);
-			self.write_text_segment(&format!("\n\tidiv {} {}", source.size, source_placeholder));
+			self.write_text_segment(&format!("\n\tidiv {} {}", Self::size_2_opsize(source.size), source_placeholder));
 			self.reg_alloc_free(source_reg);
 		} else
 		{
-			self.write_text_segment(&format!("\n\tidiv {} {source}", source.size));
+			self.write_text_segment(&format!("\n\tidiv {} {source}", Self::size_2_opsize(source.size)));
 		}
 		self.reg_alloc_free(rdx_allocated);
 	}
 
 	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", destination.size));
+		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.size)));
 	}
 
 	pub fn instr_call(&mut self, identifier: &str)

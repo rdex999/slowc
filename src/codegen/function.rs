@@ -15,7 +15,7 @@ impl<'a> CodeGen<'a>
 		
 		self.reg_alloc_free_used();
 		
-		let return_size = OpSize::from_size(function.return_type.size());
+		let return_size = function.return_type.size();
 		if function.return_type == Type::Void 
 		{
 			return None;
@@ -35,8 +35,8 @@ impl<'a> CodeGen<'a>
 		if function.parameters_stack_size != 0
 		{
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword), 
-				&Placeholder::new(PlaceholderKind::U64(function.parameters_stack_size as u64), OpSize::Qword)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8), 
+				&Placeholder::new(PlaceholderKind::U64(function.parameters_stack_size as u64), 8)
 			);
 		}
 
@@ -45,7 +45,7 @@ impl<'a> CodeGen<'a>
 		{
 			let expr = self.gen_expression(argument, locals);
 			
-			current_location_in_stack -= expr.size.bytes() as usize;
+			current_location_in_stack -= expr.size as usize;
 
 			let destination = Placeholder::new(
 				PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, current_location_in_stack as isize)), 
@@ -60,8 +60,8 @@ impl<'a> CodeGen<'a>
 		if function.parameters_stack_size != 0
 		{
 			self.instr_add(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OpSize::Qword), 
-				&Placeholder::new(PlaceholderKind::U64(function.parameters_stack_size as u64), OpSize::Qword)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8), 
+				&Placeholder::new(PlaceholderKind::U64(function.parameters_stack_size as u64), 8)
 			);
 		}
 	}

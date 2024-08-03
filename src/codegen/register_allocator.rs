@@ -117,7 +117,7 @@ impl<'a> CodeGen<'a>
 			{
 				self.instr_push(&Placeholder::new(
 					PlaceholderKind::Reg(register_info.register), 
-					OpSize::from_size(register_info.register.size())
+					register_info.register.size()
 				));
 			}
 		}
@@ -131,7 +131,7 @@ impl<'a> CodeGen<'a>
 			{
 				self.instr_pop(&Placeholder::new(
 					PlaceholderKind::Reg(self.registers[i].register), 
-					OpSize::from_size(self.registers[i].register.size())
+					self.registers[i].register.size()
 				));
 			}
 		}
@@ -208,7 +208,7 @@ impl<'a> CodeGen<'a>
 
 		self.instr_push(&Placeholder::new(
 			PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
-			OpSize::from_size(self.registers[reg_info_idx].register.size())
+			self.registers[reg_info_idx].register.size()
 		));
 	}
 	
@@ -219,7 +219,7 @@ impl<'a> CodeGen<'a>
 			self.registers[reg_info_idx].push_count -= 1;
 			self.instr_pop(&Placeholder::new(
 				PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
-				OpSize::from_size(self.registers[reg_info_idx].register.size())	
+				self.registers[reg_info_idx].register.size()
 			));
 
 			// if self.registers[reg_info_idx].push_count == 0
