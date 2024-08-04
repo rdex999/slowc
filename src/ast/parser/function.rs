@@ -207,7 +207,7 @@ impl<'a> Parser<'a>
 				print_errln!(CompileError::UnexpectedEof, self.source, self.source.len() - 1, "While parsing function attributes.");
 			});
 		}
-		attributes |= attribute::SYS_V_ABI; 	/* Just for now, in the future there will be more calling convenctions */
+		attributes |= attribute::SYS_V_ABI_X86_64; 	/* Just for now, in the future there will be more calling convenctions */
 		return attributes;
 	}
 

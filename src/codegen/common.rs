@@ -22,7 +22,11 @@ impl<'a> CodeGen<'a>
 		if attr & attribute::GLOBAL != 0
 		{
 			self.write_attribute_segment(&format!("\nglobal {identifier}\n"));
+		} else if attr & attribute::EXTERN != 0
+		{
+			self.write_attribute_segment(&format!("\nextern {identifier}\n"));
 		}
+		
 	}
 
 	pub fn write_lable_text_seg(&mut self, lable: &str)

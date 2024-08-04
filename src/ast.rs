@@ -315,7 +315,7 @@ pub mod attribute
 	
 	pub const GLOBAL: 				AttributeType = 0b1 << 0;
 	pub const EXTERN: 				AttributeType = 0b1 << 1;
-	pub const SYS_V_ABI: 			AttributeType = 0b1 << 2;
+	pub const SYS_V_ABI_X86_64: 	AttributeType = 0b1 << 2;
 	pub const FUNCTION_PARAMETER: 	AttributeType = 0b1 << 3;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<AttributeType>

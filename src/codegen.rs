@@ -73,41 +73,7 @@ impl<'a> CodeGen<'a>
 		return &OUT_OBJECT_FILE_PATH;
 	}
 
-	fn gen_function(&mut self, function: &Function)
-	{
-		self.decl_attribute(&function.identifier, function.attributes);
-		self.write_lable_text_seg(&function.identifier);
-
-		self.instr_push(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8));
-		self.instr_mov(
-			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8),
-			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8)
-		);
-		if function.stack_size != 0
-		{
-			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
-				&Placeholder::new(PlaceholderKind::Constant(function.stack_size as u64), 8), 
-			);
-		}
-
-		self.instr_add_spacing();
-
-		self.gen_code_block(&function.statements, &function.locals);
 	
-		self.gen_function_return();
-	}
-
-	fn gen_function_return(&mut self)
-	{
-		self.instr_mov(
-			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
-			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8)
-		);
-		self.instr_pop(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8));
-		self.instr_ret();
-	}
-
 	fn gen_code_block(&mut self, statements: &Vec<Statement>, locals: &Vec<Variable>)
 	{
 		for statement in statements

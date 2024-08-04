@@ -2,6 +2,13 @@
 
 func global main(argc i32) -> u32
 {
-	let result u32 = foo(418, 2, 1, 1, 1, 1, 1, 1);
+	let result u32 = (2 + 6) * foo(1, 1, 1, 1, 1, 1, 418, 2) / 4;
+
+	// Print "abc\n", just having some fun with the C standard library
+	putchar(97);
+	putchar(98);
+	putchar(99);
+	putchar(10);
+
 	return result;
 }

@@ -66,7 +66,7 @@ impl LocalVariables
 		let mut array: Vec<Variable> = self.variables.into_values().collect();
 		array.sort_by_cached_key(|var| var.index);
 
-		if function_attributes & attribute::SYS_V_ABI != 0
+		if function_attributes & attribute::SYS_V_ABI_X86_64 != 0
 		{
 			return Self::update_var_info_sys_v_abi_x86_64(array);
 		} else
