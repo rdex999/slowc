@@ -299,6 +299,7 @@ impl<'a> CodeGen<'a>
 	{
 		match source.size
 		{
+			2 => self.instr_cwd(),
 			4 => self.instr_cdq(),
 			8 => self.instr_cqo(),
 			_ => todo!("Unimplemented Sign convertion."),
@@ -372,6 +373,11 @@ impl<'a> CodeGen<'a>
 	pub fn instr_call(&mut self, identifier: &str)
 	{
 		self.write_text_segment(&format!("\n\tcall {identifier}"));
+	}
+	
+	pub fn instr_cwd(&mut self)
+	{
+		self.write_text_segment("\n\tcwd");
 	}
 
 	pub fn instr_cdq(&mut self)

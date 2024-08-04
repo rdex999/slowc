@@ -39,6 +39,7 @@ impl<'a> Parser<'a>
 	pub fn value_type(&self, value: &Value, variables: &LocalVariables) -> Type
 	{
 		match value {
+			Value::I16(_) => Type::I16,
 			Value::I32(_) => Type::I32,
 			Value::U32(_) => Type::U32,
 			Value::I64(_) => Type::I64,
