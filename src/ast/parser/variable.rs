@@ -4,7 +4,6 @@ pub struct LocalVariables
 {
 	index: u8,
 	variables: HashMap<String, Variable>,
-	pub parameters_stack_size: usize,	
 }
 
 pub struct LocalVariablesInfo
@@ -12,16 +11,19 @@ pub struct LocalVariablesInfo
 	pub vars: Vec<Variable>,
 	
 	// The amount of bytes to subtract from the RSP register
-	pub stack_size: usize,			
+	pub stack_size: usize,
+
+	pub parameters_stack_size: usize,
 }
 
 impl LocalVariablesInfo
 {
-	pub fn new(vars: Vec<Variable>, stack_size: usize) -> Self
+	pub fn new(vars: Vec<Variable>, stack_size: usize, parameters_stack_size: usize) -> Self
 	{
 		return Self {
 			vars,
-			stack_size
+			stack_size,
+			parameters_stack_size,
 		};
 	}
 }
@@ -32,7 +34,6 @@ impl LocalVariables
 	{
 		return Self {
 			index: 0,
-			parameters_stack_size: 0,
 			variables: HashMap::new(),
 		};
 	}
@@ -40,11 +41,6 @@ impl LocalVariables
 	pub fn add_variable(&mut self, identifier: String, attributes: AttributeType, data_type: Type) -> Variable
 	{
 		let var = Variable::new(data_type, attributes, self.index);	
-		if attributes & attribute::FUNCTION_PARAMETER != 0
-		{
-			self.parameters_stack_size += data_type.size() as usize;
-		}
-
 		self.index += 1;
 		self.variables.insert(identifier, var.clone());
 		return var;
@@ -70,6 +66,17 @@ impl LocalVariables
 		let mut array: Vec<Variable> = self.variables.into_values().collect();
 		array.sort_by_cached_key(|var| var.index);
 
+		if function_attributes & attribute::SYS_V_ABI != 0
+		{
+			return Self::update_var_info_sys_v_abi_x86_64(array);
+		} else
+		{
+			todo!("Unsupported calling convenction.");
+		}
+	}
+
+	fn update_var_info_sys_v_abi_x86_64(mut variables: Vec<Variable>) -> LocalVariablesInfo
+	{
 		// Location counter for local variables, also used for determining the functions stack size
 		let mut stack_var_position: isize = 0;
 
@@ -79,44 +86,38 @@ impl LocalVariables
 		// Count parameters that were passed in rdi, rsi, rdx, rcx, r8, r9
 		let mut integer_parameters: u8 = 0;
 
-		if function_attributes & attribute::SYS_V_ABI != 0
+		for variable in variables.iter_mut()
 		{
-			for variable in array.iter_mut()
+			// If the current variable is not a function parameter
+			if variable.attributes & attribute::FUNCTION_PARAMETER == 0
 			{
-				// If the current variable is not a function parameter
-				if variable.attributes & attribute::FUNCTION_PARAMETER == 0
-				{
-					stack_var_position -= variable.data_type.size() as isize;	
-					variable.location = stack_var_position;
-					continue;
-				}
+				stack_var_position -= variable.data_type.size() as isize;	
+				variable.location = stack_var_position;
+				continue;
+			}
 
-				if variable.data_type.is_integer()	
+			if variable.data_type.is_integer()	
+			{
+				if integer_parameters < 6	/* rdi, rsi, rdx, rcx, r8, r9 (6 registers)*/
 				{
-					if integer_parameters < 6	/* rdi, rsi, rdx, rcx, r8, r9 (6 registers)*/
-					{
-						stack_var_position -= variable.data_type.size() as isize;
-						variable.location = stack_var_position;
-						integer_parameters += 1;
-					} else
-					{
-						variable.location = stack_parameter_position as isize;
-						stack_parameter_position += variable.data_type.size() as usize;
-					}
+					stack_var_position -= variable.data_type.size() as isize;
+					variable.location = stack_var_position;
+					integer_parameters += 1;
 				} else
 				{
-					todo!("Add floating point shit");
+					variable.location = stack_parameter_position as isize;
+					stack_parameter_position += variable.data_type.size() as usize;
 				}
+			} else
+			{
+				todo!("Add floating point shit");
 			}
-		} else
-		{
-			todo!("Unsupported calling convenction.");
 		}
 
-		
 		return LocalVariablesInfo::new(
-			array, 
-			(stack_var_position * -1) as usize,
+			variables, 
+			(stack_var_position * -1) as usize, 
+			stack_parameter_position - 8 - 8
 		);
 	}
 }

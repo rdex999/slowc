@@ -98,7 +98,7 @@ impl<'a> Parser<'a>
 		});
 
 		self.advance_token();
-		let mut function = Function::new(identifier.to_string(), return_type, attributes, variables.parameters_stack_size);
+		let mut function = Function::new(identifier.to_string(), return_type, attributes);
 		function.parameter_count = variables.get_variable_count();
 
 		if token_scope_start.kind == TokenKind::Semicolon
@@ -106,6 +106,7 @@ impl<'a> Parser<'a>
 			let locals = variables.get_variables_info(attributes);	
 			function.locals = locals.vars;
 			function.stack_size = locals.stack_size;
+			function.parameters_stack_size = locals.parameters_stack_size;
 			self.func_manager.add(function);
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
@@ -137,6 +138,7 @@ impl<'a> Parser<'a>
 		let locals = variables.get_variables_info(attributes);
 		function.locals = locals.vars;
 		function.stack_size = locals.stack_size;
+		function.parameters_stack_size = locals.parameters_stack_size;
 		self.func_manager.add(function);
 
 	}

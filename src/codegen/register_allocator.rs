@@ -109,20 +109,23 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
+	// TODO: Improve this
 	pub fn reg_alloc_save_used(&mut self)
 	{
-		for register_info in self.registers
+		for i in 0..self.registers.len()
 		{
-			if register_info.is_used()
+			if self.registers[i].is_used()
 			{
 				self.instr_push(&Placeholder::new(
-					PlaceholderKind::Reg(register_info.register), 
-					register_info.register.size()
+					PlaceholderKind::Reg(self.registers[i].register), 
+					self.registers[i].register.size()
 				));
+				self.registers[i].push_count += 1;
 			}
 		}
 	}
 
+	// TODO: Improve this
 	pub fn reg_alloc_free_used(&mut self)
 	{
 		for i in (0..self.registers.len()).rev()
@@ -133,6 +136,7 @@ impl<'a> CodeGen<'a>
 					PlaceholderKind::Reg(self.registers[i].register), 
 					self.registers[i].register.size()
 				));
+				self.registers[i].push_count -= 1;
 			}
 		}
 	}
@@ -197,6 +201,7 @@ impl<'a> CodeGen<'a>
 		return if register as OpSize >= Register::RAX as OpSize && register as OpSize <= Register::DH as OpSize { 4 } else { 3 };
 	}
 
+	// TODO: Improve this
 	fn reg_alloc_allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
 	{
 		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size())

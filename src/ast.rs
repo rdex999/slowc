@@ -52,8 +52,8 @@ pub struct FunctionCallInfo
 #[derive(Debug, Clone)]
 pub enum Value
 {
-	I8(i8),		/* (Not funny) */
-	U8(u8),		/* (Not funny) */
+	I8(i8),			/* (Not funny) */
+	U8(u8),			/* (Not funny) */
 	I16(i16),		/* (Not funny) */
 	U16(u16),		/* (Not funny) */
 	I32(i32),		/* (Not funny) */
@@ -137,7 +137,7 @@ impl Root
 
 impl Function
 {
-	pub fn new(identifier: String, return_type: Type, attributes: AttributeType, parameters_stack_size: usize) -> Self
+	pub fn new(identifier: String, return_type: Type, attributes: AttributeType) -> Self
 	{
 		return Self{
 			identifier,
@@ -146,7 +146,7 @@ impl Function
 			attributes,
 			locals: Vec::new(),
 			stack_size: 0,
-			parameters_stack_size,
+			parameters_stack_size: 0,
 			parameter_count: 0,
 			statements: Vec::new(),
 		};
