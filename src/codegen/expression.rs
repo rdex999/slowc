@@ -31,6 +31,7 @@ impl<'a> CodeGen<'a>
 		return match value
 		{
 			Value::I8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_BYTE),
+			Value::U8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_BYTE),
 			Value::I16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_WORD),
 			Value::U16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_WORD),
 			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),

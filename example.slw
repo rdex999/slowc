@@ -2,5 +2,5 @@
 
 func global main(argc i32) -> void
 {
-	let num i8 = 255 * (30 - 15 * 2);
+	let num u8 = (255 / 2) * 2;
 }

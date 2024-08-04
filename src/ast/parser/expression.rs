@@ -32,6 +32,7 @@ impl<'a> Parser<'a>
 				{
 					match data_type {
 						Type::I8  => return Some(Value::I8(value as i8)),
+						Type::U8  => return Some(Value::U8(value as u8)),
 						Type::I16 => return Some(Value::I16(value as i16)),
 						Type::U16 => return Some(Value::U16(value as u16)),
 						Type::I32 => return Some(Value::I32(value as i32)),
