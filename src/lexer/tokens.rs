@@ -33,6 +33,7 @@ pub enum TokenKind
 	Ident,
 	VarDecl,
 	Void,
+	I8,
 	I16,
 	U16,
 	I32,

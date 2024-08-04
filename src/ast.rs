@@ -52,6 +52,7 @@ pub struct FunctionCallInfo
 #[derive(Debug, Clone)]
 pub enum Value
 {
+	I8(i8),		/* (Not funny) */
 	I16(i16),		/* (Not funny) */
 	U16(u16),		/* (Not funny) */
 	I32(i32),		/* (Not funny) */
@@ -104,6 +105,7 @@ pub enum BinExprOperator
 pub enum Type
 {
 	Void,
+	I8,
 	I16,
 	U16,
 	I32,
@@ -218,8 +220,8 @@ impl Type
 	{
 		return match self
 		{
-			Type::I16 | Type::U16 | Type::I32 | Type::U32 | 
-			Type::I64 | Type::U64 => true,
+			Type::I8  /* | Type::U8 */ | Type::I16 | Type::U16 | 
+			Type::I32 | Type::U32 | Type::I64 | Type::U64 => true,
 			_ => false,
 		}
 	}
@@ -229,6 +231,7 @@ impl Type
 	{
 		match token_kind {
 			TokenKind::Void => return Some(Type::Void),
+			TokenKind::I8 	=> return Some(Type::I8),
 			TokenKind::I16 	=> return Some(Type::I16),
 			TokenKind::U16 	=> return Some(Type::U16),
 			TokenKind::I32 	=> return Some(Type::I32),
@@ -244,6 +247,7 @@ impl Type
 		return match self
 		{
 			Type::Void 				=> 0,
+			Type::I8  /* | Type::U8 */	=> 1,
 			Type::I16 | Type::U16	=> 2,
 			Type::I32 | Type::U32	=> 4,
 			Type::I64 | Type::U64	=> 8,
@@ -254,7 +258,7 @@ impl Type
 	{
 		return match self
 		{
-			Type::I16 | Type::I32 | Type::I64 => true,
+			Type::I8 | Type::I16 | Type::I32 | Type::I64 => true,
 			_ => false,
 		}
 	}

@@ -292,16 +292,51 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\timul {} {destination}, {source}", Self::size_2_opsize(destination.size)));
+		if source.size != OP_BYTE
+		{
+			self.write_text_segment(&format!("\n\timul {} {destination}, {source}", Self::size_2_opsize(destination.size)));
+			return;
+		}
+
+		if let PlaceholderKind::Reg(register) = destination.kind
+		{
+			if register != Register::AL
+			{
+				self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), OP_BYTE), &destination);
+			}
+		} else
+		{
+			self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), OP_BYTE), &destination);
+		}
+
+		if source.is_constant()
+		{
+			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::R15B), OP_BYTE);
+			self.reg_alloc_allocate_forced(Register::R15B);
+			self.instr_mov(&src_placeholder, &source);
+			self.write_text_segment(&format!("\n\timul {} {src_placeholder}", Self::size_2_opsize(destination.size)));
+			self.reg_alloc_free(Register::R15B);
+		} else
+		{
+			self.write_text_segment(&format!("\n\timul {} {source}", Self::size_2_opsize(destination.size)));
+		}
+
 	}
 
 	pub fn instr_idiv(&mut self, source: &Placeholder)
 	{
+		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
+		if source.size != OP_BYTE
+		{
+			self.reg_alloc_allocate_forced(rdx_allocated);
+		}
+
 		match source.size
 		{
-			2 => self.instr_cwd(),
-			4 => self.instr_cdq(),
-			8 => self.instr_cqo(),
+			OP_BYTE  => self.instr_cbw(),
+			OP_WORD  => self.instr_cwd(),
+			OP_DWORD => self.instr_cdq(),
+			OP_QWORD => self.instr_cqo(),
 			_ => todo!("Unimplemented Sign convertion."),
 		}	
 
@@ -313,11 +348,16 @@ impl<'a> CodeGen<'a>
 				source.size
 			);
 			self.instr_mov(&source_placeholder, source);
-			self.write_text_segment(&format!("\n\tidiv {} {}", Self::size_2_opsize(source.size), source_placeholder));
+			self.write_text_segment(&format!("\n\tidiv {} {source_placeholder}", Self::size_2_opsize(source.size)));
 			self.reg_alloc_free(source_reg);
 		} else
 		{
 			self.write_text_segment(&format!("\n\tidiv {} {source}", Self::size_2_opsize(source.size)));
+		}
+
+		if source.size != OP_BYTE
+		{
+			self.reg_alloc_free(rdx_allocated);
 		}
 	}
 
@@ -340,14 +380,21 @@ impl<'a> CodeGen<'a>
 	pub fn instr_div(&mut self, source: &Placeholder)
 	{
 		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
-		self.reg_alloc_allocate_forced(rdx_allocated);
+		if source.size == OP_BYTE
+		{
+			let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), OP_BYTE);
+			self.instr_xor(&ah_placeholder, &ah_placeholder);
+		} else 
+		{
+			self.reg_alloc_allocate_forced(rdx_allocated);
+			let rdx_placeholder = Placeholder::new(
+				PlaceholderKind::Reg(rdx_allocated), 
+				source.size
+			);
+	
+			self.instr_xor(&rdx_placeholder, &rdx_placeholder);
+		}
 
-		let rdx_placeholder = Placeholder::new(
-			PlaceholderKind::Reg(rdx_allocated), 
-			source.size
-		);
-
-		self.instr_xor(&rdx_placeholder, &rdx_placeholder);
 
 		if !source.is_register()
 		{
@@ -357,12 +404,15 @@ impl<'a> CodeGen<'a>
 
 			self.write_text_segment(&format!("\n\tdiv {} {src_placeholder}", Self::size_2_opsize(src_placeholder.size)));
 			self.reg_alloc_free(register);
-			self.reg_alloc_free(rdx_allocated);
-			return;
+		} else
+		{
+			self.write_text_segment(&format!("\n\tdiv {} {source}", Self::size_2_opsize(source.size)));
 		}
 
-		self.write_text_segment(&format!("\n\tdiv {} {source}", Self::size_2_opsize(source.size)));
-		self.reg_alloc_free(rdx_allocated);
+		if source.size != OP_BYTE
+		{
+			self.reg_alloc_free(rdx_allocated);
+		}	
 	}
 
 	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)
@@ -373,6 +423,11 @@ impl<'a> CodeGen<'a>
 	pub fn instr_call(&mut self, identifier: &str)
 	{
 		self.write_text_segment(&format!("\n\tcall {identifier}"));
+	}
+
+	pub fn instr_cbw(&mut self)
+	{
+		self.write_text_segment("\n\tcbw");
 	}
 	
 	pub fn instr_cwd(&mut self)
