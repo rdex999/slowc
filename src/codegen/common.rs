@@ -21,7 +21,7 @@ impl<'a> CodeGen<'a>
 	{
 		if attr & attribute::GLOBAL != 0
 		{
-			self.write_attribute_segment(&format!("global {identifier}\n"));
+			self.write_attribute_segment(&format!("\nglobal {identifier}\n"));
 		}
 	}
 

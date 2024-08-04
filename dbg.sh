@@ -5,16 +5,20 @@ if (( $? != 0 )); then
 	exit
 fi
 
-nasm -felf64 -g -o a.o /tmp/slowc_compiled.asm
-if (( $? != 0 )); then
-	exit
+if [[ "$1" == "run" ]]; then
+	until [ -f a.out ]
+	do
+		sleep 0.01
+	done
+	./a.out
+	EXIT_CODE=$?
+	rm a.out
+	exit $EXIT_CODE
+else
+	gdb a.out \
+		-ex "lay src" \
+		-ex "lay regs" \
+		-ex "br main" \
+		-ex "run"
 fi
-
-ld -e main -o a.out a.o
-gdb a.out \
-	-ex "lay src" \
-	-ex "lay regs" \
-	-ex "br main" \
-	-ex "run"
-
-rm a.o a.out
+rm a.out

@@ -1,6 +1,8 @@
 #intext to_include.hslw
 
-func global main(argc i32) -> void
+func global main(argc i32) -> u8
 {
 	let num u8 = (255 / 2) * 2;
+	let result u8 = num - 50;
+	return result;
 }

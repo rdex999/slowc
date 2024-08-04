@@ -11,11 +11,21 @@ fn main() {
     {
         print_err!(CompileError::Usage, "Correct usage: slowc <FILE.slw>");
     }
-    
-    slowc_compile_file(&argv[1]);
+
+    let executable_path = "a.out";
+    let obj_file = slowc_compile_file(&argv[1]);
+
+    // Linking with the C standard library is temporary. Il create my own in the future
+    std::process::Command::new("ld")
+        .args(["-o", executable_path])
+        .args(["-dynamic-linker", "/lib64/ld-linux-x86-64.so.2"])
+        .args(["/usr/lib/crt1.o", "/usr/lib/crti.o", "-lc", "/usr/lib/crtn.o"])
+        .arg(obj_file)
+        .spawn()
+        .expect("Error, failed to link program.");
 }
 
-fn slowc_compile_file(filepath: &str)
+fn slowc_compile_file(filepath: &str) -> &str
 {
     let mut source = std::fs::read_to_string(filepath)
         .unwrap_or_else(|err| {print_err!(CompileError::NoSuchFile(filepath), "Error: {err}");});
@@ -33,7 +43,7 @@ fn slowc_compile_file(filepath: &str)
 
     let code_generator = codegen::CodeGen::new(&ir);
 
-    code_generator.generate();
+    return code_generator.generate();
 
     // print_msg!("IR:\n\t{:#?}", ir);
     // while let Some(token) = lexer.next()

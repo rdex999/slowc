@@ -8,7 +8,7 @@ use instructions::*;
 use register_allocator::*;
 use super::{ast::*, CompileError, print_err};
 
-const _OUT_OBJECT_FILE_PATH: &str = "/tmp/slowc_compiled.obj";
+const OUT_OBJECT_FILE_PATH: &str = "/tmp/slowc_compiled.obj";
 const OUT_ASM_FILE_PATH: &str = "/tmp/slowc_compiled.asm";
 
 const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3;
@@ -27,19 +27,20 @@ impl<'a> CodeGen<'a>
 
 	pub fn new(ir: &'a Root) -> Self
 	{
-		let data_segment = String::from("segment .data");
+		let attribute_segment = String::from("bits 64");
+		let data_segment = String::from("\nsegment .data");
 		let text_segment = String::from("\nsegment .text");
 
 		return Self {
 			ir,
 			registers: Self::reg_alloc_init(),
-			attribute_segment: String::new(),
+			attribute_segment,
 			data_segment,
 			text_segment,
 		};
 	}
 	
-	pub fn generate(mut self)
+	pub fn generate<'b>(mut self) -> &'b str
 	{
 		for function in &self.ir.functions
 		{
@@ -60,6 +61,16 @@ impl<'a> CodeGen<'a>
 		std::fs::write(OUT_ASM_FILE_PATH, final_asm).unwrap_or_else(|err| {
 			print_err!(CompileError::FileWriteError(OUT_ASM_FILE_PATH), "Could not write to temporary assembly file. {err}");
 		});
+
+		std::process::Command::new("nasm")
+			.args(["-f", "elf64"])
+			.arg("-g")
+			.args(["-o", OUT_OBJECT_FILE_PATH])
+			.arg(OUT_ASM_FILE_PATH)
+			.spawn()
+			.expect("Dev error! failed to execute nasm.");
+
+		return &OUT_OBJECT_FILE_PATH;
 	}
 
 	fn gen_function(&mut self, function: &Function)
