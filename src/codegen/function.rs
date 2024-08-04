@@ -8,9 +8,9 @@ impl<'a> CodeGen<'a>
 		
 		self.reg_alloc_save_used();
 
-		if function.attributes & attribute::CDECL != 0
+		if function.attributes & attribute::SYS_V_ABI != 0
 		{
-			self.gen_cdecl_call(locals, function_call_info);
+			self.gen_sys_v_abi_call(locals, function_call_info);
 		}
 		
 		self.reg_alloc_free_used();
@@ -28,7 +28,7 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	fn gen_cdecl_call(&mut self, locals: &Vec<Variable>, function_call_info: &FunctionCallInfo)
+	fn gen_sys_v_abi_call(&mut self, locals: &Vec<Variable>, function_call_info: &FunctionCallInfo)
 	{
 		let function = &self.ir.functions[function_call_info.index as usize];
 
@@ -40,22 +40,6 @@ impl<'a> CodeGen<'a>
 			);
 		}
 
-		let mut current_location_in_stack: usize = function.parameters_stack_size;
-		for argument in function_call_info.arguments.iter().rev()
-		{
-			let expr = self.gen_expression(argument, locals);
-			
-			current_location_in_stack -= expr.size as usize;
-
-			let destination = Placeholder::new(
-				PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, current_location_in_stack as isize)), 
-				expr.size
-			);
-
-			self.instr_mov(&destination, &expr);
-		}
-
-		self.instr_call(&function.identifier);
 
 		if function.parameters_stack_size != 0
 		{

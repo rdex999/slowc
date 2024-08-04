@@ -65,34 +65,58 @@ impl LocalVariables
 		return self.index;
 	}
 
-	pub fn get_variables_info(self) -> LocalVariablesInfo
+	pub fn get_variables_info(self, function_attributes: AttributeType) -> LocalVariablesInfo
 	{
 		let mut array: Vec<Variable> = self.variables.into_values().collect();
-		let mut total_size: usize = 0;
-		array.sort_by_cached_key(|var| {
-			if var.attributes & attribute::FUNCTION_PARAMETER == 0
-			{
-				total_size += var.data_type.size() as usize;
-			}
-			return var.index;
-		});
+		array.sort_by_cached_key(|var| var.index);
 
-		let mut current_location = total_size as isize * -1;
-		let mut parameters_location: isize = 8 + 8;		/* First thing on the stack is the base pointer, then the return address, so skip them */
-		for variable in &mut array
+		// Location counter for local variables, also used for determining the functions stack size
+		let mut stack_var_position: isize = 0;
+
+		// Location counter for parameters that were passed on the stack 
+		let mut stack_parameter_position: usize = 8 + 8;		/* Return address(8), base pointer(8) */
+
+		// Count parameters that were passed in rdi, rsi, rdx, rcx, r8, r9
+		let mut integer_parameters: u8 = 0;
+
+		if function_attributes & attribute::SYS_V_ABI != 0
 		{
-			if variable.attributes & attribute::FUNCTION_PARAMETER != 0
+			for variable in array.iter_mut()
 			{
-				variable.location = parameters_location;
-				parameters_location += variable.data_type.size() as isize;
-				continue;
+				// If the current variable is not a function parameter
+				if variable.attributes & attribute::FUNCTION_PARAMETER == 0
+				{
+					stack_var_position -= variable.data_type.size() as isize;	
+					variable.location = stack_var_position;
+					continue;
+				}
+
+				if variable.data_type.is_integer()	
+				{
+					if integer_parameters < 6	/* rdi, rsi, rdx, rcx, r8, r9 (6 registers)*/
+					{
+						stack_var_position -= variable.data_type.size() as isize;
+						variable.location = stack_var_position;
+						integer_parameters += 1;
+					} else
+					{
+						variable.location = stack_parameter_position as isize;
+						stack_parameter_position += variable.data_type.size() as usize;
+					}
+				} else
+				{
+					todo!("Add floating point shit");
+				}
 			}
-			variable.location = current_location;
-			current_location += variable.data_type.size() as isize;
+		} else
+		{
+			todo!("Unsupported calling convenction.");
 		}
+
+		
 		return LocalVariablesInfo::new(
 			array, 
-			total_size
+			(stack_var_position * -1) as usize,
 		);
 	}
 }

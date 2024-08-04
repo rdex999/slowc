@@ -1,4 +1,4 @@
-func foo(num1 u32, num2 u32) -> u32
+func foo(num1 u32, num2 u32, num3 u32, num4 u32, num5 u32, num6 u32, num7 u32, num8 u32) -> u32
 {
 	let result u32 = num1 + num2;
 	return result;

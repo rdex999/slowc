@@ -103,7 +103,7 @@ impl<'a> Parser<'a>
 
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
-			let locals = variables.get_variables_info();	
+			let locals = variables.get_variables_info(attributes);	
 			function.locals = locals.vars;
 			function.stack_size = locals.stack_size;
 			self.func_manager.add(function);
@@ -134,7 +134,7 @@ impl<'a> Parser<'a>
 		}
 
 		self.advance_token();
-		let locals = variables.get_variables_info();
+		let locals = variables.get_variables_info(attributes);
 		function.locals = locals.vars;
 		function.stack_size = locals.stack_size;
 		self.func_manager.add(function);
@@ -205,7 +205,7 @@ impl<'a> Parser<'a>
 				print_errln!(CompileError::UnexpectedEof, self.source, self.source.len() - 1, "While parsing function attributes.");
 			});
 		}
-		attributes |= attribute::CDECL; 	/* Just for now, in the future there will be more calling convenctions */
+		attributes |= attribute::SYS_V_ABI; 	/* Just for now, in the future there will be more calling convenctions */
 		return attributes;
 	}
 

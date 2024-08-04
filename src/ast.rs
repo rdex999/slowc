@@ -265,6 +265,11 @@ impl Type
 			_ => false,
 		}
 	}
+
+	pub fn is_integer(&self) -> bool
+	{
+		return *self as u8 >= Type::I8 as u8 && *self as u8 <= Type::U64 as u8;
+	}
 }
 
 impl std::fmt::Display for Type
@@ -308,10 +313,10 @@ pub mod attribute
 	pub type AttributeType = u16;
 	use super::*;
 	
-	pub const GLOBAL: 				AttributeType = 0b1;
-	pub const EXTERN: 				AttributeType = GLOBAL << 1;
-	pub const CDECL: 				AttributeType = EXTERN << 2;
-	pub const FUNCTION_PARAMETER: 	AttributeType = CDECL << 3;
+	pub const GLOBAL: 				AttributeType = 0b1 << 0;
+	pub const EXTERN: 				AttributeType = 0b1 << 1;
+	pub const SYS_V_ABI: 			AttributeType = 0b1 << 2;
+	pub const FUNCTION_PARAMETER: 	AttributeType = 0b1 << 3;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<AttributeType>
 	{
