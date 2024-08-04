@@ -53,6 +53,7 @@ pub struct FunctionCallInfo
 pub enum Value
 {
 	I16(i16),		/* (Not funny) */
+	U16(u16),		/* (Not funny) */
 	I32(i32),		/* (Not funny) */
 	U32(u32),		/* (Not funny) */
 	I64(i64),		/* (Not funny) */
@@ -104,6 +105,7 @@ pub enum Type
 {
 	Void,
 	I16,
+	U16,
 	I32,
 	U32,
 	I64,
@@ -216,7 +218,8 @@ impl Type
 	{
 		return match self
 		{
-			Type::I16 | Type::I32 | Type::U32 | Type::I64 | Type::U64 => true,
+			Type::I16 | Type::U16 | Type::I32 | Type::U32 | 
+			Type::I64 | Type::U64 => true,
 			_ => false,
 		}
 	}
@@ -227,6 +230,7 @@ impl Type
 		match token_kind {
 			TokenKind::Void => return Some(Type::Void),
 			TokenKind::I16 	=> return Some(Type::I16),
+			TokenKind::U16 	=> return Some(Type::U16),
 			TokenKind::I32 	=> return Some(Type::I32),
 			TokenKind::U32 	=> return Some(Type::U32),
 			TokenKind::I64 	=> return Some(Type::I64),
@@ -240,7 +244,7 @@ impl Type
 		return match self
 		{
 			Type::Void 				=> 0,
-			Type::I16 /* | Type::U16 */	=> 2,
+			Type::I16 | Type::U16	=> 2,
 			Type::I32 | Type::U32	=> 4,
 			Type::I64 | Type::U64	=> 8,
 		}

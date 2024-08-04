@@ -90,6 +90,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_VAR_DECL 	=> kind = TokenKind::VarDecl,
 			KEYWORD_VOID		=> kind = TokenKind::Void,
 			KEYWORD_I16			=> kind = TokenKind::I16,
+			KEYWORD_U16			=> kind = TokenKind::U16,
 			KEYWORD_I32			=> kind = TokenKind::I32,
 			KEYWORD_U32			=> kind = TokenKind::U32,
 			KEYWORD_I64			=> kind = TokenKind::I64,

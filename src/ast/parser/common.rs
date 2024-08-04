@@ -40,6 +40,7 @@ impl<'a> Parser<'a>
 	{
 		match value {
 			Value::I16(_) => Type::I16,
+			Value::U16(_) => Type::U16,
 			Value::I32(_) => Type::I32,
 			Value::U32(_) => Type::U32,
 			Value::I64(_) => Type::I64,

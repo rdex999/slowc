@@ -35,7 +35,7 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I16(_) /* | Value::U16(_) */ 				=> OP_WORD,
+			Value::I16(_) | Value::U16(_) 				=> OP_WORD,
 			Value::I32(_) | Value::U32(_) 				=> OP_DWORD,
 			Value::I64(_) | Value::U64(_)				=> OP_QWORD,
 			Value::Var(index) 						=> locals[*index as usize].data_type.size(),
