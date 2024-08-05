@@ -11,8 +11,6 @@ use super::{ast::*, CompileError, print_err};
 const OUT_OBJECT_FILE_PATH: &str = "/tmp/slowc_compiled.obj";
 const OUT_ASM_FILE_PATH: &str = "/tmp/slowc_compiled.asm";
 
-const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3;
-
 pub struct CodeGen<'a>
 {
 	ir: &'a Root,

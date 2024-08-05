@@ -45,6 +45,23 @@ pub enum Register
 	R13, R13D, R13W, R13B,
 	R14, R14D, R14W, R14B,
 	R15, R15D, R15W, R15B,
+
+	XMM0,
+	XMM1,
+	XMM2,
+	XMM3,
+	XMM4,
+	XMM5,
+	XMM6,
+	XMM7,
+	XMM8,
+	XMM9,
+	XMM10,
+	XMM11,
+	XMM12,
+	XMM13,
+	XMM14,
+	XMM15,
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
@@ -107,12 +124,17 @@ impl LocationExpr
 
 impl Register
 {
-	pub const COUNT: u8 = 68;
-	pub const COUNT_FULL: u8 = 16;
+	pub const COUNT: u8 = 84;
+	pub const COUNT_FULL: u8 = 16 + 16;
 
 	// The size of the register in bytes
 	pub fn data_type(&self) -> Type
 	{
+		if *self as u8 >= Register::XMM0 as u8 && *self as u8 <= Register::XMM15 as u8
+		{
+			return Type::F64;
+		}
+
 		match self {
 			Register::RAX | Register::RBX | Register::RCX | Register::RDX |
 			Register::RSI | Register::RDI | Register::RSP | Register::RBP |

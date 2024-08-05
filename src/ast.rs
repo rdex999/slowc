@@ -114,6 +114,8 @@ pub enum Type
 	U32,
 	I64,
 	U64,
+
+	F64,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -249,11 +251,11 @@ impl Type
 	{
 		return match self
 		{
-			Type::Void 				=> 0,
-			Type::I8  | Type::U8 	=> 1,
-			Type::I16 | Type::U16	=> 2,
-			Type::I32 | Type::U32	=> 4,
-			Type::I64 | Type::U64	=> 8,
+			Type::Void 							=> 0,
+			Type::I8  | Type::U8 				=> 1,
+			Type::I16 | Type::U16				=> 2,
+			Type::I32 | Type::U32				=> 4,
+			Type::I64 | Type::U64 | Type::F64 	=> 8,
 		}
 	}
 
@@ -261,7 +263,8 @@ impl Type
 	{
 		return match self
 		{
-			Type::I8 | Type::I16 | Type::I32 | Type::I64 => true,
+			Type::I8 | Type::I16 | Type::I32 | Type::I64 |
+			Type::F64 => true,
 			_ => false,
 		}
 	}

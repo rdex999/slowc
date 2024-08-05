@@ -1,6 +1,6 @@
 use super::*;
 
-const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3;
+pub const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3 - 1;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RegisterInfo
@@ -55,12 +55,20 @@ impl<'a> CodeGen<'a>
 			loop
 			{
 				let reg = Register::try_from(register_index).unwrap();
-				match reg
+
+				if reg as u8 >= Register::XMM1 as u8 && reg as u8 <= Register::XMM15 as u8
 				{
-					Register::RBX | Register::RCX | Register::RDX => register_index += 5,
-					Register::RAX => {register_index += 5; continue;},
-					Register::RSP | Register::RBP => {register_index += 4; continue;},
-					_ => register_index += 4,
+					register_index += 1;
+				} else
+				{
+					match reg
+					{
+						Register::RBX | Register::RCX | Register::RDX => register_index += 5,
+						Register::RAX => { register_index += 5; continue; },
+						Register::RSP | Register::RBP => { register_index += 4; continue; },
+						Register::XMM0 => { register_index += 1; continue; },
+						_ => register_index += 4,
+					}
 				}
 				return RegisterInfo::new(reg);
 			}
