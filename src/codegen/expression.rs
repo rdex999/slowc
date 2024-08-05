@@ -19,7 +19,7 @@ impl<'a> CodeGen<'a>
 				let variable = locals[*variable_index as usize];
 				return Placeholder::new(
 					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
-					variable.data_type.size()
+					variable.data_type
 				);
 			}, 
 			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
@@ -30,14 +30,14 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_BYTE),
-			Value::U8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_BYTE),
-			Value::I16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_WORD),
-			Value::U16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_WORD),
-			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),
-			Value::U32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_DWORD),
-			Value::I64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_QWORD),
-			Value::U64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), OP_QWORD),
+			Value::I8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I8),
+			Value::U8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U8),
+			Value::I16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I16),
+			Value::U16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U16),
+			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I32),
+			Value::U32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U32),
+			Value::I64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I64),
+			Value::U64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U64),
 			Value::Var(_) 											=> self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
 		}	
@@ -55,8 +55,8 @@ impl<'a> CodeGen<'a>
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder, signed: bool) -> Placeholder 
 	{
 		// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
-		let rax = Register::from_op_size(Register::RAX, lhs.size);
-		let destination = Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
+		let rax = Register::from_op_size(Register::RAX, lhs.data_type.size());
+		let destination = Placeholder::new(PlaceholderKind::Reg(rax), lhs.data_type);
 		self.instr_mov(&destination, lhs);
 
 		match operator {
@@ -83,7 +83,7 @@ impl<'a> CodeGen<'a>
 				}
 			},
 		}
-		return Placeholder::new(PlaceholderKind::Reg(rax), lhs.size);
+		return Placeholder::new(PlaceholderKind::Reg(rax), lhs.data_type);
 	}
 
 	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>, signed: bool) -> Placeholder
@@ -104,8 +104,8 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(op) =>
 					{
 						let rhs = self.gen_bin_expr_recurse(&op, locals, signed);
-						let register = self.reg_alloc_allocate(rhs.size).unwrap();
-						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.size);
+						let register = self.reg_alloc_allocate(rhs.data_type.size()).unwrap();
+						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.data_type);
 						self.instr_mov(
 							&rhs_placeholder, 
 							&rhs
@@ -123,8 +123,8 @@ impl<'a> CodeGen<'a>
 			BinExprPart::Operation(op) =>
 			{
 				let lhs = self.gen_bin_expr_recurse(&op, locals, signed);
-				let register = self.reg_alloc_allocate(lhs.size).unwrap();
-				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.size);
+				let register = self.reg_alloc_allocate(lhs.data_type.size()).unwrap();
+				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.data_type);
 				let result;
 				self.instr_mov(
 					&lhs_placeholder, 
@@ -136,14 +136,19 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Val(value) => 
 					{
 						let rhs = self.gen_value(value, locals);
-						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs, signed);
+						let rhs_reg = self.reg_alloc_allocate(rhs.data_type.size()).unwrap();
+						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.data_type);
+						self.instr_mov(&rhs_placeholder, &rhs);
+
+						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder, signed);
+						self.reg_alloc_free(rhs_reg);
 					},
 
 					BinExprPart::Operation(rhs_op) => 
 					{
 						let rhs = self.gen_bin_expr_recurse(rhs_op, locals, signed);
-						let rhs_reg = self.reg_alloc_allocate(rhs.size).unwrap();
-						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.size);
+						let rhs_reg = self.reg_alloc_allocate(rhs.data_type.size()).unwrap();
+						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.data_type);
 						self.instr_mov(&rhs_placeholder, &rhs);
 						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder, signed);
 						self.reg_alloc_free(rhs_reg);

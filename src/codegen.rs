@@ -95,10 +95,10 @@ impl<'a> CodeGen<'a>
 	fn gen_assign_stmt(&mut self, assign_data: &VarUpdateInfo, locals: &Vec<Variable>)
 	{
 		let source = self.gen_expression(&assign_data.value, locals);
-		let	src_reg = self.reg_alloc_allocate(source.size).unwrap();
+		let	src_reg = self.reg_alloc_allocate(source.data_type.size()).unwrap();
 		let src_placeholder = Placeholder::new(
 			PlaceholderKind::Reg(src_reg), 
-			source.size
+			source.data_type
 		);
 		self.instr_mov(&src_placeholder, &source);
 
@@ -122,7 +122,7 @@ impl<'a> CodeGen<'a>
 		}
 
 		let expr_placeholder = self.gen_expression(expr, locals);
-		let rax = Register::from_op_size(Register::RAX, expr_placeholder.size);
+		let rax = Register::from_op_size(Register::RAX, expr_placeholder.data_type.size());
 
 		// I hate Rust
 		if let PlaceholderKind::Reg(reg) = expr_placeholder.kind
@@ -130,14 +130,14 @@ impl<'a> CodeGen<'a>
 			if reg != rax
 			{
 				self.instr_mov(
-					&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.size), 
+					&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.data_type), 
 					&expr_placeholder
 				);
 			}
 		} else 
 		{
 			self.instr_mov(
-				&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.size), 
+				&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.data_type), 
 				&expr_placeholder
 			);
 		}

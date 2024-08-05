@@ -119,7 +119,7 @@ impl<'a> CodeGen<'a>
 			{
 				self.instr_push(&Placeholder::new(
 					PlaceholderKind::Reg(self.registers[i].register), 
-					self.registers[i].register.size()
+					self.registers[i].register.data_type()
 				));
 				self.registers[i].was_saved_before_call = true;
 				self.registers[i].is_free = true;
@@ -140,7 +140,7 @@ impl<'a> CodeGen<'a>
 			{
 				self.instr_pop(&Placeholder::new(
 					PlaceholderKind::Reg(self.registers[i].register), 
-					self.registers[i].register.size()
+					self.registers[i].register.data_type()
 				));
 
 				self.registers[i].was_saved_before_call = false;
@@ -212,7 +212,7 @@ impl<'a> CodeGen<'a>
 
 			self.instr_pop(&Placeholder::new(
 				PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
-				self.registers[reg_info_idx].register.size()
+				self.registers[reg_info_idx].register.data_type()
 			));
 
 			return;
@@ -232,7 +232,7 @@ impl<'a> CodeGen<'a>
 
 	fn reg_alloc_allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
 	{
-		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size())
+		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.data_type().size())
 		{
 			return;
 		}
@@ -240,7 +240,7 @@ impl<'a> CodeGen<'a>
 		self.registers[reg_info_idx].push_count += 1;
 		self.instr_push(&Placeholder::new(
 			PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
-			self.registers[reg_info_idx].register.size()
+			self.registers[reg_info_idx].register.data_type()
 		));
 	}
 

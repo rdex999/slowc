@@ -14,16 +14,16 @@ impl<'a> CodeGen<'a>
 		self.write_lable_text_seg(&function.identifier);
 
 		// Save stack frame
-		self.instr_push(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8));
+		self.instr_push(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), Type::U64));
 		self.instr_mov(
-			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8),
-			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8)
+			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), Type::U64),
+			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64)
 		);
 		if function.stack_size != 0
 		{
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
-				&Placeholder::new(PlaceholderKind::Constant(function.stack_size as u64), 8), 
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64),
+				&Placeholder::new(PlaceholderKind::Constant(function.stack_size as u64), Type::U64), 
 			);
 		}
 
@@ -44,10 +44,10 @@ impl<'a> CodeGen<'a>
 	pub fn gen_function_return(&mut self)
 	{
 		self.instr_mov(
-			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), 8),
-			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8)
+			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64),
+			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), Type::U64)
 		);
-		self.instr_pop(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), 8));
+		self.instr_pop(&Placeholder::new(PlaceholderKind::Reg(Register::RBP), Type::U64));
 		self.instr_ret();
 	}
 
@@ -64,15 +64,14 @@ impl<'a> CodeGen<'a>
 		
 		self.reg_alloc_free_used();
 		
-		let return_size = function.return_type.size();
 		if function.return_type == Type::Void 
 		{
 			return None;
 		} else 
 		{ 
 			return Some(Placeholder::new(
-				PlaceholderKind::Reg(Register::from_op_size(Register::RAX, return_size)), 
-				return_size
+				PlaceholderKind::Reg(Register::from_op_size(Register::RAX, function.return_type.size())), 
+				function.return_type	
 			));
 		}
 	}
@@ -84,8 +83,8 @@ impl<'a> CodeGen<'a>
 		if function.parameters_stack_size != 0
 		{
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OP_QWORD), 
-				&Placeholder::new(PlaceholderKind::Constant(function.parameters_stack_size as u64), OP_QWORD)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Constant(function.parameters_stack_size as u64), Type::U64)
 			);
 		}
 
@@ -104,14 +103,14 @@ impl<'a> CodeGen<'a>
 				let register = Self::int_argument_2_register_sys_v_abi_x86_64(integer_arguments, arg_data.data_type.size());
 				self.reg_alloc_allocate_forced(register);
 				allocated_registers.push(register);
-				placeholder = Placeholder::new(PlaceholderKind::Reg(register), arg_data.data_type.size());
+				placeholder = Placeholder::new(PlaceholderKind::Reg(register), arg_data.data_type);
 				integer_arguments += 1;
 			} else
 			// When adding floats in the future, add em here
 			{
 				placeholder = Placeholder::new(
 					PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, stack_position as isize)), 
-					arg_data.data_type.size()
+					arg_data.data_type
 				);
 				stack_position += arg_data.data_type.size();
 			}
@@ -129,8 +128,8 @@ impl<'a> CodeGen<'a>
 		if function.parameters_stack_size != 0
 		{
 			self.instr_add(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), OP_QWORD), 
-				&Placeholder::new(PlaceholderKind::Constant(stack_position as u64), OP_QWORD)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Constant(stack_position as u64), Type::U64)
 			);
 		}
 	}
@@ -148,10 +147,10 @@ impl<'a> CodeGen<'a>
 			if parameter.data_type.is_integer() && integer_arguments < 6
 			{
 				let register = Self::int_argument_2_register_sys_v_abi_x86_64(integer_arguments, parameter.data_type.size());
-				let source = Placeholder::new(PlaceholderKind::Reg(register), parameter.data_type.size());
+				let source = Placeholder::new(PlaceholderKind::Reg(register), parameter.data_type);
 				let destination = Placeholder::new(
 					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, parameter.location)), 
-					parameter.data_type.size()
+					parameter.data_type
 				);
 				self.instr_mov(&destination, &source);
 				integer_arguments += 1;

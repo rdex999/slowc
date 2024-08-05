@@ -10,7 +10,7 @@ pub const OP_QWORD: OpSize = 8;
 pub struct Placeholder
 {
 	pub kind: PlaceholderKind,
-	pub size: OpSize,		/* In bytes */
+	pub data_type: Type,
 }
 
 #[derive(Clone, Copy)]
@@ -111,7 +111,7 @@ impl Register
 	pub const COUNT_FULL: u8 = 16;
 
 	// The size of the register in bytes
-	pub fn size(&self) -> OpSize
+	pub fn data_type(&self) -> Type
 	{
 		match self {
 			Register::RAX | Register::RBX | Register::RCX | Register::RDX |
@@ -119,7 +119,7 @@ impl Register
 			Register::R8  | Register::R9  | Register::R10 | Register::R11 |
 			Register::R12 | Register::R13 | Register::R14 | Register::R15 =>
 			{
-				return 8;
+				return Type::U64;
 			},
 
 			Register::EAX | Register::EBX | Register::ECX | Register::EDX |
@@ -127,7 +127,7 @@ impl Register
 			Register::R8D  | Register::R9D  | Register::R10D | Register::R11D |
 			Register::R12D | Register::R13D | Register::R14D | Register::R15D =>
 			{
-				return 4;
+				return Type::U32;
 			},
 
 			Register::AX | Register::BX | Register::CX | Register::DX |
@@ -135,9 +135,9 @@ impl Register
 			Register::R8W  | Register::R9W  | Register::R10W | Register::R11W |
 			Register::R12W | Register::R13W | Register::R14W | Register::R15W =>
 			{
-				return 2;
+				return Type::U16;
 			},
-			_ => return 1,
+			_ => return Type::U8,
 		}
 	}
 
@@ -162,11 +162,11 @@ impl TryFrom<OpSize> for Register
 }
 impl Placeholder
 {
-	pub fn new(kind: PlaceholderKind, size: OpSize) -> Self
+	pub fn new(kind: PlaceholderKind, data_type: Type) -> Self
 	{
 		return Self {
 			kind,
-			size,
+			data_type,
 		};
 	}
 
@@ -250,8 +250,8 @@ impl<'a> CodeGen<'a>
 			if let PlaceholderKind::Location(_) = source.kind
 			{
 				source_placeholder = Placeholder::new(
-					PlaceholderKind::Reg(Register::from_op_size(Register::RAX, source.size)), 
-					source.size
+					PlaceholderKind::Reg(Register::from_op_size(Register::RAX, source.data_type.size())), 
+					source.data_type
 				);
 				self.instr_mov(&source_placeholder, source);
 			}
@@ -262,17 +262,17 @@ impl<'a> CodeGen<'a>
 			return;
 		}
 
-		self.write_text_segment(&format!("\n\tmov {} {destination}, {}", Self::size_2_opsize(destination.size), source_placeholder));
+		self.write_text_segment(&format!("\n\tmov {} {destination}, {}", Self::size_2_opsize(destination.data_type.size()), source_placeholder));
 	}
 
 	pub fn instr_push(&mut self, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tpush {} {source}", Self::size_2_opsize(source.size)));
+		self.write_text_segment(&format!("\n\tpush {} {source}", Self::size_2_opsize(source.data_type.size())));
 	}
 
 	pub fn instr_pop(&mut self, destination: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tpop {} {destination}", Self::size_2_opsize(destination.size)));
+		self.write_text_segment(&format!("\n\tpop {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_ret(&mut self)
@@ -282,19 +282,19 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_add(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", Self::size_2_opsize(destination.size)));
+		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_sub(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", Self::size_2_opsize(destination.size)));
+		self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		if source.size != OP_BYTE
+		if source.data_type.size() != OP_BYTE
 		{
-			self.write_text_segment(&format!("\n\timul {} {destination}, {source}", Self::size_2_opsize(destination.size)));
+			self.write_text_segment(&format!("\n\timul {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 			return;
 		}
 
@@ -302,36 +302,36 @@ impl<'a> CodeGen<'a>
 		{
 			if register != Register::AL
 			{
-				self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), OP_BYTE), &destination);
+				self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), source.data_type), &destination);
 			}
 		} else
 		{
-			self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), OP_BYTE), &destination);
+			self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), source.data_type), &destination);
 		}
 
 		if source.is_constant()
 		{
-			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::R15B), OP_BYTE);
+			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::R15B), source.data_type);
 			self.reg_alloc_allocate_forced(Register::R15B);
 			self.instr_mov(&src_placeholder, &source);
-			self.write_text_segment(&format!("\n\timul {} {src_placeholder}", Self::size_2_opsize(destination.size)));
+			self.write_text_segment(&format!("\n\timul {} {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
 			self.reg_alloc_free(Register::R15B);
 		} else
 		{
-			self.write_text_segment(&format!("\n\timul {} {source}", Self::size_2_opsize(destination.size)));
+			self.write_text_segment(&format!("\n\timul {} {source}", Self::size_2_opsize(destination.data_type.size())));
 		}
 
 	}
 
 	pub fn instr_idiv(&mut self, source: &Placeholder)
 	{
-		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
-		if source.size != OP_BYTE
+		let rdx_allocated = Register::from_op_size(Register::RDX, source.data_type.size());
+		if source.data_type.size() != OP_BYTE
 		{
 			self.reg_alloc_allocate_forced(rdx_allocated);
 		}
 
-		match source.size
+		match source.data_type.size()
 		{
 			OP_BYTE  => self.instr_cbw(),
 			OP_WORD  => self.instr_cwd(),
@@ -342,20 +342,20 @@ impl<'a> CodeGen<'a>
 
 		if source.is_constant()
 		{
-			let source_reg = self.reg_alloc_allocate(source.size).unwrap();
+			let source_reg = self.reg_alloc_allocate(source.data_type.size()).unwrap();
 			let source_placeholder = Placeholder::new(
 				PlaceholderKind::Reg(source_reg), 
-				source.size
+				source.data_type
 			);
 			self.instr_mov(&source_placeholder, source);
-			self.write_text_segment(&format!("\n\tidiv {} {source_placeholder}", Self::size_2_opsize(source.size)));
+			self.write_text_segment(&format!("\n\tidiv {} {source_placeholder}", Self::size_2_opsize(source.data_type.size())));
 			self.reg_alloc_free(source_reg);
 		} else
 		{
-			self.write_text_segment(&format!("\n\tidiv {} {source}", Self::size_2_opsize(source.size)));
+			self.write_text_segment(&format!("\n\tidiv {} {source}", Self::size_2_opsize(source.data_type.size())));
 		}
 
-		if source.size != OP_BYTE
+		if source.data_type.size() != OP_BYTE
 		{
 			self.reg_alloc_free(rdx_allocated);
 		}
@@ -365,31 +365,31 @@ impl<'a> CodeGen<'a>
 	{
 		if !source.is_register()
 		{
-			let register = self.reg_alloc_allocate(source.size).unwrap();
-			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.size);
+			let register = self.reg_alloc_allocate(source.data_type.size()).unwrap();
+			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.data_type);
 			self.instr_mov(&src_placeholder, source);
 
-			self.write_text_segment(&format!("\n\tmul {} {src_placeholder}", Self::size_2_opsize(src_placeholder.size)));
+			self.write_text_segment(&format!("\n\tmul {} {src_placeholder}", Self::size_2_opsize(src_placeholder.data_type.size())));
 			self.reg_alloc_free(register);
 			return;
 		}
 
-		self.write_text_segment(&format!("\n\tmul {} {source}", Self::size_2_opsize(source.size)));
+		self.write_text_segment(&format!("\n\tmul {} {source}", Self::size_2_opsize(source.data_type.size())));
 	}
 
 	pub fn instr_div(&mut self, source: &Placeholder)
 	{
-		let rdx_allocated = Register::from_op_size(Register::RDX, source.size);
-		if source.size == OP_BYTE
+		let rdx_allocated = Register::from_op_size(Register::RDX, source.data_type.size());
+		if source.data_type.size() == OP_BYTE
 		{
-			let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), OP_BYTE);
+			let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), source.data_type);
 			self.instr_xor(&ah_placeholder, &ah_placeholder);
 		} else 
 		{
 			self.reg_alloc_allocate_forced(rdx_allocated);
 			let rdx_placeholder = Placeholder::new(
 				PlaceholderKind::Reg(rdx_allocated), 
-				source.size
+				source.data_type
 			);
 	
 			self.instr_xor(&rdx_placeholder, &rdx_placeholder);
@@ -398,18 +398,18 @@ impl<'a> CodeGen<'a>
 
 		if !source.is_register()
 		{
-			let register = self.reg_alloc_allocate(source.size).unwrap();
-			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.size);
+			let register = self.reg_alloc_allocate(source.data_type.size()).unwrap();
+			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.data_type);
 			self.instr_mov(&src_placeholder, source);
 
-			self.write_text_segment(&format!("\n\tdiv {} {src_placeholder}", Self::size_2_opsize(src_placeholder.size)));
+			self.write_text_segment(&format!("\n\tdiv {} {src_placeholder}", Self::size_2_opsize(src_placeholder.data_type.size())));
 			self.reg_alloc_free(register);
 		} else
 		{
-			self.write_text_segment(&format!("\n\tdiv {} {source}", Self::size_2_opsize(source.size)));
+			self.write_text_segment(&format!("\n\tdiv {} {source}", Self::size_2_opsize(source.data_type.size())));
 		}
 
-		if source.size != OP_BYTE
+		if source.data_type.size() != OP_BYTE
 		{
 			self.reg_alloc_free(rdx_allocated);
 		}	
@@ -417,7 +417,7 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.size)));
+		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_call(&mut self, identifier: &str)
