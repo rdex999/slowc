@@ -7,6 +7,7 @@ pub struct RegisterInfo
 {
 	pub register: Register,
 	push_count: u8,	
+	pub was_saved_before_call: bool,
 
 	// Using an option, because the register might not have lower parts (for example RDI doesnt have an high 8 bits sub-register)
 	// In the future there will also be ZMM registers
@@ -31,6 +32,7 @@ impl RegisterInfo
 
 		return Self {
 			register,
+			was_saved_before_call: false,
 			push_count: 0,
 			is_free,
 			is_l8_free,
@@ -40,7 +42,7 @@ impl RegisterInfo
 
 	pub fn is_used(&self) -> bool
 	{
-		return self.push_count != 0 || !self.is_free || !self.is_l8_free || (self.is_h8_free != None && !self.is_h8_free.unwrap());
+		return !self.is_free || !self.is_l8_free || (self.is_h8_free != None && !self.is_h8_free.unwrap());
 	}
 }
 
@@ -115,7 +117,17 @@ impl<'a> CodeGen<'a>
 		{
 			if self.registers[i].is_used()
 			{
-				self.reg_alloc_allocate_sub_reg_forced(i, self.registers[i].register);
+				self.instr_push(&Placeholder::new(
+					PlaceholderKind::Reg(self.registers[i].register), 
+					self.registers[i].register.size()
+				));
+				self.registers[i].was_saved_before_call = true;
+				self.registers[i].is_free = true;
+				self.registers[i].is_l8_free = true;
+				if self.registers[i].is_h8_free != None
+				{
+					self.registers[i].is_h8_free = Some(true);
+				}
 			}
 		}
 	}
@@ -124,9 +136,15 @@ impl<'a> CodeGen<'a>
 	{
 		for i in (0..self.registers.len()).rev()
 		{
-			if self.registers[i].is_used()
+			if self.registers[i].was_saved_before_call
 			{
-				self.reg_alloc_free_sub_reg(i, self.registers[i].register);
+				self.instr_pop(&Placeholder::new(
+					PlaceholderKind::Reg(self.registers[i].register), 
+					self.registers[i].register.size()
+				));
+
+				self.registers[i].was_saved_before_call = false;
+				self.registers[i].is_free = false;
 			}
 		}
 	}
@@ -152,7 +170,7 @@ impl<'a> CodeGen<'a>
 	{
 		let reg_info = &mut self.registers[reg_info_idx];
 
-		if !reg_info.is_free || reg_info.push_count != 0
+		if !reg_info.is_free
 		{
 			return None;
 		}
@@ -185,37 +203,9 @@ impl<'a> CodeGen<'a>
 		return Some(Register::try_from(reg_info.register as OpSize + (3 - size.trailing_zeros() as OpSize) ).unwrap())
 	}
 	
-	fn reg_alloc_get_last_sub_reg_offset(register: Register) -> OpSize 
-	{
-		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
-		return if register as OpSize >= Register::RAX as OpSize && register as OpSize <= Register::DH as OpSize { 4 } else { 3 };
-	}
-
-	// TODO: Improve this
-	fn reg_alloc_allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
-	{
-		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size())
-		{
-			return;
-		}
-	
-		self.registers[reg_info_idx].push_count += 1;
-		self.registers[reg_info_idx].is_free = true;
-		self.registers[reg_info_idx].is_l8_free = true;
-		if let Some(_) = self.registers[reg_info_idx].is_h8_free
-		{
-			self.registers[reg_info_idx].is_h8_free = Some(true);
-		}
-
-		self.instr_push(&Placeholder::new(
-			PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
-			self.registers[reg_info_idx].register.size()
-		));
-	}
-	
 	fn reg_alloc_free_sub_reg(&mut self, reg_info_idx: usize, register: Register)
 	{
-		if self.registers[reg_info_idx].push_count != 0
+		if self.registers[reg_info_idx].push_count != 0 && !self.registers[reg_info_idx].was_saved_before_call
 		{
 			self.registers[reg_info_idx].push_count -= 1;
 			self.registers[reg_info_idx].is_free = false;
@@ -225,15 +215,6 @@ impl<'a> CodeGen<'a>
 				self.registers[reg_info_idx].register.size()
 			));
 
-			// if self.registers[reg_info_idx].push_count == 0
-			// {
-			// 	self.registers[reg_info_idx].is_free = true;
-			// 	self.registers[reg_info_idx].is_l8_free = true;
-			// 	if self.registers[reg_info_idx].is_h8_free != None
-			// 	{
-			// 		self.registers[reg_info_idx].is_h8_free = Some(true);
-			// 	}
-			// }
 			return;
 		}
 		
@@ -247,6 +228,26 @@ impl<'a> CodeGen<'a>
 		}
 		reg_info.is_l8_free = true;
 		return;
+	}
+
+	fn reg_alloc_allocate_sub_reg_forced(&mut self, reg_info_idx: usize, register: Register)
+	{
+		if let Some(_) = self.reg_alloc_allocate_sub_reg(reg_info_idx, register.size())
+		{
+			return;
+		}
+
+		self.registers[reg_info_idx].push_count += 1;
+		self.instr_push(&Placeholder::new(
+			PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
+			self.registers[reg_info_idx].register.size()
+		));
+	}
+
+	fn reg_alloc_get_last_sub_reg_offset(register: Register) -> OpSize 
+	{
+		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
+		return if register as OpSize >= Register::RAX as OpSize && register as OpSize <= Register::DH as OpSize { 4 } else { 3 };
 	}
 	
 	fn reg_alloc_is_all_sub_regs_free(&self, reg_info_idx: usize) -> bool
