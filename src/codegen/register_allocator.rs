@@ -1,6 +1,8 @@
 use super::*;
 
 pub const ALLOCATABLE_REGS_COUNT: usize = Register::COUNT_FULL as usize - 3 - 1;
+const GENERAL_REGISTERS: usize = ALLOCATABLE_REGS_COUNT - 15;
+const XMM_REGS_INDEX: usize = GENERAL_REGISTERS;
 
 #[derive(Debug, Clone, Copy)]
 pub struct RegisterInfo
@@ -79,13 +81,25 @@ impl<'a> CodeGen<'a>
 	
 	pub fn reg_alloc_allocate(&mut self, data_type: Type) -> Option<Register>
 	{
-		for i in 0..self.registers.len()
+		if data_type.is_integer()
 		{
-			if let Some(allocated_register) = self.reg_alloc_allocate_sub_reg(i, data_type.size())
+			for i in 0..GENERAL_REGISTERS
 			{
-				return Some(allocated_register);
+				if let Some(allocated_register) = self.reg_alloc_allocate_sub_reg(i, data_type.size())
+				{
+					return Some(allocated_register);
+				}
 			}
-		}	
+		} else
+		{
+			for i in XMM_REGS_INDEX..self.registers.len()
+			{
+				if let Some(allocated_register) = self.reg_alloc_allocate_sub_reg(i, data_type.size())
+				{
+					return Some(allocated_register);
+				}
+			}
+		}
 		return None;
 	}
 
@@ -182,7 +196,13 @@ impl<'a> CodeGen<'a>
 		{
 			return None;
 		}
-	
+
+		if reg_info.register as u8 >= Register::XMM1 as u8 && reg_info.register as u8 <= Register::XMM15 as u8
+		{
+			reg_info.is_free = false;
+			return Some(reg_info.register);
+		}
+		
 		if size == 1
 		{
 			if reg_info.is_l8_free
@@ -254,6 +274,11 @@ impl<'a> CodeGen<'a>
 
 	fn reg_alloc_get_last_sub_reg_offset(register: Register) -> OpSize 
 	{
+		if register as u8 >= Register::XMM1 as u8 && register as u8 <= Register::XMM15 as u8
+		{
+			return 0;
+		}
+
 		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
 		return if register as OpSize >= Register::RAX as OpSize && register as OpSize <= Register::DH as OpSize { 4 } else { 3 };
 	}
@@ -261,6 +286,11 @@ impl<'a> CodeGen<'a>
 	fn reg_alloc_is_all_sub_regs_free(&self, reg_info_idx: usize) -> bool
 	{
 		let reg_info = self.registers[reg_info_idx];
+
+		if reg_info.register as u8 >= Register::XMM1 as u8 && reg_info.register as u8 <= Register::XMM15 as u8 
+		{
+			return reg_info.is_free;
+		}
 
 		if reg_info.is_h8_free != None && !reg_info.is_h8_free.unwrap()
 		{
