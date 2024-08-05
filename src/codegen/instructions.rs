@@ -163,9 +163,23 @@ impl Register
 		}
 	}
 
+	pub fn is_general(&self) -> bool
+	{
+		return *self as u8 >= Register::RAX as u8 && *self as u8 <= Register::R15B as u8;
+	}
+
 	pub fn from_op_size(base_register: Register, op_size: OpSize) -> Self
 	{
 		return Register::try_from(base_register as OpSize + 4 - (op_size.trailing_zeros() as OpSize + 1)).unwrap();
+	}
+
+	pub fn default_for_type(data_type: Type) -> Self
+	{
+		if data_type.is_integer()
+		{
+			return Register::RAX;
+		}
+		return Register::XMM0;
 	}
 }
 
@@ -266,34 +280,81 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_mov(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
+		if destination == source
+		{
+			return;
+		}
+
 		let mut source_placeholder = *source;
 		if let PlaceholderKind::Location(_) = destination.kind
 		{
 			if let PlaceholderKind::Location(_) = source.kind
 			{
 				source_placeholder = Placeholder::new(
-					PlaceholderKind::Reg(Register::from_op_size(Register::RAX, source.data_type.size())), 
+					PlaceholderKind::Reg(Register::from_op_size(Register::default_for_type(source.data_type), source.data_type.size())), 
 					source.data_type
 				);
 				self.instr_mov(&source_placeholder, source);
 			}
 		}
 
-		if destination == source
+		if destination.data_type.is_integer()
 		{
+			self.write_text_segment(&format!("\n\tmov {} {destination}, {source_placeholder}", Self::size_2_opsize(destination.data_type.size())));
 			return;
 		}
-
-		self.write_text_segment(&format!("\n\tmov {} {destination}, {}", Self::size_2_opsize(destination.data_type.size()), source_placeholder));
+		if destination.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\tmovsd {destination}, {source_placeholder}"));
+		}
+		// TODO: Add F32 data type here
 	}
 
 	pub fn instr_push(&mut self, source: &Placeholder)
 	{
+		if let PlaceholderKind::Reg(register) = source.kind
+		{
+			if register.is_general()
+			{
+				self.write_text_segment(&format!("\n\tpush {} {source}", Self::size_2_opsize(source.data_type.size())));
+				return;
+			}
+
+			self.instr_sub(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Constant(source.data_type.size() as u64), Type::U64)
+			);
+
+			self.instr_mov(
+				&Placeholder::new(PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, 0)), source.data_type), 
+				source
+			);
+			return;
+		}
 		self.write_text_segment(&format!("\n\tpush {} {source}", Self::size_2_opsize(source.data_type.size())));
 	}
 
 	pub fn instr_pop(&mut self, destination: &Placeholder)
 	{
+		if let PlaceholderKind::Reg(register) = destination.kind
+		{
+			if register.is_general()
+			{
+				self.write_text_segment(&format!("\n\tpop {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+				return;
+			}
+
+			self.instr_mov(
+				destination,
+				&Placeholder::new(PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, 0)), destination.data_type)
+			);
+
+			self.instr_add(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Constant(destination.data_type.size() as u64), Type::U64)
+			);
+			return;
+		}
 		self.write_text_segment(&format!("\n\tpop {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
@@ -304,12 +365,26 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_add(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		} else if destination.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\taddsd {destination}, {source}"));
+		}
+		// TODO: Add F32 data type here
 	}
 
 	pub fn instr_sub(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		} else if destination.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\tsubsd {destination}, {source}"));
+		}
+		// TODO: Add F32 data type here
 	}
 
 	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
