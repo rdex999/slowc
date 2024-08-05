@@ -223,6 +223,17 @@ impl Placeholder
 			_ => false,
 		};
 	}
+
+	// If the placeholder is not a register false is returned, if its a register, then return placeholder.reg == register
+	pub fn is_register_eq(&self, register: Register) -> bool
+	{
+		if let PlaceholderKind::Reg(reg) = self.kind
+		{
+			return reg == register;
+		}
+
+		return false;
+	}
 }
 
 impl PartialEq for Placeholder
@@ -387,39 +398,6 @@ impl<'a> CodeGen<'a>
 		// TODO: Add F32 data type here
 	}
 
-	pub fn instr_imul(&mut self, destination: &Placeholder, source: &Placeholder)
-	{
-		if source.data_type.size() != OP_BYTE
-		{
-			self.write_text_segment(&format!("\n\timul {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-			return;
-		}
-
-		if let PlaceholderKind::Reg(register) = destination.kind
-		{
-			if register != Register::AL
-			{
-				self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), source.data_type), &destination);
-			}
-		} else
-		{
-			self.instr_mov(&Placeholder::new(PlaceholderKind::Reg(Register::AL), source.data_type), &destination);
-		}
-
-		if source.is_constant()
-		{
-			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::R15B), source.data_type);
-			self.reg_alloc_allocate_forced(Register::R15B);
-			self.instr_mov(&src_placeholder, &source);
-			self.write_text_segment(&format!("\n\timul {} {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
-			self.reg_alloc_free(Register::R15B);
-		} else
-		{
-			self.write_text_segment(&format!("\n\timul {} {source}", Self::size_2_opsize(destination.data_type.size())));
-		}
-
-	}
-
 	pub fn instr_idiv(&mut self, source: &Placeholder)
 	{
 		let rdx_allocated = Register::from_op_size(Register::RDX, source.data_type.size());
@@ -458,20 +436,100 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	pub fn instr_mul(&mut self, source: &Placeholder)
+	pub fn instr_mul(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		if !source.is_register()
+		let mut allocated_register = None;
+		let mut src_placeholder = *source;
+		if source.is_constant()
 		{
-			let register = self.reg_alloc_allocate(source.data_type).unwrap();
-			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.data_type);
-			self.instr_mov(&src_placeholder, source);
-
-			self.write_text_segment(&format!("\n\tmul {} {src_placeholder}", Self::size_2_opsize(src_placeholder.data_type.size())));
-			self.reg_alloc_free(register);
-			return;
+			allocated_register = self.reg_alloc_allocate(source.data_type);
+			src_placeholder = Placeholder::new(PlaceholderKind::Reg(allocated_register.unwrap()), src_placeholder.data_type);
+			self.instr_mov(&src_placeholder, &source);
 		}
 
-		self.write_text_segment(&format!("\n\tmul {} {source}", Self::size_2_opsize(source.data_type.size())));
+		if destination.data_type.is_integer()
+		{
+			if destination.data_type.is_signed()
+			{
+				if destination.data_type.size() == OP_BYTE
+				{
+					if !destination.is_register_eq(Register::AL)	
+					{
+						self.instr_mov(
+							&Placeholder::new(PlaceholderKind::Reg(Register::AL), destination.data_type), 
+							destination
+						);
+					}
+					self.write_text_segment(&format!("\n\timul {} {src_placeholder}", Self::size_2_opsize(src_placeholder.data_type.size())));
+
+					let al_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AL), destination.data_type);
+					if *destination != al_placeholder
+					{
+						self.instr_mov(&destination, &al_placeholder);
+					}
+				} else		/* If its not a byte multiplication */
+				{
+					self.write_text_segment(&format!("\n\timul {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+				}
+			} else 		/* If doing an unsigned multiplication */
+			{
+				let rax = Register::from_op_size(Register::RAX, destination.data_type.size());
+				if !destination.is_register_eq(rax)	
+				{
+					self.instr_mov(
+						&Placeholder::new(PlaceholderKind::Reg(rax), destination.data_type), 
+						destination
+					);
+				}
+				if !src_placeholder.is_register()
+				{
+					allocated_register = self.reg_alloc_allocate(source.data_type);
+					self.instr_mov(&src_placeholder, &source);
+				}
+
+				self.write_text_segment(&format!("\n\tmul {} {src_placeholder}", Self::size_2_opsize(src_placeholder.data_type.size())));
+
+				if !destination.is_register_eq(rax)	
+				{
+					self.instr_mov(
+						destination,
+						&Placeholder::new(PlaceholderKind::Reg(rax), destination.data_type)
+					);
+				}
+			}
+		} else		/* If doing floating point multiplication */
+		{
+			let mut dst_placeholder = *destination;
+			let mut allocated_dst_reg = None;
+
+			if !destination.is_register()
+			{
+				allocated_dst_reg = self.reg_alloc_allocate(dst_placeholder.data_type);
+				dst_placeholder = Placeholder::new(PlaceholderKind::Reg(allocated_dst_reg.unwrap()), dst_placeholder.data_type);
+				self.instr_mov(&dst_placeholder, destination);
+			}
+
+			if destination.data_type == Type::F64
+			{
+				self.write_text_segment(&format!("\n\tmulsd {dst_placeholder}, {src_placeholder}"));
+			}
+			// TODO: Add f32 data type here
+
+			if *destination != dst_placeholder
+			{
+				self.instr_mov(destination, &dst_placeholder);
+			}
+
+			if let Some(allocated_dst_reg) = allocated_dst_reg
+			{
+				self.reg_alloc_free(allocated_dst_reg);
+			}
+		}
+
+		if let Some(allocated_register) = allocated_register
+		{
+			self.reg_alloc_free(allocated_register);
+		}
 	}
 
 	pub fn instr_div(&mut self, source: &Placeholder)

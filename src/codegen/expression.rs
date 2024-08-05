@@ -64,13 +64,7 @@ impl<'a> CodeGen<'a>
 			BinExprOperator::Sub => self.instr_sub(&destination, rhs),
 			BinExprOperator::Mul =>
 			{
-				if signed
-				{
-					self.instr_imul(&destination, rhs);
-				} else
-				{
-					self.instr_mul(rhs);
-				}
+				self.instr_mul(&destination, rhs);
 			},
 			BinExprOperator::Div =>
 			{

@@ -1,8 +1,9 @@
 #intext to_include.hslw
 
-func global main(argc i32) -> u32
+func global main(argc i32) -> i8
 {
-	let result u32 = (64 + 0) / foo(1, 1, 1, 1, 1, 1, 2, 2);
+	let n i8 = 2;
+	let result i8 = (100 / 4) * n;
 
 	// Print "abc\n", just having some fun with the C standard library
 	putchar(97);
