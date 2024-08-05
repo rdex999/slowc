@@ -95,7 +95,7 @@ impl<'a> CodeGen<'a>
 	fn gen_assign_stmt(&mut self, assign_data: &VarUpdateInfo, locals: &Vec<Variable>)
 	{
 		let source = self.gen_expression(&assign_data.value, locals);
-		let	src_reg = self.reg_alloc_allocate(source.data_type.size()).unwrap();
+		let	src_reg = self.reg_alloc_allocate(source.data_type).unwrap();
 		let src_placeholder = Placeholder::new(
 			PlaceholderKind::Reg(src_reg), 
 			source.data_type

@@ -69,11 +69,11 @@ impl<'a> CodeGen<'a>
     	return registers;
 	}
 	
-	pub fn reg_alloc_allocate(&mut self, size: OpSize) -> Option<Register>
+	pub fn reg_alloc_allocate(&mut self, data_type: Type) -> Option<Register>
 	{
 		for i in 0..self.registers.len()
 		{
-			if let Some(allocated_register) = self.reg_alloc_allocate_sub_reg(i, size)
+			if let Some(allocated_register) = self.reg_alloc_allocate_sub_reg(i, data_type.size())
 			{
 				return Some(allocated_register);
 			}

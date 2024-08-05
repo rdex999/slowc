@@ -342,7 +342,7 @@ impl<'a> CodeGen<'a>
 
 		if source.is_constant()
 		{
-			let source_reg = self.reg_alloc_allocate(source.data_type.size()).unwrap();
+			let source_reg = self.reg_alloc_allocate(source.data_type).unwrap();
 			let source_placeholder = Placeholder::new(
 				PlaceholderKind::Reg(source_reg), 
 				source.data_type
@@ -365,7 +365,7 @@ impl<'a> CodeGen<'a>
 	{
 		if !source.is_register()
 		{
-			let register = self.reg_alloc_allocate(source.data_type.size()).unwrap();
+			let register = self.reg_alloc_allocate(source.data_type).unwrap();
 			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.data_type);
 			self.instr_mov(&src_placeholder, source);
 
@@ -398,7 +398,7 @@ impl<'a> CodeGen<'a>
 
 		if !source.is_register()
 		{
-			let register = self.reg_alloc_allocate(source.data_type.size()).unwrap();
+			let register = self.reg_alloc_allocate(source.data_type).unwrap();
 			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.data_type);
 			self.instr_mov(&src_placeholder, source);
 

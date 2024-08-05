@@ -104,7 +104,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(op) =>
 					{
 						let rhs = self.gen_bin_expr_recurse(&op, locals, signed);
-						let register = self.reg_alloc_allocate(rhs.data_type.size()).unwrap();
+						let register = self.reg_alloc_allocate(rhs.data_type).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.data_type);
 						self.instr_mov(
 							&rhs_placeholder, 
@@ -123,7 +123,7 @@ impl<'a> CodeGen<'a>
 			BinExprPart::Operation(op) =>
 			{
 				let lhs = self.gen_bin_expr_recurse(&op, locals, signed);
-				let register = self.reg_alloc_allocate(lhs.data_type.size()).unwrap();
+				let register = self.reg_alloc_allocate(lhs.data_type).unwrap();
 				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.data_type);
 				let result;
 				self.instr_mov(
@@ -136,7 +136,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Val(value) => 
 					{
 						let rhs = self.gen_value(value, locals);
-						let rhs_reg = self.reg_alloc_allocate(rhs.data_type.size()).unwrap();
+						let rhs_reg = self.reg_alloc_allocate(rhs.data_type).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.data_type);
 						self.instr_mov(&rhs_placeholder, &rhs);
 
@@ -147,7 +147,7 @@ impl<'a> CodeGen<'a>
 					BinExprPart::Operation(rhs_op) => 
 					{
 						let rhs = self.gen_bin_expr_recurse(rhs_op, locals, signed);
-						let rhs_reg = self.reg_alloc_allocate(rhs.data_type.size()).unwrap();
+						let rhs_reg = self.reg_alloc_allocate(rhs.data_type).unwrap();
 						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.data_type);
 						self.instr_mov(&rhs_placeholder, &rhs);
 						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder, signed);
