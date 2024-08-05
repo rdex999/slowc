@@ -2,7 +2,7 @@
 
 func global main(argc i32) -> u32
 {
-	let result u32 = (2 + 6) * foo(1, 1, 1, 1, 1, 1, 418, 2) / 4;
+	let result u32 = (2 + 0) * foo(1, 1, 1, 1, 1, 1, 418, 2) / 4;
 
 	// Print "abc\n", just having some fun with the C standard library
 	putchar(97);

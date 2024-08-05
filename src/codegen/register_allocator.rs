@@ -40,7 +40,7 @@ impl RegisterInfo
 
 	pub fn is_used(&self) -> bool
 	{
-		return !self.is_free || !self.is_l8_free || (self.is_h8_free != None && !self.is_h8_free.unwrap());
+		return self.push_count != 0 || !self.is_free || !self.is_l8_free || (self.is_h8_free != None && !self.is_h8_free.unwrap());
 	}
 }
 
@@ -109,34 +109,24 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	// TODO: Improve this
 	pub fn reg_alloc_save_used(&mut self)
 	{
 		for i in 0..self.registers.len()
 		{
 			if self.registers[i].is_used()
 			{
-				self.instr_push(&Placeholder::new(
-					PlaceholderKind::Reg(self.registers[i].register), 
-					self.registers[i].register.size()
-				));
-				self.registers[i].push_count += 1;
+				self.reg_alloc_allocate_sub_reg_forced(i, self.registers[i].register);
 			}
 		}
 	}
 
-	// TODO: Improve this
 	pub fn reg_alloc_free_used(&mut self)
 	{
 		for i in (0..self.registers.len()).rev()
 		{
 			if self.registers[i].is_used()
 			{
-				self.instr_pop(&Placeholder::new(
-					PlaceholderKind::Reg(self.registers[i].register), 
-					self.registers[i].register.size()
-				));
-				self.registers[i].push_count -= 1;
+				self.reg_alloc_free_sub_reg(i, self.registers[i].register);
 			}
 		}
 	}
@@ -195,7 +185,7 @@ impl<'a> CodeGen<'a>
 		return Some(Register::try_from(reg_info.register as OpSize + (3 - size.trailing_zeros() as OpSize) ).unwrap())
 	}
 	
-	fn reg_alloc_get_last_sub_reg_offset(register: Register) ->OpSize 
+	fn reg_alloc_get_last_sub_reg_offset(register: Register) -> OpSize 
 	{
 		// If its a register that has an high 8 bits sub-register, the offset is 4, and if not, then the offset is 3
 		return if register as OpSize >= Register::RAX as OpSize && register as OpSize <= Register::DH as OpSize { 4 } else { 3 };
@@ -210,6 +200,12 @@ impl<'a> CodeGen<'a>
 		}
 	
 		self.registers[reg_info_idx].push_count += 1;
+		self.registers[reg_info_idx].is_free = true;
+		self.registers[reg_info_idx].is_l8_free = true;
+		if let Some(_) = self.registers[reg_info_idx].is_h8_free
+		{
+			self.registers[reg_info_idx].is_h8_free = Some(true);
+		}
 
 		self.instr_push(&Placeholder::new(
 			PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
@@ -222,6 +218,8 @@ impl<'a> CodeGen<'a>
 		if self.registers[reg_info_idx].push_count != 0
 		{
 			self.registers[reg_info_idx].push_count -= 1;
+			self.registers[reg_info_idx].is_free = false;
+
 			self.instr_pop(&Placeholder::new(
 				PlaceholderKind::Reg(self.registers[reg_info_idx].register), 
 				self.registers[reg_info_idx].register.size()
