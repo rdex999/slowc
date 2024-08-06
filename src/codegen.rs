@@ -123,22 +123,22 @@ impl<'a> CodeGen<'a>
 		}
 
 		let expr_placeholder = self.gen_expression(expr, locals);
-		let rax = Register::from_op_size(Register::RAX, expr_placeholder.data_type.size());
+		let return_register = Register::from_op_size(Register::default_for_type(expr_placeholder.data_type), expr_placeholder.data_type.size());
 
 		// I hate Rust
 		if let PlaceholderKind::Reg(reg) = expr_placeholder.kind
 		{
-			if reg != rax
+			if reg != return_register 
 			{
 				self.instr_mov(
-					&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.data_type), 
+					&Placeholder::new(PlaceholderKind::Reg(return_register), expr_placeholder.data_type), 
 					&expr_placeholder
 				);
 			}
 		} else 
 		{
 			self.instr_mov(
-				&Placeholder::new(PlaceholderKind::Reg(rax), expr_placeholder.data_type), 
+				&Placeholder::new(PlaceholderKind::Reg(return_register), expr_placeholder.data_type), 
 				&expr_placeholder
 			);
 		}

@@ -90,14 +90,17 @@ impl<'a> CodeGen<'a>
 
 		// rdi, rsi, rdx, rcx, r8, r9,
 		let mut allocated_registers: Vec<Register> = Vec::with_capacity(6);
-
 		let mut integer_arguments: u8 = 0;
+		let mut float_arguments: u8 = 0;
 		let mut stack_position: u8 = 0;
+
 		for (i, argument) in function_call_info.arguments.iter().enumerate()
 		{
 			let placeholder;
 			let argument = self.gen_expression(argument, locals);
 			let arg_data = function.locals[i];
+			// println!("{}\n\n", self.text_segment);
+
 			if arg_data.data_type.is_integer() && integer_arguments < 6
 			{
 				let register = Self::int_argument_2_register_sys_v_abi_x86_64(integer_arguments, arg_data.data_type.size());
@@ -105,8 +108,14 @@ impl<'a> CodeGen<'a>
 				allocated_registers.push(register);
 				placeholder = Placeholder::new(PlaceholderKind::Reg(register), arg_data.data_type);
 				integer_arguments += 1;
+			} else if !arg_data.data_type.is_integer() && float_arguments < 15
+			{
+				let register = Self::float_argument_2_register_sys_v_abi_x86_64(float_arguments);
+				self.reg_alloc_allocate_forced(register);
+				allocated_registers.push(register);
+				placeholder = Placeholder::new(PlaceholderKind::Reg(register), arg_data.data_type);
+				float_arguments += 1;
 			} else
-			// When adding floats in the future, add em here
 			{
 				placeholder = Placeholder::new(
 					PlaceholderKind::Location(
@@ -122,6 +131,7 @@ impl<'a> CodeGen<'a>
 			}
 
 			self.instr_mov(&placeholder, &argument);
+			// println!("{}\n\n", self.text_segment);
 		}
 
 		self.instr_call(&function.identifier);
@@ -142,7 +152,9 @@ impl<'a> CodeGen<'a>
 
 	fn store_parameters_sys_v_abi_x86_64(&mut self, function: &Function)
 	{
-		let mut integer_arguments: u8 = 0;
+		let mut integer_parameters: u8 = 0;
+		let mut float_parameters: u8 = 0;
+
 		for parameter in &function.locals
 		{
 			if parameter.attributes & attribute::FUNCTION_PARAMETER == 0
@@ -150,23 +162,33 @@ impl<'a> CodeGen<'a>
 				break;
 			}
 
-			if parameter.data_type.is_integer() && integer_arguments < 6
+			let source;
+			let destination = Placeholder::new(
+				PlaceholderKind::Location(
+					LocationExpr::new(
+						LocationExprPart::Reg(Register::RBP), 
+						LocationExprPart::Offset(parameter.location),
+						None, 
+					)
+				), 
+				parameter.data_type
+			);
+			
+			if parameter.data_type.is_integer() && integer_parameters < 6
 			{
-				let register = Self::int_argument_2_register_sys_v_abi_x86_64(integer_arguments, parameter.data_type.size());
-				let source = Placeholder::new(PlaceholderKind::Reg(register), parameter.data_type);
-				let destination = Placeholder::new(
-					PlaceholderKind::Location(
-						LocationExpr::new(
-							LocationExprPart::Reg(Register::RBP), 
-							LocationExprPart::Offset(parameter.location),
-							None, 
-						)
-					), 
-					parameter.data_type
-				);
-				self.instr_mov(&destination, &source);
-				integer_arguments += 1;
+				let register = Self::int_argument_2_register_sys_v_abi_x86_64(integer_parameters, parameter.data_type.size());
+				source = Placeholder::new(PlaceholderKind::Reg(register), parameter.data_type);
+				integer_parameters += 1;
+			} else if !parameter.data_type.is_integer() && float_parameters < 15
+			{
+				let register = Self::float_argument_2_register_sys_v_abi_x86_64(float_parameters);
+				source = Placeholder::new(PlaceholderKind::Reg(register), parameter.data_type);
+				float_parameters += 1;
+			} else
+			{
+				break;
 			}
+			self.instr_mov(&destination, &source);
 		}
 	}
 
@@ -184,5 +206,10 @@ impl<'a> CodeGen<'a>
 			},
 			size
 		);
+	}
+
+	fn float_argument_2_register_sys_v_abi_x86_64(argument: u8) -> Register
+	{
+		return Register::try_from(Register::XMM1 as u8 + argument).unwrap();
 	}
 }

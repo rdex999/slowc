@@ -86,6 +86,9 @@ impl LocalVariables
 		// Count parameters that were passed in rdi, rsi, rdx, rcx, r8, r9
 		let mut integer_parameters: u8 = 0;
 
+		// Count parameters that were passed in xmm1-15
+		let mut float_parameters: u8 = 0;
+
 		for variable in variables.iter_mut()
 		{
 			// If the current variable is not a function parameter
@@ -110,7 +113,16 @@ impl LocalVariables
 				}
 			} else
 			{
-				todo!("Add floating point shit");
+				if float_parameters < 15		/* XMM1-15 (15 registers) */
+				{
+					stack_var_position -= variable.data_type.size() as isize;
+					variable.location = stack_var_position;
+					float_parameters += 1;
+				} else
+				{
+					variable.location = stack_parameter_position as isize;
+					stack_parameter_position += variable.data_type.size() as usize;
+				}
 			}
 		}
 

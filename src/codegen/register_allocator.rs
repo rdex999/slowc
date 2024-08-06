@@ -171,7 +171,7 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	fn reg_alloc_register_2_index(register: Register) -> usize
+	pub fn reg_alloc_register_2_index(register: Register) -> usize
 	{
 		let reg_int = register as usize;
 		if reg_int >= Register::RAX as usize && reg_int <= Register::DH as usize
@@ -182,8 +182,12 @@ impl<'a> CodeGen<'a>
 		{
 			return (reg_int - (4 * 5)) / 4 + (4 - 1);
 		}
+		if reg_int < Register::XMM1 as usize
+		{
+			return (reg_int - (4 * 5)) / 4 + 4 - 3;
+		}
 
-		return (reg_int - (4 * 5)) / 4 + (4 - 1) - 2;
+		return reg_int - 16 * 4 + 4 + 1 + 3;
 	}
 
 

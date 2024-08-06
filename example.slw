@@ -2,8 +2,7 @@
 
 func global main(argv u64, argc u32) -> u64 
 {
-	let floating_brain f64 = 3.0 + 0.42 * 2.0;
-	floating_brain = (floating_brain + (10.0 - floating_brain)) / 2.0;
+	let floating_brain f64 = foo(5.5, 2.25 * 2.0);
 
 	// Print "abc\n", just having some fun with the C standard library
 	putchar(97);
@@ -11,6 +10,5 @@ func global main(argv u64, argc u32) -> u64
 	putchar(99);
 	putchar(10);
 
-	let exit_code u64 = foo(418, (0 - 2) + 4) / 2;
-	return exit_code;
+	return 0;
 }
