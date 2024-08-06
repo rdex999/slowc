@@ -21,6 +21,37 @@ pub enum PlaceholderKind
 	Integer(u64),
 }
 
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+pub struct Lable
+{
+	index: usize,
+	kind: LableKind
+}
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+#[allow(dead_code)]
+pub enum LableKind
+{
+	DataSeg,
+	TextSeg,
+}
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+pub struct LocationExpr
+{
+	base: LocationExprPart,
+	offset: LocationExprPart,
+	offset_multiplier: Option<usize>,
+}
+
+#[derive(Clone, Copy, PartialEq, PartialOrd)]
+pub enum LocationExprPart
+{
+	Reg(Register),
+	Offset(isize),
+	Labl(Lable),
+}
+
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
 // For getting the amount of values in an enum
 #[allow(dead_code)]
@@ -64,13 +95,6 @@ pub enum Register
 	XMM15,
 }
 
-#[derive(Clone, Copy, PartialEq, PartialOrd)]
-pub struct LocationExpr
-{
-	base: Register,
-	base_multiplier: Option<usize>,
-	offset: isize,
-}
 
 impl std::fmt::Display for Placeholder
 {
@@ -98,12 +122,39 @@ impl std::fmt::Display for LocationExpr
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
 	{
-		if let Some(multiplier) = self.base_multiplier
+		let _ = write!(f, "[{} + {}", self.base, self.offset);
+		if let Some(multiplier) = self.offset_multiplier
 		{
-			let _ = write!(f, "[{} * {multiplier} + {}]", self.base, self.offset);
-		} else
+			let _ = write!(f, " * {multiplier}");
+		}
+		let _ = write!(f, "]");
+		return Ok(());
+	}
+}
+
+impl std::fmt::Display for LocationExprPart
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+	{
+		match self
 		{
-			let _ = write!(f, "[{} + {}]", self.base, self.offset);
+			LocationExprPart::Reg(register) 	=> { let _ = write!(f, "{register}"); },
+			LocationExprPart::Offset(offset) 	=> { let _ = write!(f, "{offset}"); },
+			LocationExprPart::Labl(lable) 		=> { let _ = write!(f, "{lable}"); },
+		}
+
+		return Ok(());
+	}
+}
+
+impl std::fmt::Display for Lable
+{
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
+	{
+		match self.kind
+		{
+			LableKind::TextSeg => { let _ = write!(f, "LT{}", self.index); },
+			LableKind::DataSeg => { let _ = write!(f, "LD{}", self.index); },
 		}
 
 		return Ok(());
@@ -112,12 +163,23 @@ impl std::fmt::Display for LocationExpr
 
 impl LocationExpr
 {
-	pub fn new(base: Register, base_multiplier: Option<usize>, offset: isize) -> Self
+	pub fn new(base: LocationExprPart, offset: LocationExprPart, offset_multiplier: Option<usize>) -> Self
 	{
 		return Self {
 			base,
-			base_multiplier,
 			offset,
+			offset_multiplier,
+		};
+	}
+}
+
+impl Lable
+{
+	pub fn new(index: usize, kind: LableKind) -> Self
+	{
+		return Self {
+			index,
+			kind
 		};
 	}
 }
@@ -337,7 +399,11 @@ impl<'a> CodeGen<'a>
 			);
 
 			self.instr_mov(
-				&Placeholder::new(PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, 0)), source.data_type), 
+				&Placeholder::new(PlaceholderKind::Location(LocationExpr::new(
+					LocationExprPart::Reg(Register::RSP),
+					LocationExprPart::Offset(0),
+					None,
+					)), source.data_type), 
 				source
 			);
 			return;
@@ -357,7 +423,11 @@ impl<'a> CodeGen<'a>
 
 			self.instr_mov(
 				destination,
-				&Placeholder::new(PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, 0)), destination.data_type)
+				&Placeholder::new(PlaceholderKind::Location(LocationExpr::new(
+					LocationExprPart::Reg(Register::RSP),
+					LocationExprPart::Offset(0),
+					None
+					)), destination.data_type)
 			);
 
 			self.instr_add(

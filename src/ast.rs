@@ -223,8 +223,9 @@ impl Type
 	{
 		return match self
 		{
-			Type::I8  | Type::U8 | Type::I16 | Type::U16 | 
-			Type::I32 | Type::U32 | Type::I64 | Type::U64 => true,
+			Type::I8  | Type::U8  | Type::I16 | Type::U16 | 
+			Type::I32 | Type::U32 | Type::I64 | Type::U64 |
+			Type::F64 => true,
 			_ => false,
 		}
 	}
@@ -242,6 +243,7 @@ impl Type
 			TokenKind::U32 	=> return Some(Type::U32),
 			TokenKind::I64 	=> return Some(Type::I64),
 			TokenKind::U64 	=> return Some(Type::U64),
+			TokenKind::F64 	=> return Some(Type::F64),
 			_ 				=> return None
 		};
 	}

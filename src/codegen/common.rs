@@ -34,18 +34,32 @@ impl<'a> CodeGen<'a>
 		self.write_text_segment(&format!("\n{lable}:"));
 	}
 
-	// pub fn decl_var_data_seg(&mut self, value: &Value) -> Placeholder
-	// {
-	// 	let lable = self.generate_data_seg_lable();
+	pub fn decl_var_data_seg(&mut self, value: &Value) -> Lable
+	{
+		let lable = self.generate_data_seg_lable();
+		match value
+		{
+			Value::I8(number) => self.write_data_segment(&format!("\n\t{lable}: db {number}")),
+			Value::U8(number) => self.write_data_segment(&format!("\n\t{lable}: db {number}")),
+			Value::I16(number) => self.write_data_segment(&format!("\n\t{lable}: dw {number}")),
+			Value::U16(number) => self.write_data_segment(&format!("\n\t{lable}: dw {number}")),
+			Value::I32(number) => self.write_data_segment(&format!("\n\t{lable}: dd {number}")),
+			Value::U32(number) => self.write_data_segment(&format!("\n\t{lable}: dd {number}")),
+			Value::I64(number) => self.write_data_segment(&format!("\n\t{lable}: dq {number}")),
+			Value::U64(number) => self.write_data_segment(&format!("\n\t{lable}: dq {number}")),
+			Value::F64(number) => self.write_data_segment(&format!("\n\t{lable}: dq {:?}", number)),
+			_ => panic!("Dev error! decl_var_data_seg called with a value that is not constant."),
+		}
 
-	// }
+		return lable;
+	}
 
-	// pub fn generate_data_seg_lable(&mut self) -> String
-	// {
-	// 	let count = self.data_seg_var_count;
-	// 	self.data_seg_var_count += 1;
-	// 	return format!("data_seg_{}", count);
-	// }
+	pub fn generate_data_seg_lable(&mut self) -> Lable
+	{
+		let index = self.data_seg_var_index;
+		self.data_seg_var_index += 1;
+		return Lable::new(index, LableKind::DataSeg);
+	}
 
 	// Returns the size of a value, in bytes
 	pub fn _value_type(&self, value: &Value, locals: &Vec<Variable>) -> Type

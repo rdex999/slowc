@@ -70,7 +70,7 @@ impl<'a> CodeGen<'a>
 		} else 
 		{ 
 			return Some(Placeholder::new(
-				PlaceholderKind::Reg(Register::from_op_size(Register::RAX, function.return_type.size())), 
+				PlaceholderKind::Reg(Register::from_op_size(Register::default_for_type(function.return_type), function.return_type.size())), 
 				function.return_type	
 			));
 		}
@@ -109,7 +109,13 @@ impl<'a> CodeGen<'a>
 			// When adding floats in the future, add em here
 			{
 				placeholder = Placeholder::new(
-					PlaceholderKind::Location(LocationExpr::new(Register::RSP, None, stack_position as isize)), 
+					PlaceholderKind::Location(
+						LocationExpr::new(
+							LocationExprPart::Reg(Register::RSP),
+							LocationExprPart::Offset(stack_position as isize), 
+							None
+						)
+					), 
 					arg_data.data_type
 				);
 				stack_position += arg_data.data_type.size();
@@ -149,7 +155,13 @@ impl<'a> CodeGen<'a>
 				let register = Self::int_argument_2_register_sys_v_abi_x86_64(integer_arguments, parameter.data_type.size());
 				let source = Placeholder::new(PlaceholderKind::Reg(register), parameter.data_type);
 				let destination = Placeholder::new(
-					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, parameter.location)), 
+					PlaceholderKind::Location(
+						LocationExpr::new(
+							LocationExprPart::Reg(Register::RBP), 
+							LocationExprPart::Offset(parameter.location),
+							None, 
+						)
+					), 
 					parameter.data_type
 				);
 				self.instr_mov(&destination, &source);

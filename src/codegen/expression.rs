@@ -18,7 +18,11 @@ impl<'a> CodeGen<'a>
 			{
 				let variable = locals[*variable_index as usize];
 				return Placeholder::new(
-					PlaceholderKind::Location(LocationExpr::new(Register::RBP, None, variable.location)), 
+					PlaceholderKind::Location(LocationExpr::new(
+						LocationExprPart::Reg(Register::RBP),
+						LocationExprPart::Offset(variable.location), 
+						None,
+					)), 
 					variable.data_type
 				);
 			}, 
@@ -30,17 +34,27 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I8(number) 									=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I8),
-			Value::U8(number) 									=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U8),
-			Value::I16(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I16),
-			Value::U16(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U16),
-			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I32),
-			Value::U32(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U32),
-			Value::I64(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I64),
-			Value::U64(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U64),
-			Value::F64(number) 								=> 
+			Value::I8(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I8),
+			Value::U8(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U8),
+			Value::I16(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I16),
+			Value::U16(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U16),
+			Value::I32(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I32),
+			Value::U32(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U32),
+			Value::I64(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I64),
+			Value::U64(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U64),
+			Value::F64(_) 				=> 
 			{
-				todo!();
+				let lable = self.decl_var_data_seg(value);
+				Placeholder::new(
+					PlaceholderKind::Location(
+						LocationExpr::new(
+							LocationExprPart::Labl(lable), 
+							LocationExprPart::Offset(0), 
+							None
+						),
+					),
+					Type::F64
+				)
 			}
 			Value::Var(_) 											=> self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
@@ -59,8 +73,8 @@ impl<'a> CodeGen<'a>
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder) -> Placeholder 
 	{
 		// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
-		let rax = Register::from_op_size(Register::RAX, lhs.data_type.size());
-		let destination = Placeholder::new(PlaceholderKind::Reg(rax), lhs.data_type);
+		let dst_register = Register::from_op_size(Register::default_for_type(lhs.data_type), lhs.data_type.size());
+		let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
 		self.instr_mov(&destination, lhs);
 
 		match operator {
@@ -75,7 +89,7 @@ impl<'a> CodeGen<'a>
 				self.instr_div(&destination, rhs);
 			},
 		}
-		return Placeholder::new(PlaceholderKind::Reg(rax), lhs.data_type);
+		return destination;
 	}
 
 	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>) -> Placeholder

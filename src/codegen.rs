@@ -19,7 +19,7 @@ pub struct CodeGen<'a>
 	data_segment: String,
 	text_segment: String,
 
-	// data_seg_var_count: usize
+	data_seg_var_index: usize
 }
 
 impl<'a> CodeGen<'a>
@@ -37,7 +37,7 @@ impl<'a> CodeGen<'a>
 			attribute_segment,
 			data_segment,
 			text_segment,
-			// data_seg_var_count: 0
+			data_seg_var_index: 0
 		};
 	}
 	

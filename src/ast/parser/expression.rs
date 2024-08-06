@@ -30,21 +30,40 @@ impl<'a> Parser<'a>
 	
 				if let Some(data_type) = data_type
 				{
-					match data_type {
-						Type::I8  => return Some(Value::I8(value as i8)),
-						Type::U8  => return Some(Value::U8(value as u8)),
-						Type::I16 => return Some(Value::I16(value as i16)),
-						Type::U16 => return Some(Value::U16(value as u16)),
-						Type::I32 => return Some(Value::I32(value as i32)),
-						Type::U32 => return Some(Value::U32(value as u32)),
-						Type::I64 => return Some(Value::I64(value)),
-						Type::U64 => return Some(Value::U64(value as u64)),
+					return match data_type {
+						Type::I8  => Some(Value::I8(value as i8)),
+						Type::U8  => Some(Value::U8(value as u8)),
+						Type::I16 => Some(Value::I16(value as i16)),
+						Type::U16 => Some(Value::U16(value as u16)),
+						Type::I32 => Some(Value::I32(value as i32)),
+						Type::U32 => Some(Value::U32(value as u32)),
+						Type::I64 => Some(Value::I64(value)),
+						Type::U64 => Some(Value::U64(value as u64)),
 	
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
 					}
 				}
 				return Some(Value::I32(value as i32));
 			},
+
+			TokenKind::FloatLit(value) =>
+			{
+				self.advance_token();
+				if is_lvalue
+				{
+					print_errln!(CompileError::Syntax, self.source, first_token.span.start, "Expected modifiable lvalue.");
+				}
+
+				if let Some(data_type) = data_type
+				{
+					return match data_type
+					{
+						Type::F64 => Some(Value::F64(value)),
+						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
+					}
+				}
+				return Some(Value::F64(value));
+			}
 			
 			TokenKind::Ident =>
 			{
