@@ -398,44 +398,6 @@ impl<'a> CodeGen<'a>
 		// TODO: Add F32 data type here
 	}
 
-	pub fn instr_idiv(&mut self, source: &Placeholder)
-	{
-		let rdx_allocated = Register::from_op_size(Register::RDX, source.data_type.size());
-		if source.data_type.size() != OP_BYTE
-		{
-			self.reg_alloc_allocate_forced(rdx_allocated);
-		}
-
-		match source.data_type.size()
-		{
-			OP_BYTE  => self.instr_cbw(),
-			OP_WORD  => self.instr_cwd(),
-			OP_DWORD => self.instr_cdq(),
-			OP_QWORD => self.instr_cqo(),
-			_ => todo!("Unimplemented Sign convertion."),
-		}	
-
-		if source.is_constant()
-		{
-			let source_reg = self.reg_alloc_allocate(source.data_type).unwrap();
-			let source_placeholder = Placeholder::new(
-				PlaceholderKind::Reg(source_reg), 
-				source.data_type
-			);
-			self.instr_mov(&source_placeholder, source);
-			self.write_text_segment(&format!("\n\tidiv {} {source_placeholder}", Self::size_2_opsize(source.data_type.size())));
-			self.reg_alloc_free(source_reg);
-		} else
-		{
-			self.write_text_segment(&format!("\n\tidiv {} {source}", Self::size_2_opsize(source.data_type.size())));
-		}
-
-		if source.data_type.size() != OP_BYTE
-		{
-			self.reg_alloc_free(rdx_allocated);
-		}
-	}
-
 	pub fn instr_mul(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
 		let mut allocated_register = None;
@@ -532,42 +494,91 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	pub fn instr_div(&mut self, source: &Placeholder)
+	pub fn instr_div(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		let rdx_allocated = Register::from_op_size(Register::RDX, source.data_type.size());
-		if source.data_type.size() == OP_BYTE
+		let mut dst = *destination;
+		let mut src = *source;
+		let mut src_reg = None;
+		let mut dst_reg = None;
+		
+		if source.is_constant()
 		{
-			let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), source.data_type);
-			self.instr_xor(&ah_placeholder, &ah_placeholder);
-		} else 
-		{
-			self.reg_alloc_allocate_forced(rdx_allocated);
-			let rdx_placeholder = Placeholder::new(
-				PlaceholderKind::Reg(rdx_allocated), 
-				source.data_type
-			);
-	
-			self.instr_xor(&rdx_placeholder, &rdx_placeholder);
+			src_reg = self.reg_alloc_allocate(source.data_type);
+			src = Placeholder::new(PlaceholderKind::Reg(src_reg.unwrap()), source.data_type);
+			self.instr_mov(&src, &source);
 		}
 
-
-		if !source.is_register()
+		if destination.data_type.is_integer()
 		{
-			let register = self.reg_alloc_allocate(source.data_type).unwrap();
-			let src_placeholder = Placeholder::new(PlaceholderKind::Reg(register), source.data_type);
-			self.instr_mov(&src_placeholder, source);
+			let rax = Register::from_op_size(Register::RAX, destination.data_type.size());
+			if !destination.is_register_eq(rax)
+			{
+				dst_reg = self.reg_alloc_allocate(destination.data_type);
+				dst = Placeholder::new(PlaceholderKind::Reg(dst_reg.unwrap()), destination.data_type);
+				self.instr_mov(&dst, &destination);			
+			}
 
-			self.write_text_segment(&format!("\n\tdiv {} {src_placeholder}", Self::size_2_opsize(src_placeholder.data_type.size())));
-			self.reg_alloc_free(register);
+			let rdx_allocated = Register::from_op_size(Register::RDX, src.data_type.size());
+			if src.data_type.size() != OP_BYTE
+			{
+				self.reg_alloc_allocate_forced(rdx_allocated);
+			}
+			
+			if destination.data_type.is_signed()
+			{
+				match src.data_type.size()
+				{
+					OP_BYTE  => self.instr_cbw(),
+					OP_WORD  => self.instr_cwd(),
+					OP_DWORD => self.instr_cdq(),
+					OP_QWORD => self.instr_cqo(),
+					_ => todo!("Unimplemented Sign convertion."),
+				}
+				self.write_text_segment(&format!("\n\tidiv {} {src}", Self::size_2_opsize(src.data_type.size())));
+			} else
+			{
+				if src.data_type.size() == OP_BYTE
+				{
+					let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), src.data_type);
+					self.instr_xor(&ah_placeholder, &ah_placeholder);
+				} else
+				{
+					let rdx_placeholder = Placeholder::new(PlaceholderKind::Reg(rdx_allocated), src.data_type);
+					self.instr_xor(&rdx_placeholder, &rdx_placeholder);
+				}
+				self.write_text_segment(&format!("\n\tdiv {} {src}", Self::size_2_opsize(src.data_type.size())));
+			}
+
+			if src.data_type.size() != OP_BYTE
+			{
+				self.reg_alloc_free(rdx_allocated);
+			}
+
 		} else
 		{
-			self.write_text_segment(&format!("\n\tdiv {} {source}", Self::size_2_opsize(source.data_type.size())));
+			if !destination.is_register()
+			{
+				dst_reg = self.reg_alloc_allocate(destination.data_type);
+				dst = Placeholder::new(PlaceholderKind::Reg(dst_reg.unwrap()), destination.data_type);
+				self.instr_mov(&dst, &destination);
+			}
+
+			if src.data_type == Type::F64
+			{
+				self.write_text_segment(&format!("\n\tdivsd {dst}, {src}"));
+			}
+			// TODO: Add f32 data type here
 		}
 
-		if source.data_type.size() != OP_BYTE
+		if let Some(src_reg) = src_reg
 		{
-			self.reg_alloc_free(rdx_allocated);
-		}	
+			self.reg_alloc_free(src_reg);
+		}
+
+		if let Some(dst_reg) = dst_reg
+		{
+			self.reg_alloc_free(dst_reg);
+		}
 	}
 
 	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)

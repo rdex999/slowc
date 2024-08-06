@@ -74,7 +74,6 @@ pub enum ExprType
 pub struct BinExpr
 {
 	pub root: BinExprPart,
-	pub signed: bool
 }
 
 #[derive(Debug, Clone)]
@@ -173,11 +172,10 @@ impl FunctionCallInfo
 
 impl BinExpr
 {
-	pub fn new(root: BinExprPart, signed: bool) -> Self
+	pub fn new(root: BinExprPart) -> Self
 	{
 		return Self {
 			root,
-			signed
 		};
 	}
 }
