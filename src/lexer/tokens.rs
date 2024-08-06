@@ -17,6 +17,7 @@ pub enum TokenKind
 {
 	// Eof,
 	IntLit(i64),
+	FloatLit(f64),
 	Plus,
 	Minus,
 	Asterisk,
@@ -41,6 +42,7 @@ pub enum TokenKind
 	U32,
 	I64,
 	U64,
+	F64,
 	FuncDecl,
 	Return,
 	Global,

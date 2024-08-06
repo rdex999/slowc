@@ -23,7 +23,7 @@ impl<'a> CodeGen<'a>
 		{
 			self.instr_sub(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64),
-				&Placeholder::new(PlaceholderKind::Constant(function.stack_size as u64), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Integer(function.stack_size as u64), Type::U64), 
 			);
 		}
 
@@ -84,7 +84,7 @@ impl<'a> CodeGen<'a>
 		{
 			self.instr_sub(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Constant(function.parameters_stack_size as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Integer(function.parameters_stack_size as u64), Type::U64)
 			);
 		}
 
@@ -129,7 +129,7 @@ impl<'a> CodeGen<'a>
 		{
 			self.instr_add(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Constant(stack_position as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Integer(stack_position as u64), Type::U64)
 			);
 		}
 	}

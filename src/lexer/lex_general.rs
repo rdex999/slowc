@@ -3,23 +3,37 @@ impl<'a> Lexer<'a>
 {
 	pub fn lex_number(&mut self) -> Token
 	{
-		let mut number: i64 = 0;
 		let start = self.position;
+		let mut number = String::with_capacity(8);
 		while let Some(ch) = self.current
 		{
-			if let Some(digit) = ch.to_digit(10)
-			{
-				number = number * 10 + digit as i64;
-			} else
+			if !ch.is_digit(0x10) && ch != '.'
 			{
 				break;
 			}
+
+			number.push(ch);
 			self.advance();
 		}
-		return Token::new(
-			TokenKind::IntLit(number), 
-			TextSpan::new(start, self.position)
-		);
+
+		match number.parse::<i64>()
+		{
+			Ok(number) => 
+			{
+				return Token::new(
+					TokenKind::IntLit(number), 
+					TextSpan::new(start, self.position)
+				);
+			}
+			Err(_) => 
+			{
+				let number: f64 = number.parse().unwrap();
+				return Token::new(
+					TokenKind::FloatLit(number), 
+					TextSpan::new(start, self.position)
+				);
+			}
+		}
 	}
 
 	pub fn lex_operator(&mut self) -> Token
@@ -97,6 +111,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_U32			=> kind = TokenKind::U32,
 			KEYWORD_I64			=> kind = TokenKind::I64,
 			KEYWORD_U64			=> kind = TokenKind::U64,
+			KEYWORD_F64			=> kind = TokenKind::F64,
 			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
 			KEYWORD_RETURN		=> kind = TokenKind::Return,
 			KEYWORD_GLOBAL		=> kind = TokenKind::Global,

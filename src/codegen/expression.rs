@@ -30,14 +30,18 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I8),
-			Value::U8(number) 									=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U8),
-			Value::I16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I16),
-			Value::U16(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U16),
-			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I32),
-			Value::U32(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U32),
-			Value::I64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::I64),
-			Value::U64(number) 								=> Placeholder::new(PlaceholderKind::Constant(*number as u64), Type::U64),
+			Value::I8(number) 									=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I8),
+			Value::U8(number) 									=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U8),
+			Value::I16(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I16),
+			Value::U16(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U16),
+			Value::I32(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I32),
+			Value::U32(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U32),
+			Value::I64(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I64),
+			Value::U64(number) 								=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U64),
+			Value::F64(number) 								=> 
+			{
+				todo!();
+			}
 			Value::Var(_) 											=> self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
 		}	

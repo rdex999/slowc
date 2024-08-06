@@ -60,6 +60,7 @@ pub enum Value
 	U32(u32),		/* (Not funny) */
 	I64(i64),		/* (Not funny) */
 	U64(u64),		/* (Not funny) */
+	F64(f64),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
 	FuncCall(FunctionCallInfo),
 }
@@ -307,6 +308,18 @@ impl BinExprOperator
 			BinExprOperator::Mul | BinExprOperator::Div => return 2,
 		}
 	}
+}
+
+impl Value
+{
+	// pub fn is_constant(&self) -> bool
+	// {
+	// 	return match *self
+	// 	{
+	// 		Value::Var(_) | Value::FuncCall(_) => false,
+	// 		_ => true,
+	// 	};
+	// }
 }
 
 pub mod attribute

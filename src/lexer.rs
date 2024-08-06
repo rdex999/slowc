@@ -34,6 +34,7 @@ pub const KEYWORD_I32		: &str = create_keyword!("חתום32", "i32");
 pub const KEYWORD_U32		: &str = create_keyword!("חיובי32", "u32");
 pub const KEYWORD_I64		: &str = create_keyword!("חתום64", "i64");
 pub const KEYWORD_U64		: &str = create_keyword!("חיובי64", "u64");
+pub const KEYWORD_F64		: &str = create_keyword!("ממשי64", "f64");
 pub const KEYWORD_FUNC_DECL	: &str = create_keyword!("פונקציה", "func");
 pub const KEYWORD_RETURN	: &str = create_keyword!("החזר", "return");
 pub const KEYWORD_GLOBAL	: &str = create_keyword!("גלובלי", "global");

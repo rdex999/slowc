@@ -18,7 +18,7 @@ pub enum PlaceholderKind
 {
 	Reg(Register),
 	Location(LocationExpr),
-	Constant(u64),
+	Integer(u64),
 }
 
 // Check out in the future: https://doc.rust-lang.org/std/mem/fn.variant_count.html
@@ -78,7 +78,7 @@ impl std::fmt::Display for Placeholder
 	{
 		match &self.kind {
 			PlaceholderKind::Reg(register) => write!(f, "{register}"),
-			PlaceholderKind::Constant(value) => write!(f, "{value}"),
+			PlaceholderKind::Integer(value) => write!(f, "{value}"),
 			PlaceholderKind::Location(location)	=> write!(f, "{location}"),
 		}
 	}
@@ -210,7 +210,7 @@ impl Placeholder
 	{
 		match self.kind
 		{
-			PlaceholderKind::Constant(_) => return true,
+			PlaceholderKind::Integer(_) => return true,
 			_ => return false,
 		}
 	}
@@ -250,9 +250,9 @@ impl PartialEq for Placeholder
 				}
 			}
 
-			PlaceholderKind::Constant(value) =>
+			PlaceholderKind::Integer(value) =>
 			{
-				if let PlaceholderKind::Constant(other_value) = other.kind
+				if let PlaceholderKind::Integer(other_value) = other.kind
 				{
 					return value == other_value;
 				}
@@ -333,7 +333,7 @@ impl<'a> CodeGen<'a>
 
 			self.instr_sub(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Constant(source.data_type.size() as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Integer(source.data_type.size() as u64), Type::U64)
 			);
 
 			self.instr_mov(
@@ -362,7 +362,7 @@ impl<'a> CodeGen<'a>
 
 			self.instr_add(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Constant(destination.data_type.size() as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Integer(destination.data_type.size() as u64), Type::U64)
 			);
 			return;
 		}

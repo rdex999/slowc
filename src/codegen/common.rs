@@ -7,7 +7,7 @@ impl<'a> CodeGen<'a>
 		self.attribute_segment.push_str(data);
 	}
 
-	pub fn _write_data_segment(&mut self, data: &str)
+	pub fn write_data_segment(&mut self, data: &str)
 	{
 		self.data_segment.push_str(data);
 	}
@@ -34,6 +34,19 @@ impl<'a> CodeGen<'a>
 		self.write_text_segment(&format!("\n{lable}:"));
 	}
 
+	// pub fn decl_var_data_seg(&mut self, value: &Value) -> Placeholder
+	// {
+	// 	let lable = self.generate_data_seg_lable();
+
+	// }
+
+	// pub fn generate_data_seg_lable(&mut self) -> String
+	// {
+	// 	let count = self.data_seg_var_count;
+	// 	self.data_seg_var_count += 1;
+	// 	return format!("data_seg_{}", count);
+	// }
+
 	// Returns the size of a value, in bytes
 	pub fn _value_type(&self, value: &Value, locals: &Vec<Variable>) -> Type
 	{
@@ -47,6 +60,7 @@ impl<'a> CodeGen<'a>
 			Value::U32(_) 								=> Type::U32,
 			Value::I64(_) 								=> Type::I64,
 			Value::U64(_)								=> Type::U64,
+			Value::F64(_)								=> Type::F64,
 			Value::Var(index) 						=> locals[*index as usize].data_type,
 			Value::FuncCall(info)	=> self.ir.functions[info.index as usize].return_type,
 		}
