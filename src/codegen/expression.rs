@@ -34,15 +34,15 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I8(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I8),
-			Value::U8(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U8),
-			Value::I16(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I16),
-			Value::U16(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U16),
-			Value::I32(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I32),
-			Value::U32(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U32),
-			Value::I64(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I64),
-			Value::U64(number) 	=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U64),
-			Value::F64(_) 				=> 
+			Value::I8(number) 			=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I8),
+			Value::U8(number) 			=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U8),
+			Value::I16(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I16),
+			Value::U16(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U16),
+			Value::I32(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I32),
+			Value::U32(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U32),
+			Value::I64(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I64),
+			Value::U64(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U64),
+			Value::F64(_) | Value::F32(_) 	=> 
 			{
 				let lable = self.decl_var_data_seg(value);
 				Placeholder::new(
@@ -53,7 +53,7 @@ impl<'a> CodeGen<'a>
 							None
 						),
 					),
-					Type::F64
+					self.value_type(value, locals),
 				)
 			}
 			Value::Var(_) 											=> self.gen_value_access(locals, value),

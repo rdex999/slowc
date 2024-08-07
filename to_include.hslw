@@ -1,4 +1,4 @@
-func foo(num1 f64, num2 f64) -> f64
+func foo(num1 f32, num2 f32) -> f32
 {
 	return num1 + num2;
 }

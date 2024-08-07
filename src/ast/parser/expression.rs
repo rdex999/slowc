@@ -58,8 +58,9 @@ impl<'a> Parser<'a>
 				{
 					return match data_type
 					{
+						Type::F32 => Some(Value::F32(value as f32)),
 						Type::F64 => Some(Value::F64(value)),
-						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
+						_ => { print_errln!(CompileError::TypeError(data_type, Type::F32), self.source, first_token.span.start, ""); }
 					}
 				}
 				return Some(Value::F64(value));

@@ -232,6 +232,10 @@ impl Register
 
 	pub fn from_op_size(base_register: Register, op_size: OpSize) -> Self
 	{
+		if base_register as u8 >= Register::XMM0 as u8 && base_register as u8 <= Register::XMM15 as u8
+		{
+			return base_register;
+		}
 		return Register::try_from(base_register as OpSize + 4 - (op_size.trailing_zeros() as OpSize + 1)).unwrap();
 	}
 
@@ -379,8 +383,10 @@ impl<'a> CodeGen<'a>
 		if destination.data_type == Type::F64
 		{
 			self.write_text_segment(&format!("\n\tmovsd {destination}, {source_placeholder}"));
+		} else if destination.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\tmovss {destination}, {source_placeholder}"));
 		}
-		// TODO: Add F32 data type here
 	}
 
 	pub fn instr_push(&mut self, source: &Placeholder)
@@ -452,8 +458,10 @@ impl<'a> CodeGen<'a>
 		} else if destination.data_type == Type::F64
 		{
 			self.write_text_segment(&format!("\n\taddsd {destination}, {source}"));
+		} else if destination.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\taddss {destination}, {source}"));
 		}
-		// TODO: Add F32 data type here
 	}
 
 	pub fn instr_sub(&mut self, destination: &Placeholder, source: &Placeholder)
@@ -464,8 +472,10 @@ impl<'a> CodeGen<'a>
 		} else if destination.data_type == Type::F64
 		{
 			self.write_text_segment(&format!("\n\tsubsd {destination}, {source}"));
+		} else if destination.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\tsubss {destination}, {source}"));
 		}
-		// TODO: Add F32 data type here
 	}
 
 	pub fn instr_mul(&mut self, destination: &Placeholder, source: &Placeholder)
@@ -544,8 +554,10 @@ impl<'a> CodeGen<'a>
 			if destination.data_type == Type::F64
 			{
 				self.write_text_segment(&format!("\n\tmulsd {dst_placeholder}, {src_placeholder}"));
+			} else if destination.data_type == Type::F32
+			{
+				self.write_text_segment(&format!("\n\tmulss {dst_placeholder}, {src_placeholder}"));
 			}
-			// TODO: Add f32 data type here
 
 			if *destination != dst_placeholder
 			{
@@ -636,8 +648,10 @@ impl<'a> CodeGen<'a>
 			if src.data_type == Type::F64
 			{
 				self.write_text_segment(&format!("\n\tdivsd {dst}, {src}"));
+			} else if src.data_type == Type::F32
+			{
+				self.write_text_segment(&format!("\n\tdivss {dst}, {src}"));
 			}
-			// TODO: Add f32 data type here
 		}
 
 		if let Some(src_reg) = src_reg
@@ -653,7 +667,16 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		} else if destination.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\txorpd {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		} else if destination.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\txorps {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		}
 	}
 
 	pub fn instr_call(&mut self, identifier: &str)

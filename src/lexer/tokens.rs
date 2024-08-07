@@ -42,6 +42,7 @@ pub enum TokenKind
 	U32,
 	I64,
 	U64,
+	F32,
 	F64,
 	FuncDecl,
 	Return,

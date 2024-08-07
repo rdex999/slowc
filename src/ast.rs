@@ -60,6 +60,7 @@ pub enum Value
 	U32(u32),		/* (Not funny) */
 	I64(i64),		/* (Not funny) */
 	U64(u64),		/* (Not funny) */
+	F32(f32),		/* (Not funny) */
 	F64(f64),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
 	FuncCall(FunctionCallInfo),
@@ -115,6 +116,7 @@ pub enum Type
 	I64,
 	U64,
 
+	F32,
 	F64,
 }
 
@@ -225,7 +227,7 @@ impl Type
 		{
 			Type::I8  | Type::U8  | Type::I16 | Type::U16 | 
 			Type::I32 | Type::U32 | Type::I64 | Type::U64 |
-			Type::F64 => true,
+			Type::F32 | Type::F64 => true,
 			_ => false,
 		}
 	}
@@ -243,6 +245,7 @@ impl Type
 			TokenKind::U32 	=> return Some(Type::U32),
 			TokenKind::I64 	=> return Some(Type::I64),
 			TokenKind::U64 	=> return Some(Type::U64),
+			TokenKind::F32 	=> return Some(Type::F32),
 			TokenKind::F64 	=> return Some(Type::F64),
 			_ 				=> return None
 		};
@@ -255,7 +258,7 @@ impl Type
 			Type::Void 							=> 0,
 			Type::I8  | Type::U8 				=> 1,
 			Type::I16 | Type::U16				=> 2,
-			Type::I32 | Type::U32				=> 4,
+			Type::I32 | Type::U32 | Type::F32	=> 4,
 			Type::I64 | Type::U64 | Type::F64 	=> 8,
 		}
 	}
@@ -264,8 +267,8 @@ impl Type
 	{
 		return match self
 		{
-			Type::I8 | Type::I16 | Type::I32 | Type::I64 |
-			Type::F64 => true,
+			Type::I8  | Type::I16 | Type::I32 | Type::I64 |
+			Type::F32 | Type::F64 => true,
 			_ => false,
 		}
 	}

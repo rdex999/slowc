@@ -47,6 +47,7 @@ impl<'a> CodeGen<'a>
 			Value::U32(number) => self.write_data_segment(&format!("\n\t{lable}: dd {number}")),
 			Value::I64(number) => self.write_data_segment(&format!("\n\t{lable}: dq {number}")),
 			Value::U64(number) => self.write_data_segment(&format!("\n\t{lable}: dq {number}")),
+			Value::F32(number) => self.write_data_segment(&format!("\n\t{lable}: dd {:?}", number)),
 			Value::F64(number) => self.write_data_segment(&format!("\n\t{lable}: dq {:?}", number)),
 			_ => panic!("Dev error! decl_var_data_seg called with a value that is not constant."),
 		}
@@ -62,7 +63,7 @@ impl<'a> CodeGen<'a>
 	}
 
 	// Returns the size of a value, in bytes
-	pub fn _value_type(&self, value: &Value, locals: &Vec<Variable>) -> Type
+	pub fn value_type(&self, value: &Value, locals: &Vec<Variable>) -> Type
 	{
 		return match value
 		{
@@ -74,6 +75,7 @@ impl<'a> CodeGen<'a>
 			Value::U32(_) 								=> Type::U32,
 			Value::I64(_) 								=> Type::I64,
 			Value::U64(_)								=> Type::U64,
+			Value::F32(_)								=> Type::F32,
 			Value::F64(_)								=> Type::F64,
 			Value::Var(index) 						=> locals[*index as usize].data_type,
 			Value::FuncCall(info)	=> self.ir.functions[info.index as usize].return_type,
