@@ -75,11 +75,11 @@ impl<'a> CodeGen<'a>
 	}
 
 	
-	fn gen_scope(&mut self, scope: &Scope)
+	fn gen_scope(&mut self, scope: &Scope, locals: &Vec<Variable>)
 	{
 		for statement in &scope.statements
 		{
-			self.gen_statement(&statement, &scope.locals);
+			self.gen_statement(&statement, locals);
 		}
 	}
 

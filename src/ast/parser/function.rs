@@ -54,15 +54,15 @@ impl<'a> Parser<'a>
 		}
 
 		let attributes = self.parse_function_decl_attributes();
-
+		
 		let token_ident = self.current_token();
-
+		
 		if TokenKind::Ident != token_ident.kind
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Expected function identifier after {KEYWORD_FUNC_DECL}");
 		}
 		let identifier = self.get_text(&token_ident.span);
-
+		
 		let token_left_paren = self.advance_token().unwrap_or_else(|| { 
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing function."); 
 		});
@@ -70,77 +70,100 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, token_left_paren.span.start, "Expected argument list after function identifier.");
 		}
-
+		
 		self.advance_token();
 		let mut variables = self.parse_function_decl_parameters();
-
+		
 		let args_end_pos = self.current_token().span.end;
 		let token_ret_type_specifier = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, args_end_pos, "While parsing function return type specifier (Arrow operator \"->\")");
 		});
-
+		
 		if token_ret_type_specifier.kind != TokenKind::Arrow
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ret_type_specifier.span.start, "Expected return type specifier (Arrow operator \"->\") after parameter list in function declaration.");
 		}
-
+		
 		let token_ret_type = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type_specifier.span.end, "While parsing function return type.");
 		});
-
+		
 		let return_type = Type::from_token_kind(&token_ret_type.kind).unwrap_or_else(|| {
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected function return type after return type specifier.");
 		});
-
+		
 		// TODO: Parse scope, right here self.current_token is a left curly bracket
 		let token_scope_start = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type.span.end, "While parsing function declaration.");
 		});
-
-		self.advance_token();
+		
 		let mut function = Function::new(identifier.to_string(), return_type, attributes);
 		function.parameter_count = variables.get_variable_count();
-
+		
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
 			let locals = variables.get_variables_info(attributes);	
-			function.code_block.locals = locals.vars;
+			function.locals = locals.vars;
 			function.code_block.stack_size = locals.stack_size;
 			function.parameters_stack_size = locals.parameters_stack_size;
 			self.func_manager.add(function);
+			self.advance_token();
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
+		
+		let mut code_block = self.parse_scope(&mut variables, &function);	
 
-		let mut has_return_stmt = false;
+		if function.return_type != Type::Void
+		{
+			let mut has_return_stmt = false;
+			for statement in &code_block.statements
+			{
+				if let Statement::Return(_) = statement
+				{
+					has_return_stmt = true;
+					break;
+				}
+			}
+			if function.return_type != Type::Void && !has_return_stmt
+			{
+				print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected return statement because of the functions return type.");
+			}
+		}	
+
+		let locals = variables.get_variables_info(attributes);
+		code_block.stack_size += locals.parameters_stack_size;
+		function.locals = locals.vars;
+		function.parameters_stack_size = locals.parameters_stack_size;
+		function.code_block = code_block;
+		self.func_manager.add(function);
+
+	}
+
+	fn parse_scope(&mut self, variables: &mut LocalVariables, function: &Function) -> Scope
+	{
+		let mut scope = Scope::new(Vec::new());
+
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing scope start.");
+		});
+
+		variables.start_scope();
+
 		while self.current_token().kind != TokenKind::RightCurly
 		{
-			if let Some(stmt) = self.parse_statement(&mut variables, &mut function)
+			if let Some(statement) = self.parse_statement(variables, function)
 			{
-				if function.return_type != Type::Void
-				{
-					if let Statement::Return(_) = stmt
-					{
-						has_return_stmt = true;
-					}
-				}
-				function.code_block.add_statement(stmt);
+				scope.add_statement(statement);
 			}
-		}
-		if function.return_type != Type::Void && !has_return_stmt
-		{
-			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected return statement because of the functions return type.");
 		}
 
 		self.advance_token();
-		let locals = variables.get_variables_info(attributes);
-		function.code_block.locals = locals.vars;
-		function.code_block.stack_size = locals.stack_size;
-		function.parameters_stack_size = locals.parameters_stack_size;
-		self.func_manager.add(function);
 
+		scope.stack_size = variables.end_scope();
+		return scope;
 	}
 
 	fn parse_function_decl_parameters(&mut self) -> LocalVariables
@@ -234,8 +257,8 @@ impl<'a> Parser<'a>
 
 		unsafe 
 		{
-			let mut arguments: Vec<ExprType> = Vec::with_capacity((*function).code_block.locals.len() as usize);
-			for parameter in &(*function).code_block.locals[..(*function).parameter_count as usize]
+			let mut arguments: Vec<ExprType> = Vec::with_capacity((*function).locals.len() as usize);
+			for parameter in &(*function).locals[..(*function).parameter_count as usize]
 			{
 				if self.current_token().kind == TokenKind::RightParen
 				{

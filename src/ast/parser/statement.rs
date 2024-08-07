@@ -3,10 +3,10 @@ use super::{Parser, variable::*};
 
 impl<'a> Parser<'a>
 {
-	pub fn parse_statement(&mut self, mut variables: &mut LocalVariables, function: &mut Function) -> Option<Statement>
+	pub fn parse_statement(&mut self, variables: &mut LocalVariables, function: &Function) -> Option<Statement>
 	{
 		match self.current_token().kind {
-			TokenKind::VarDecl => return self.parse_var_decl(&mut variables),
+			TokenKind::VarDecl => return self.parse_var_decl(variables),
 			TokenKind::Return => return Some(self.parse_return_stmt(variables, function)),
 			TokenKind::Ident => 
 			{
@@ -23,7 +23,7 @@ impl<'a> Parser<'a>
 						return stmt;
 					}
 				}
-				return Some(self.parse_var_update(&mut variables));
+				return Some(self.parse_var_update(variables));
 			},
 
 			_ => { print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found at statement beginning."); }
@@ -119,7 +119,7 @@ impl<'a> Parser<'a>
 		}
 	}
 
-	fn parse_return_stmt(&mut self, variables: &mut LocalVariables, function: &mut Function) -> Statement
+	fn parse_return_stmt(&mut self, variables: &mut LocalVariables, function: &Function) -> Statement
 	{
 		self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_RETURN} statement.");

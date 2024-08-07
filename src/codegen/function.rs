@@ -35,7 +35,7 @@ impl<'a> CodeGen<'a>
 			self.store_parameters_sys_v_abi_x86_64(function);
 		}
 
-		self.gen_scope(&function.code_block);
+		self.gen_scope(&function.code_block, &function.locals);
 	
 		self.gen_function_return();
 	}
@@ -97,7 +97,7 @@ impl<'a> CodeGen<'a>
 		{
 			let placeholder;
 			let argument = self.gen_expression(argument, locals);
-			let arg_data = function.code_block.locals[i];
+			let arg_data = function.locals[i];
 			// println!("{}\n\n", self.text_segment);
 
 			if arg_data.data_type.is_integer() && integer_arguments < 6
@@ -154,7 +154,7 @@ impl<'a> CodeGen<'a>
 		let mut integer_parameters: u8 = 0;
 		let mut float_parameters: u8 = 0;
 
-		for parameter in &function.code_block.locals
+		for parameter in &function.locals
 		{
 			if parameter.attributes & attribute::FUNCTION_PARAMETER == 0
 			{

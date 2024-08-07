@@ -22,6 +22,7 @@ pub struct Function
 	pub attributes: AttributeType,
 	pub parameter_count: u8,
 	pub parameters_stack_size: usize,
+	pub locals: Vec<Variable>,
 	pub code_block: Scope,
 }
 
@@ -29,7 +30,6 @@ pub struct Function
 pub struct Scope
 {
 	pub statements: Vec<Statement>,
-	pub locals: Vec<Variable>,
 	pub stack_size: usize,
 	// Will have more crap in the near future.
 }
@@ -134,6 +134,7 @@ pub struct Variable
 	pub attributes: AttributeType,
 	pub index: u8,
 	pub location: isize,
+	pub scope: u8,
 }
 
 impl Root
@@ -157,6 +158,7 @@ impl Function
 			attributes,
 			parameters_stack_size: 0,
 			parameter_count: 0,
+			locals: Vec::new(),
 			code_block: Scope::new(Vec::new()),
 		};
 	}
@@ -169,7 +171,6 @@ impl Scope
 	{
 		return Self {
 			statements,
-			locals: Vec::new(),
 			stack_size: 0,
 		};
 	}
@@ -215,13 +216,14 @@ impl BinExprOperation
 
 impl Variable
 {
-	pub fn new(data_type: Type, attributes: AttributeType, index: u8) -> Self 
+	pub fn new(data_type: Type, attributes: AttributeType, index: u8, scope: u8) -> Self 
 	{
 		return Self {
 			data_type,
 			attributes,
 			index,
 			location: 0,		/* Doesnt realy matter */
+			scope,
 		};
 	}
 }

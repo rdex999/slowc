@@ -3,6 +3,7 @@ use crate::ast::*;
 pub struct LocalVariables
 {
 	index: u8,
+	next_scope: u8,
 	variables: HashMap<String, Variable>,
 }
 
@@ -34,13 +35,23 @@ impl LocalVariables
 	{
 		return Self {
 			index: 0,
+			next_scope: 0,
 			variables: HashMap::new(),
 		};
 	}
 
 	pub fn add_variable(&mut self, identifier: String, attributes: AttributeType, data_type: Type) -> Variable
 	{
-		let var = Variable::new(data_type, attributes, self.index);	
+		let scope;
+		if attributes & attribute::FUNCTION_PARAMETER != 0
+		{
+			scope = 0;
+		} else
+		{
+			scope = self.current_scope();
+		}
+
+		let var = Variable::new(data_type, attributes, self.index, scope);	
 		self.index += 1;
 		self.variables.insert(identifier, var.clone());
 		return var;
@@ -48,7 +59,35 @@ impl LocalVariables
 
 	pub fn get_variable(&self, identifier: &str) -> Option<&Variable>
 	{
-		return self.variables.get(identifier);
+		let variable = self.variables.get(identifier);
+		if let Some(variable) = variable
+		{
+			if variable.scope > self.current_scope()
+			{
+				return None;
+			}
+		}
+		return variable;
+	}
+
+	pub fn start_scope(&mut self)
+	{
+		self.advance_scope();
+	}
+
+	// End the scope and returns its stack size.
+	pub fn end_scope(&mut self) -> usize
+	{
+		let mut stack_size = 0;
+		for variable in self.variables.values()
+		{
+			if variable.scope == self.current_scope()
+			{
+				stack_size += variable.data_type.size() as usize;
+			}
+		}
+		self.next_scope -= 1;
+		return stack_size;	
 	}
 
 	pub fn get_variable_by_index(&self, index: u8) -> Option<&Variable>
@@ -73,6 +112,16 @@ impl LocalVariables
 		{
 			todo!("Unsupported calling convenction.");
 		}
+	}
+
+	fn current_scope(&self) -> u8
+	{
+		return self.next_scope - 1;
+	}
+
+	fn advance_scope(&mut self)
+	{
+		self.next_scope += 1;
 	}
 
 	fn update_var_info_sys_v_abi_x86_64(mut variables: Vec<Variable>) -> LocalVariablesInfo
