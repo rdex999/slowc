@@ -104,8 +104,8 @@ impl<'a> Parser<'a>
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
 			let locals = variables.get_variables_info(attributes);	
-			function.locals = locals.vars;
-			function.stack_size = locals.stack_size;
+			function.code_block.locals = locals.vars;
+			function.code_block.stack_size = locals.stack_size;
 			function.parameters_stack_size = locals.parameters_stack_size;
 			self.func_manager.add(function);
 			return;
@@ -126,7 +126,7 @@ impl<'a> Parser<'a>
 						has_return_stmt = true;
 					}
 				}
-				function.add_statement(stmt);
+				function.code_block.add_statement(stmt);
 			}
 		}
 		if function.return_type != Type::Void && !has_return_stmt
@@ -136,8 +136,8 @@ impl<'a> Parser<'a>
 
 		self.advance_token();
 		let locals = variables.get_variables_info(attributes);
-		function.locals = locals.vars;
-		function.stack_size = locals.stack_size;
+		function.code_block.locals = locals.vars;
+		function.code_block.stack_size = locals.stack_size;
 		function.parameters_stack_size = locals.parameters_stack_size;
 		self.func_manager.add(function);
 
@@ -234,8 +234,8 @@ impl<'a> Parser<'a>
 
 		unsafe 
 		{
-			let mut arguments: Vec<ExprType> = Vec::with_capacity((*function).locals.len() as usize);
-			for parameter in &(*function).locals[..(*function).parameter_count as usize]
+			let mut arguments: Vec<ExprType> = Vec::with_capacity((*function).code_block.locals.len() as usize);
+			for parameter in &(*function).code_block.locals[..(*function).parameter_count as usize]
 			{
 				if self.current_token().kind == TokenKind::RightParen
 				{

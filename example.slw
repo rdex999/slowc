@@ -11,5 +11,5 @@ func global main(argv u64, argc u32) -> u64
 	putchar(99);
 	putchar(10);
 
-	return 0;
+	return ((420 + 4) * 2 - 8) / 4;
 }

@@ -21,10 +21,17 @@ pub struct Function
 	pub return_type: Type,
 	pub attributes: AttributeType,
 	pub parameter_count: u8,
+	pub parameters_stack_size: usize,
+	pub code_block: Scope,
+}
+
+#[derive(Debug, Clone)]
+pub struct Scope
+{
+	pub statements: Vec<Statement>,
 	pub locals: Vec<Variable>,
 	pub stack_size: usize,
-	pub parameters_stack_size: usize,
-	pub statements: Vec<Statement>,
+	// Will have more crap in the near future.
 }
 
 #[derive(Debug, Clone)]
@@ -148,14 +155,25 @@ impl Function
 			index: u8::MAX,
 			return_type,
 			attributes,
-			locals: Vec::new(),
-			stack_size: 0,
 			parameters_stack_size: 0,
 			parameter_count: 0,
-			statements: Vec::new(),
+			code_block: Scope::new(Vec::new()),
 		};
 	}
 	
+}
+
+impl Scope
+{
+	pub fn new(statements: Vec<Statement>) -> Self
+	{
+		return Self {
+			statements,
+			locals: Vec::new(),
+			stack_size: 0,
+		};
+	}
+
 	pub fn add_statement(&mut self, statement: Statement)
 	{
 		self.statements.push(statement);

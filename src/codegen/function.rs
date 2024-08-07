@@ -6,7 +6,7 @@ impl<'a> CodeGen<'a>
 	{
 		self.decl_attribute(&function.identifier, function.attributes);
 		
-		if function.statements.len() == 0
+		if function.code_block.statements.len() == 0
 		{
 			return;
 		}
@@ -19,11 +19,11 @@ impl<'a> CodeGen<'a>
 			&Placeholder::new(PlaceholderKind::Reg(Register::RBP), Type::U64),
 			&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64)
 		);
-		if function.stack_size != 0
+		if function.code_block.stack_size != 0
 		{
 			self.instr_sub(
 				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64),
-				&Placeholder::new(PlaceholderKind::Integer(function.stack_size as u64), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Integer(function.code_block.stack_size as u64), Type::U64), 
 			);
 		}
 
@@ -35,8 +35,7 @@ impl<'a> CodeGen<'a>
 			self.store_parameters_sys_v_abi_x86_64(function);
 		}
 
-
-		self.gen_code_block(&function.statements, &function.locals);
+		self.gen_scope(&function.code_block);
 	
 		self.gen_function_return();
 	}
@@ -98,7 +97,7 @@ impl<'a> CodeGen<'a>
 		{
 			let placeholder;
 			let argument = self.gen_expression(argument, locals);
-			let arg_data = function.locals[i];
+			let arg_data = function.code_block.locals[i];
 			// println!("{}\n\n", self.text_segment);
 
 			if arg_data.data_type.is_integer() && integer_arguments < 6
@@ -155,7 +154,7 @@ impl<'a> CodeGen<'a>
 		let mut integer_parameters: u8 = 0;
 		let mut float_parameters: u8 = 0;
 
-		for parameter in &function.locals
+		for parameter in &function.code_block.locals
 		{
 			if parameter.attributes & attribute::FUNCTION_PARAMETER == 0
 			{
