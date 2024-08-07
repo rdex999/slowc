@@ -35,8 +35,11 @@ impl<'a> CodeGen<'a>
 			self.store_parameters_sys_v_abi_x86_64(function);
 		}
 
-		self.gen_scope(&function.code_block, &function.locals);
-	
+		for statement in &function.code_block.statements
+		{
+			self.gen_statement(statement, &function.locals);
+		}
+
 		self.gen_function_return();
 	}
 

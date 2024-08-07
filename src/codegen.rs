@@ -77,9 +77,25 @@ impl<'a> CodeGen<'a>
 	
 	fn gen_scope(&mut self, scope: &Scope, locals: &Vec<Variable>)
 	{
+		if scope.stack_size != 0
+		{
+			self.instr_sub(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Integer(scope.stack_size as u64), Type::U64)
+			);
+		}
+
 		for statement in &scope.statements
 		{
 			self.gen_statement(&statement, locals);
+		}
+
+		if scope.stack_size != 0
+		{
+			self.instr_add(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Integer(scope.stack_size as u64), Type::U64)
+			);
 		}
 	}
 
@@ -87,6 +103,7 @@ impl<'a> CodeGen<'a>
 	{
 		match statement
 		{
+			Statement::Scope(scope)									=> self.gen_scope(scope, locals),
 			Statement::Assign(assign_data) 					=> self.gen_assign_stmt(assign_data, locals),
 			Statement::FunctionCall(function_call_info) 	=> { self.gen_function_call(locals, function_call_info); } 
 			Statement::Return(expression) 				=> self.gen_return_stmt(locals, expression),

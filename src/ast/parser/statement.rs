@@ -6,9 +6,10 @@ impl<'a> Parser<'a>
 	pub fn parse_statement(&mut self, variables: &mut LocalVariables, function: &Function) -> Option<Statement>
 	{
 		match self.current_token().kind {
-			TokenKind::VarDecl => return self.parse_var_decl(variables),
-			TokenKind::Return => return Some(self.parse_return_stmt(variables, function)),
-			TokenKind::Ident => 
+			TokenKind::LeftCurly 	=> return Some(Statement::Scope(self.parse_scope(variables, function))),
+			TokenKind::VarDecl 		=> return self.parse_var_decl(variables),
+			TokenKind::Return 		=> return Some(self.parse_return_stmt(variables, function)),
+			TokenKind::Ident 		=> 
 			{
 				if let Some(next_token) = self.peek(1)
 				{

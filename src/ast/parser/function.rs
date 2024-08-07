@@ -92,29 +92,28 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected function return type after return type specifier.");
 		});
 		
-		// TODO: Parse scope, right here self.current_token is a left curly bracket
 		let token_scope_start = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type.span.end, "While parsing function declaration.");
 		});
 		
 		let mut function = Function::new(identifier.to_string(), return_type, attributes);
 		function.parameter_count = variables.get_variable_count();
-		
+
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
+			self.advance_token();
 			let locals = variables.get_variables_info(attributes);	
 			function.locals = locals.vars;
 			function.code_block.stack_size = locals.stack_size;
 			function.parameters_stack_size = locals.parameters_stack_size;
 			self.func_manager.add(function);
-			self.advance_token();
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
-		
-		let mut code_block = self.parse_scope(&mut variables, &function);	
+
+		let mut code_block = self.parse_scope(&mut variables, &function);
 
 		if function.return_type != Type::Void
 		{
@@ -127,22 +126,22 @@ impl<'a> Parser<'a>
 					break;
 				}
 			}
-			if function.return_type != Type::Void && !has_return_stmt
+			if !has_return_stmt
 			{
 				print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected return statement because of the functions return type.");
 			}
-		}	
+		}
 
 		let locals = variables.get_variables_info(attributes);
-		code_block.stack_size += locals.parameters_stack_size;
 		function.locals = locals.vars;
 		function.parameters_stack_size = locals.parameters_stack_size;
+
+		code_block.stack_size += locals.parameters_stack_size;
 		function.code_block = code_block;
 		self.func_manager.add(function);
-
 	}
 
-	fn parse_scope(&mut self, variables: &mut LocalVariables, function: &Function) -> Scope
+	pub fn parse_scope(&mut self, variables: &mut LocalVariables, function: &Function) -> Scope
 	{
 		let mut scope = Scope::new(Vec::new());
 

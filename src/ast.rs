@@ -37,6 +37,7 @@ pub struct Scope
 #[derive(Debug, Clone)]
 pub enum Statement
 {
+	Scope(Scope),
 	Assign(VarUpdateInfo),
 	FunctionCall(FunctionCallInfo),
 	Return(Option<ExprType>),
@@ -157,9 +158,9 @@ impl Function
 			return_type,
 			attributes,
 			parameters_stack_size: 0,
-			parameter_count: 0,
 			locals: Vec::new(),
-			code_block: Scope::new(Vec::new()),
+			parameter_count: 0,
+			code_block: Scope::new(Vec::new())
 		};
 	}
 	

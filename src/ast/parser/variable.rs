@@ -92,7 +92,15 @@ impl LocalVariables
 
 	pub fn get_variable_by_index(&self, index: u8) -> Option<&Variable>
 	{
-		return self.variables.values().find(|var| var.index == index);
+		let variable = self.variables.values().find(|var| var.index == index);
+		if let Some(variable) = variable
+		{
+			if variable.scope > self.current_scope()
+			{
+				return None;
+			}
+		}
+		return variable;
 	}
 
 	pub fn get_variable_count(&self) -> u8
