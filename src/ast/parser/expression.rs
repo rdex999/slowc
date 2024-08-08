@@ -116,56 +116,66 @@ impl<'a> Parser<'a>
 
 	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
 	{
-		let lhs;
+		let mut root = self.parse_bin_expression_high_precedence(data_type, variables, if precedence != 2 { precedence + 1 } else { precedence });
+	
+		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+		{
+			if operator.precedence() != precedence
+			{
+				break;	
+			}
+			self.parse_bin_operator();
+			let rhs = self.parse_bin_expression_high_precedence(data_type, variables, if precedence != 2 { precedence + 1 } else { precedence });
+			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
+		}
+		return root;
+	}
+
+	fn parse_bin_expression_high_precedence(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
+	{
+		let mut root = self.parse_value_expr(data_type, variables);
+
+		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+		{
+			if operator.precedence() < precedence
+			{
+				break;
+			}
+
+			self.parse_bin_operator();	
+			let rhs = self.parse_value_expr(data_type, variables);
+			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
+		}
+		return root;
+
+	}
+
+	fn parse_value_expr(&mut self, data_type: Type, variables: &LocalVariables) -> BinExprPart
+	{
 		if self.current_token().kind == TokenKind::LeftParen
 		{
-			self.advance_token();
-			lhs = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
+			let value;
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
+			});
+
+			value = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
+
 			if self.current_token().kind != TokenKind::RightParen
 			{
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese. \")\"");
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese.");
 			}
-			self.advance_token();
-		} else 
-		{
-			lhs = BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
-			}));	
-		}
 
-		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
-		{
-			if operator.precedence() >= precedence
-			{
-				self.parse_bin_operator();
-				// Ik recursion is bad, but it an advantage is this situation - 
-				// The same could be done with a stack data structure, (Vec) but this would require heap allcating memory which is slow af
-				// In this way, everything is on the stack, the because its just an expression the recursion is not big, so the stack wont commit suicide
-				let rhs = self.parse_bin_expression_part(data_type, variables, operator.precedence());
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
+			});
 
-				if let Some(next_operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
-				{
-					if next_operator.precedence() >= precedence
-					{
-						self.parse_bin_operator();
-						let low_precedence_part = self.parse_bin_expression_part(data_type, variables, next_operator.precedence());
-						// Makes me think about my lifes deceisions
-						return BinExprPart::Operation(Box::new(BinExprOperation::new(
-							next_operator,
-							BinExprPart::Operation(Box::new(BinExprOperation::new(operator, lhs, rhs))),
-							low_precedence_part
-						)));
-
-					}
-				}
-				return BinExprPart::Operation(Box::new(BinExprOperation::new(operator, lhs, rhs)));
-			} else
-			{
-				return lhs;
-			}
+			return value;
 		} else
 		{
-			return lhs;
+			return BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
+			}));
 		}
 	}
 	
