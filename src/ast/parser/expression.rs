@@ -110,22 +110,32 @@ impl<'a> Parser<'a>
 
 	fn parse_bin_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr
 	{
-		let expression_root = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
+		let expression_root = self.parse_bin_expression_part(data_type, variables);
 		return BinExpr::new(expression_root);
 	}
 
-	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
+	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
-		let mut root = self.parse_bin_expression_high_precedence(data_type, variables, if precedence != 2 { precedence + 1 } else { precedence });
+		let mut root = self.parse_bin_expression_high_precedence(
+			data_type, 
+			variables, 
+			BinExprOperator::LOWEST_PRECEDENCE + 1
+		);
 	
 		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{
-			if operator.precedence() != precedence
+			if operator.precedence() != BinExprOperator::LOWEST_PRECEDENCE
 			{
 				break;	
 			}
 			self.parse_bin_operator();
-			let rhs = self.parse_bin_expression_high_precedence(data_type, variables, if precedence != 2 { precedence + 1 } else { precedence });
+
+			let rhs = self.parse_bin_expression_high_precedence(
+				data_type, 
+				variables, 
+				BinExprOperator::LOWEST_PRECEDENCE + 1
+			);
+
 			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
 		}
 		return root;
@@ -159,7 +169,7 @@ impl<'a> Parser<'a>
 				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
 			});
 
-			value = self.parse_bin_expression_part(data_type, variables, BinExprOperator::LOWEST_PRECEDENCE);
+			value = self.parse_bin_expression_part(data_type, variables);
 
 			if self.current_token().kind != TokenKind::RightParen
 			{
