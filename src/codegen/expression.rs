@@ -2,11 +2,9 @@ use super::*;
 
 impl<'a> CodeGen<'a>
 {
-	pub fn gen_expression(&mut self, expression: &ExprType, locals: &Vec<Variable>) -> Placeholder
+	pub fn gen_expression(&mut self, expression: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
-		match expression {
-			ExprType::BinExprT(bin_expr) => return self.gen_bin_expr(bin_expr, locals),
-		}
+		return self.gen_bin_expr(expression, locals);
 	}
 	
 	// Will return a pointer to the result
@@ -88,6 +86,7 @@ impl<'a> CodeGen<'a>
 			{
 				self.instr_div(&destination, rhs);
 			},
+			BinExprOperator::BoolEq => todo!("Implement the == operator."),
 		}
 		return destination;
 	}

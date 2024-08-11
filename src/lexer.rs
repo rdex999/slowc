@@ -40,6 +40,7 @@ pub const KEYWORD_FUNC_DECL	: &str = create_keyword!("פונקציה", "func");
 pub const KEYWORD_RETURN	: &str = create_keyword!("החזר", "return");
 pub const KEYWORD_GLOBAL	: &str = create_keyword!("גלובלי", "global");
 pub const KEYWORD_EXTERN 	: &str = create_keyword!("חיצוני", "extern");
+pub const KEYWORD_IF 		: &str = create_keyword!("אם", "if");
 
 pub struct Lexer<'a>
 {

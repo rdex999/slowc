@@ -256,7 +256,7 @@ impl<'a> Parser<'a>
 
 		unsafe 
 		{
-			let mut arguments: Vec<ExprType> = Vec::with_capacity((*function).locals.len() as usize);
+			let mut arguments: Vec<BinExpr> = Vec::with_capacity((*function).locals.len() as usize);
 			for parameter in &(*function).locals[..(*function).parameter_count as usize]
 			{
 				if self.current_token().kind == TokenKind::RightParen

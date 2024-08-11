@@ -4,11 +4,11 @@ use super::{Parser, variable::*, };
 
 impl<'a> Parser<'a>
 {
-	pub fn parse_expression(&mut self, data_type: Type, variables: &LocalVariables) -> ExprType
+	pub fn parse_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr 
 	{
 		if data_type.is_bin_expr_type()
 		{
-			return ExprType::BinExprT(self.parse_bin_expression(data_type, variables));
+			return self.parse_bin_expression(data_type, variables);
 		} else
 		{
 			todo!("Dev error!! parse_expression() - None binary expressions are not yet supported.");

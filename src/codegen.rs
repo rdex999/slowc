@@ -107,6 +107,7 @@ impl<'a> CodeGen<'a>
 			Statement::Assign(assign_data) 					=> self.gen_assign_stmt(assign_data, locals),
 			Statement::FunctionCall(function_call_info) 	=> { self.gen_function_call(locals, function_call_info); } 
 			Statement::Return(expression) 				=> self.gen_return_stmt(locals, expression),
+			_ => todo!("Implement if statements in code generation.")
 		}
 	}
 
@@ -127,7 +128,7 @@ impl<'a> CodeGen<'a>
 		self.reg_alloc_free(src_reg);
 	}
 
-	fn gen_return_stmt(&mut self, locals: &Vec<Variable>, expression: &Option<ExprType>)
+	fn gen_return_stmt(&mut self, locals: &Vec<Variable>, expression: &Option<BinExpr>)
 	{
 		let expr;
 		if let Some(exp) = expression

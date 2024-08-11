@@ -1,24 +1,7 @@
 #intext to_include.hslw
 
-func global main(argv u64, argc u32) -> u64
+func global main(argv u64, argc u32) -> u8
 {
-	let five_point_five f32 = 5.5;
-	let floating_brain f32 = foo(five_point_five, 2.25 * 2.0) / 2.0;
-
-	{
-		let num u8 = 97;
-		putchar(num);
-		{
-			let sum f32 = five_point_five + floating_brain;
-		}
-		num = num + 1 - 1;
-	}
-
-	// Print "abc\n", just having some fun with the C standard library
-	//putchar(num);	// Will error
-	putchar(98);
-	putchar(99);
-	putchar(10);
-
-	return (4 / 2 * (8 + 2)) * 4 - 1;
+	let res u8 = 4 * 2 + 1 == 8 + 1;
+	return res;
 }

@@ -11,7 +11,6 @@ pub struct Root
 	pub functions: Vec<Function>
 }
 
-
 // This will have a return type field, calling convenction, and other shit in the future
 #[derive(Debug, Clone)]
 pub struct Function
@@ -35,26 +34,37 @@ pub struct Scope
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum Statement
 {
 	Scope(Scope),
+	If(IfInfo),
 	Assign(VarUpdateInfo),
 	FunctionCall(FunctionCallInfo),
-	Return(Option<ExprType>),
+	Return(Option<BinExpr>),
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct IfInfo
+{
+	condition: BinExpr,
+	then_block: Box<Statement>,
+	else_block: Option<Box<Statement>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct VarUpdateInfo
 {
 	pub destination: Value,
-	pub value: ExprType
+	pub value: BinExpr
 }
 
 #[derive(Debug, Clone)]
 pub struct FunctionCallInfo
 {
 	pub index: u8,
-	pub arguments: Vec<ExprType>,
+	pub arguments: Vec<BinExpr>,
 }
 
 #[derive(Debug, Clone)]
@@ -72,12 +82,6 @@ pub enum Value
 	F64(f64),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
 	FuncCall(FunctionCallInfo),
-}
-
-#[derive(Debug, Clone)]
-pub enum ExprType
-{
-	BinExprT(BinExpr),
 }
 
 #[derive(Debug, Clone)]
@@ -108,6 +112,8 @@ pub enum BinExprOperator
 	Sub,
 	Mul,
 	Div,
+
+	BoolEq,
 }
 
 
@@ -182,9 +188,22 @@ impl Scope
 	}
 }
 
+#[allow(dead_code)]
+impl IfInfo
+{
+	pub fn new(condition: BinExpr, then_block: Box<Statement>, else_block: Option<Box<Statement>>) -> Self
+	{
+		return Self {
+			condition,
+			then_block,
+			else_block,
+		};
+	}
+}
+
 impl FunctionCallInfo
 {
-	pub fn new(index: u8, arguments: Vec<ExprType>) -> Self
+	pub fn new(index: u8, arguments: Vec<BinExpr>) -> Self
 	{
 		return Self {
 			index,
@@ -231,7 +250,7 @@ impl Variable
 
 impl VarUpdateInfo
 {
-	pub fn new(destination: Value, value: ExprType) -> Self
+	pub fn new(destination: Value, value: BinExpr) -> Self
 	{
 		return Self {
 			destination,
@@ -315,24 +334,26 @@ impl BinExprOperator
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
-		match token_kind
+		return Some(match token_kind
 		{
-			TokenKind::Plus => Some(BinExprOperator::Add),
-			TokenKind::Minus => Some(BinExprOperator::Sub),
-			TokenKind::Asterisk => Some(BinExprOperator::Mul),
-			TokenKind::ForwardSlash => Some(BinExprOperator::Div),
-			
+			TokenKind::Plus 		=> BinExprOperator::Add,
+			TokenKind::Minus 		=> BinExprOperator::Sub,
+			TokenKind::Asterisk 	=> BinExprOperator::Mul,
+			TokenKind::ForwardSlash => BinExprOperator::Div,
+
+			TokenKind::BoolEq 		=> BinExprOperator::BoolEq,
 			_ => return None
-		}
+		});
 	}
 	
 	pub fn precedence(&self) -> u8
 	{
-		match *self
+		return match *self
 		{
-			BinExprOperator::Add | BinExprOperator::Sub => return 1,
-			BinExprOperator::Mul | BinExprOperator::Div => return 2,
-		}
+			BinExprOperator::BoolEq => 1,
+			BinExprOperator::Add | BinExprOperator::Sub => 2,
+			BinExprOperator::Mul | BinExprOperator::Div => 3,
+		};
 	}
 }
 

@@ -39,7 +39,7 @@ impl<'a> Lexer<'a>
 	pub fn lex_operator(&mut self) -> Token
 	{
 		let ch = self.current.unwrap();
-		let start = self.position;			/* Might need -1 */
+		let start = self.position;
 		let kind: TokenKind;
 		let next_ch = self.advance().unwrap_or('\0');
 		
@@ -56,9 +56,19 @@ impl<'a> Lexer<'a>
 					kind = TokenKind::Minus;
 				}
 			},
+			'=' => 
+			{
+				if next_ch == '='
+				{
+					self.advance();
+					kind = TokenKind::BoolEq;
+				} else
+				{
+					kind = TokenKind::Equal
+				}
+			},
 			'*' => kind = TokenKind::Asterisk,
 			'/' => kind = TokenKind::ForwardSlash,
-			'=' => kind = TokenKind::Equal,
 			'(' => kind = TokenKind::LeftParen,
 			')' => kind = TokenKind::RightParen,
 			'{' => kind = TokenKind::LeftCurly,
@@ -117,6 +127,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_RETURN		=> kind = TokenKind::Return,
 			KEYWORD_GLOBAL		=> kind = TokenKind::Global,
 			KEYWORD_EXTERN		=> kind = TokenKind::Extern,
+			KEYWORD_IF			=> kind = TokenKind::If,
 			_ => kind = TokenKind::Ident
 		}
 
