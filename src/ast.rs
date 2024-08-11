@@ -330,7 +330,8 @@ impl std::fmt::Display for Type
 
 impl BinExprOperator
 {
-	const LOWEST_PRECEDENCE: u8 = 1;
+	// const LOWEST_PRECEDENCE: u8 = 1;
+	// const HIGHEST_PRECEDENCE: u8 = 3;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
@@ -354,6 +355,11 @@ impl BinExprOperator
 			BinExprOperator::Add | BinExprOperator::Sub => 2,
 			BinExprOperator::Mul | BinExprOperator::Div => 3,
 		};
+	}
+
+	pub fn is_boolean(&self) -> bool
+	{
+		return *self as u8 >= BinExprOperator::BoolEq as u8;
 	}
 }
 

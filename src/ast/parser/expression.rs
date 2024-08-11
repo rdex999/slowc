@@ -119,21 +119,22 @@ impl<'a> Parser<'a>
 		let mut root = self.parse_bin_expression_high_precedence(
 			data_type, 
 			variables, 
-			BinExprOperator::LOWEST_PRECEDENCE + 1
+			BinExprOperator::Add.precedence() + 1
 		);
 	
 		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{
-			if operator.precedence() != BinExprOperator::LOWEST_PRECEDENCE
-			{
-				break;	
-			}
 			self.parse_bin_operator();
+
+			if operator.is_boolean() && data_type.size() != 1
+			{
+				print_errln!(CompileError::TypeError(data_type, Type::U8), self.source, self.current_token().span.start, "Found boolean operator in a non-boolean expression.");
+			}
 
 			let rhs = self.parse_bin_expression_high_precedence(
 				data_type, 
 				variables, 
-				BinExprOperator::LOWEST_PRECEDENCE + 1
+				operator.precedence()
 			);
 
 			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
@@ -150,6 +151,11 @@ impl<'a> Parser<'a>
 			if operator.precedence() < precedence
 			{
 				break;
+			}
+
+			if operator.is_boolean() && data_type.size() != 1
+			{
+				print_errln!(CompileError::TypeError(data_type, Type::U8), self.source, self.current_token().span.start, "Found boolean operator in a non-boolean expression.");
 			}
 
 			self.parse_bin_operator();	

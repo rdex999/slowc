@@ -46,9 +46,9 @@ fn slowc_compile_file(filepath: &str) -> &str
     return code_generator.generate();
 
     // println!("{:#?}", ir);
+    // return "aserdgf";
     // while let Some(token) = lexer.next()
     // {
     //     print_msg!("{:?}", token);
     // }
-    // return "aserdgf";
 }

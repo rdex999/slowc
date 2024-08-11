@@ -290,6 +290,15 @@ impl Placeholder
 		};
 	}
 
+	pub fn is_location(&self) -> bool
+	{
+		return match self.kind
+		{
+			PlaceholderKind::Location(_) => true,
+			_ => false
+		};
+	}
+
 	// If the placeholder is not a register false is returned, if its a register, then return placeholder.reg == register
 	pub fn is_register_eq(&self, register: Register) -> bool
 	{
@@ -702,5 +711,38 @@ impl<'a> CodeGen<'a>
 	pub fn instr_cqo(&mut self)
 	{
 		self.write_text_segment("\n\tcqo");
+	}
+
+	pub fn instr_cmp(&mut self, lhs: &Placeholder, rhs: &Placeholder)
+	{
+		let mut lhs_placeholder = *lhs;
+		let mut allocated_register = None;
+		if (lhs.is_location() && rhs.is_location()) || (lhs.is_constant() && rhs.is_constant())
+		{
+			allocated_register = self.reg_alloc_allocate(lhs.data_type);
+			lhs_placeholder = Placeholder::new(PlaceholderKind::Reg(allocated_register.unwrap()), lhs.data_type);
+			self.instr_mov(&lhs_placeholder, lhs);
+		}
+
+		if lhs_placeholder.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tcmp {} {lhs_placeholder}, {rhs}", Self::size_2_opsize(lhs_placeholder.data_type.size())));
+		} else if lhs_placeholder.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\tcmpsd {lhs_placeholder}, {rhs}"));
+		} else if lhs_placeholder.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\tcmpss {lhs_placeholder}, {rhs}"));
+		}
+
+		if let Some(register) = allocated_register
+		{
+			self.reg_alloc_free(register);
+		}
+	}
+
+	pub fn instr_sete(&mut self, destination: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tsete {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 }
