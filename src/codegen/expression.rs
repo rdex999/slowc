@@ -76,12 +76,14 @@ impl<'a> CodeGen<'a>
 		self.instr_mov(&destination, lhs);
 
 		match operator {
-			BinExprOperator::Add 	=> self.instr_add(&destination, rhs),
-			BinExprOperator::Sub 	=> self.instr_sub(&destination, rhs),
-			BinExprOperator::Mul 	=> self.instr_mul(&destination, rhs),
-			BinExprOperator::Div 	=> self.instr_div(&destination, rhs, false),
-			BinExprOperator::Modulo => self.instr_div(&destination, rhs, true),
-			BinExprOperator::BoolEq => { self.instr_cmp(&destination, rhs); self.instr_sete(&destination); },
+			BinExprOperator::BitwiseRightShift 	=> self.instr_shr(&destination, rhs),
+			BinExprOperator::BitwiseLeftShift 	=> self.instr_shl(&destination, rhs),
+			BinExprOperator::Add 				=> self.instr_add(&destination, rhs),
+			BinExprOperator::Sub 				=> self.instr_sub(&destination, rhs),
+			BinExprOperator::Mul 				=> self.instr_mul(&destination, rhs),
+			BinExprOperator::Div 				=> self.instr_div(&destination, rhs, false),
+			BinExprOperator::Modulo 			=> self.instr_div(&destination, rhs, true),
+			BinExprOperator::BoolEq 			=> { self.instr_cmp(&destination, rhs); self.instr_sete(&destination); },
 		}
 		return destination;
 	}

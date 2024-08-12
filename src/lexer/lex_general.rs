@@ -44,6 +44,28 @@ impl<'a> Lexer<'a>
 		let next_ch = self.advance().unwrap_or('\0');
 		
 		match ch {
+			'>' =>
+			{
+				if next_ch == '>'
+				{
+					self.advance();
+					kind = TokenKind::BitwiseRightShift;
+				} else
+				{
+					todo!("Add greater than operator");
+				}
+			},
+			'<' =>
+			{
+				if next_ch == '<'
+				{
+					self.advance();
+					kind = TokenKind::BitwiseLeftShift;
+				} else
+				{
+					todo!("Add less than operator");
+				}
+			}
 			'+' => kind = TokenKind::Plus,
 			'-' => 
 			{

@@ -787,4 +787,40 @@ impl<'a> CodeGen<'a>
 	{
 		self.write_text_segment(&format!("\n\tjz {lable}"));
 	}
+
+	pub fn instr_shr(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		let mut src_placeholder = *source;
+		if !source.is_constant()
+		{
+			self.reg_alloc_allocate_forced(Register::CL);
+			src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::CL), source.data_type);
+			self.instr_mov(&src_placeholder, source);
+		}
+
+		self.write_text_segment(&format!("\n\tshr {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+
+		if !source.is_constant()
+		{
+			self.reg_alloc_free(Register::CL);
+		}
+	}
+
+	pub fn instr_shl(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		let mut src_placeholder = *source;
+		if !source.is_constant()
+		{
+			self.reg_alloc_allocate_forced(Register::CL);
+			src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::CL), source.data_type);
+			self.instr_mov(&src_placeholder, source);
+		}
+
+		self.write_text_segment(&format!("\n\tshl {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+
+		if !source.is_constant()
+		{
+			self.reg_alloc_free(Register::CL);
+		}
+	}
 }

@@ -2,11 +2,11 @@
 
 func global main(argv u64, argc u32) -> u8
 {
-	let result i8;
-	if 4 + 1 * 2 == 5 + 1 * 2 - 2
-		result = 1;	
-	else
-		result = 0;
+	//let result i8;
+	//if 4 + 1 * 2 == 5 + 1 * 2 - 2
+	//	result = 1;	
+	//else
+	//	result = 0;
 	
-	return 100 % 80;
+	return 100 * 2 + 1 >> 2 + 1 / 2;
 }

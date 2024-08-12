@@ -18,6 +18,8 @@ pub enum TokenKind
 	// Eof,
 	IntLit(i64),
 	FloatLit(f64),
+	BitwiseRightShift,
+	BitwiseLeftShift,
 	Plus,
 	Minus,
 	Asterisk,

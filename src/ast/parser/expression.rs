@@ -133,7 +133,7 @@ impl<'a> Parser<'a>
 			let rhs = self.parse_bin_expression_high_precedence(
 				data_type, 
 				variables, 
-				BinExprOperator::LOWEST_PRECEDENCE
+				BinExprOperator::LOWEST_PRECEDENCE + 1//if operator.precedence() == BinExprOperator::HIGHEST_PRECEDENCE {operator.precedence()} else {operator.precedence() + 1}
 			);
 
 			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
@@ -163,7 +163,7 @@ impl<'a> Parser<'a>
 			let rhs = self.parse_bin_expression_high_precedence(
 				data_type, 
 				variables, 
-				if precedence == BinExprOperator::HIGHEST_PRECEDENCE {precedence} else {precedence + 1}
+				if operator.precedence() == BinExprOperator::HIGHEST_PRECEDENCE {operator.precedence()} else {operator.precedence() + 1}
 			);
 
 			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));

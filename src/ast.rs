@@ -106,6 +106,8 @@ pub struct BinExprOperation
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum BinExprOperator
 {
+	BitwiseRightShift,
+	BitwiseLeftShift,
 	Add,
 	Sub,
 	Mul,
@@ -329,17 +331,19 @@ impl std::fmt::Display for Type
 impl BinExprOperator
 {
 	const LOWEST_PRECEDENCE: u8 = 1;
-	const HIGHEST_PRECEDENCE: u8 = 3;
+	const HIGHEST_PRECEDENCE: u8 = 4;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
 		return Some(match token_kind
 		{
-			TokenKind::Plus 		=> BinExprOperator::Add,
-			TokenKind::Minus 		=> BinExprOperator::Sub,
-			TokenKind::Asterisk 	=> BinExprOperator::Mul,
-			TokenKind::ForwardSlash => BinExprOperator::Div,
-			TokenKind::Percent 		=> BinExprOperator::Modulo,
+			TokenKind::BitwiseRightShift 	=> BinExprOperator::BitwiseRightShift,
+			TokenKind::BitwiseLeftShift 	=> BinExprOperator::BitwiseLeftShift,
+			TokenKind::Plus 				=> BinExprOperator::Add,
+			TokenKind::Minus 				=> BinExprOperator::Sub,
+			TokenKind::Asterisk 			=> BinExprOperator::Mul,
+			TokenKind::ForwardSlash 		=> BinExprOperator::Div,
+			TokenKind::Percent 				=> BinExprOperator::Modulo,
 
 			TokenKind::BoolEq 		=> BinExprOperator::BoolEq,
 			_ => return None
@@ -351,8 +355,9 @@ impl BinExprOperator
 		return match *self
 		{
 			BinExprOperator::BoolEq => 1,
-			BinExprOperator::Add | BinExprOperator::Sub => 2,
-			BinExprOperator::Mul | BinExprOperator::Div | BinExprOperator::Modulo => 3,
+			BinExprOperator::BitwiseRightShift | BinExprOperator::BitwiseLeftShift => 2,
+			BinExprOperator::Add | BinExprOperator::Sub => 3,
+			BinExprOperator::Mul | BinExprOperator::Div | BinExprOperator::Modulo => 4,
 		};
 	}
 
