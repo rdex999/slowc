@@ -169,6 +169,7 @@ impl<'a> CodeGen<'a>
 	fn gen_if_stmt(&mut self, locals: &Vec<Variable>, if_info: &IfInfo)
 	{
 		let false_lable = self.generate_text_seg_lable();
+		let end_else = if let Some(_) = if_info.else_block { Some(self.generate_text_seg_lable()) } else { None };
 
 		#[cfg(debug_assertions)]
 		self.write_text_segment(&format!("\n\t; Start if statement {}, expression:", false_lable.index));
@@ -183,9 +184,31 @@ impl<'a> CodeGen<'a>
 
 		self.gen_statement(&if_info.then_block, locals);
 
-		self.write_lable(false_lable);
+		if let Some(_) = if_info.else_block
+		{
+			self.instr_jmp(end_else.unwrap());
 
-		#[cfg(debug_assertions)]
-		self.write_text_segment(&format!(" \t; End if {}", false_lable.index));
+			#[cfg(debug_assertions)]
+			self.write_lable_text_seg(&format!(" \t; Skip else block of if statement {}", false_lable.index));
+		}
+
+		self.write_lable(false_lable);
+		
+		if let Some(statement) = &if_info.else_block
+		{
+			#[cfg(debug_assertions)]
+			self.write_text_segment(&format!(" \t; Else block of if statement {}", false_lable.index));
+
+			self.gen_statement(statement, locals);
+			
+			self.write_lable(end_else.unwrap());
+
+			#[cfg(debug_assertions)]
+			self.write_text_segment(&format!(" \t; End if statement {}", false_lable.index));
+		} else
+		{
+			#[cfg(debug_assertions)]
+			self.write_text_segment(&format!(" \t; End if statement {}", false_lable.index));
+		}
 	}
 }

@@ -75,6 +75,7 @@ impl<'a> Parser<'a>
 
 		if token_assign_or_semi.kind == TokenKind::Semicolon
 		{
+			self.advance_token();
 			return None;
 		} else if token_assign_or_semi.kind != TokenKind::Equal
 		{
@@ -153,9 +154,32 @@ impl<'a> Parser<'a>
 		let expression = self.parse_expression(Type::I8, variables);
 
 		let then_statement = self.parse_statement(variables, function).unwrap_or_else(|| {
-			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "The \"then\" block of an \"if\" statement cannot be a variable declaration without a value.");
+			print_errln!(
+				CompileError::Syntax, 
+				self.source, 
+				self.current_token().span.start, 
+				"The \"then\" block of an \"{KEYWORD_IF}\" statement cannot be a variable declaration without a value."
+			);
 		});
 
-		return Statement::If(IfInfo::new(expression, then_statement, None));
+		let mut else_statement = None;
+
+		if self.current_token().kind == TokenKind::Else
+		{
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing \"else\" statement.");
+			});
+
+			else_statement = Some(self.parse_statement(variables, function).unwrap_or_else(|| {
+				print_errln!(
+					CompileError::Syntax, 
+					self.source, 
+					self.current_token().span.start, 
+					"The \"{KEYWORD_ELSE}\" of an \"{KEYWORD_IF}\" statement cannot be a variable declaration without a value."
+				);
+			}));
+		}
+
+		return Statement::If(IfInfo::new(expression, then_statement, else_statement));
 	}
 }

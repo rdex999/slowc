@@ -41,6 +41,7 @@ pub const KEYWORD_RETURN	: &str = create_keyword!("החזר", "return");
 pub const KEYWORD_GLOBAL	: &str = create_keyword!("גלובלי", "global");
 pub const KEYWORD_EXTERN 	: &str = create_keyword!("חיצוני", "extern");
 pub const KEYWORD_IF 		: &str = create_keyword!("אם", "if");
+pub const KEYWORD_ELSE 		: &str = create_keyword!("אחרת", "else");
 
 pub struct Lexer<'a>
 {

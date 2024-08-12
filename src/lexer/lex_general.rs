@@ -128,6 +128,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_GLOBAL		=> kind = TokenKind::Global,
 			KEYWORD_EXTERN		=> kind = TokenKind::Extern,
 			KEYWORD_IF			=> kind = TokenKind::If,
+			KEYWORD_ELSE		=> kind = TokenKind::Else,
 			_ => kind = TokenKind::Ident
 		}
 

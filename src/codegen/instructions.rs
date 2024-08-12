@@ -765,6 +765,11 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
+	pub fn instr_jmp(&mut self, lable: Lable)
+	{
+		self.write_text_segment(&format!("\n\tjmp {lable}"));
+	}
+
 	pub fn instr_jz(&mut self, lable: Lable)
 	{
 		self.write_text_segment(&format!("\n\tjz {lable}"));

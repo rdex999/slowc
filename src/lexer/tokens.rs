@@ -48,8 +48,9 @@ pub enum TokenKind
 	Return,
 	Global,
 	Extern,
-	If,
 	BoolEq,
+	If,
+	Else,
 }
 
 impl Token
