@@ -18,6 +18,8 @@ pub enum TokenKind
 	// Eof,
 	IntLit(i64),
 	FloatLit(f64),
+	BoolEq,
+	BitwiseAnd,
 	BitwiseRightShift,
 	BitwiseLeftShift,
 	Plus,
@@ -51,7 +53,6 @@ pub enum TokenKind
 	Return,
 	Global,
 	Extern,
-	BoolEq,
 	If,
 	Else,
 }

@@ -76,6 +76,7 @@ impl<'a> CodeGen<'a>
 		self.instr_mov(&destination, lhs);
 
 		match operator {
+			BinExprOperator::BitwiseAnd 		=> self.instr_and(&destination, rhs),
 			BinExprOperator::BitwiseRightShift 	=> self.instr_shr(&destination, rhs),
 			BinExprOperator::BitwiseLeftShift 	=> self.instr_shl(&destination, rhs),
 			BinExprOperator::Add 				=> self.instr_add(&destination, rhs),

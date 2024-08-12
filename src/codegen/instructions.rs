@@ -247,6 +247,19 @@ impl Register
 		}
 		return Register::XMM0;
 	}
+
+	pub fn base_register(&self) -> Register
+	{
+		let idx = *self as u8;
+		if idx >= Register::RAX as u8 && idx <= Register::DH as u8
+		{
+			return Register::try_from(idx - idx % 5).unwrap();
+		} else if idx >= Register::RSI as u8 && idx <= Register::R15B as u8
+		{
+			return Register::try_from(idx - idx % 4).unwrap();
+		}
+		return Register::try_from(idx).unwrap();
+	}
 }
 
 impl TryFrom<OpSize> for Register
@@ -791,14 +804,28 @@ impl<'a> CodeGen<'a>
 	pub fn instr_shr(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
 		let mut src_placeholder = *source;
-		if !source.is_constant()
+		if !source.is_constant() && !source.is_register_eq(Register::from_op_size(Register::RCX, source.data_type.size()))
 		{
 			self.reg_alloc_allocate_forced(Register::CL);
 			src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::CL), source.data_type);
-			self.instr_mov(&src_placeholder, source);
+			self.instr_mov(
+				&Placeholder::new(
+					PlaceholderKind::Reg(Register::from_op_size(Register::RCX, source.data_type.size())), 
+					source.data_type
+				), 
+				source
+			);
 		}
 
-		self.write_text_segment(&format!("\n\tshr {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+		if src_placeholder.is_constant()
+		{
+			self.write_text_segment(&format!("\n\tshr {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			self.write_text_segment(&format!(
+				"\n\tshr {} {destination}, {}", Self::size_2_opsize(destination.data_type.size()), Register::CL
+			));
+		}
 
 		if !source.is_constant()
 		{
@@ -809,18 +836,37 @@ impl<'a> CodeGen<'a>
 	pub fn instr_shl(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
 		let mut src_placeholder = *source;
-		if !source.is_constant()
+		if !source.is_constant() && !source.is_register_eq(Register::from_op_size(Register::RCX, source.data_type.size()))
 		{
 			self.reg_alloc_allocate_forced(Register::CL);
 			src_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::CL), source.data_type);
-			self.instr_mov(&src_placeholder, source);
+			self.instr_mov(
+				&Placeholder::new(
+					PlaceholderKind::Reg(Register::from_op_size(Register::RCX, source.data_type.size())), 
+					source.data_type
+				), 
+				source
+			);
 		}
 
-		self.write_text_segment(&format!("\n\tshl {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+		if src_placeholder.is_constant()
+		{
+			self.write_text_segment(&format!("\n\tshl {} {destination}, {src_placeholder}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			self.write_text_segment(&format!(
+				"\n\tshl {} {destination}, {}", Self::size_2_opsize(destination.data_type.size()), Register::CL
+			));
+		}
 
 		if !source.is_constant()
 		{
 			self.reg_alloc_free(Register::CL);
 		}
+	}
+
+	pub fn instr_and(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tand {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 	}
 }
