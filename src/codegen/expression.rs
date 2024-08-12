@@ -80,7 +80,7 @@ impl<'a> CodeGen<'a>
 			BinExprOperator::Sub 	=> self.instr_sub(&destination, rhs),
 			BinExprOperator::Mul 	=> self.instr_mul(&destination, rhs),
 			BinExprOperator::Div 	=> self.instr_div(&destination, rhs),
-			BinExprOperator::BoolEq => { self.instr_cmp(lhs, rhs); self.instr_sete(&destination); },
+			BinExprOperator::BoolEq => { self.instr_cmp(&destination, rhs); self.instr_sete(&destination); },
 		}
 		return destination;
 	}

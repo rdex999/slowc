@@ -19,7 +19,8 @@ pub struct CodeGen<'a>
 	data_segment: String,
 	text_segment: String,
 
-	data_seg_var_index: usize
+	data_seg_var_index: usize,
+	text_seg_var_index: usize,
 }
 
 impl<'a> CodeGen<'a>
@@ -37,7 +38,8 @@ impl<'a> CodeGen<'a>
 			attribute_segment,
 			data_segment,
 			text_segment,
-			data_seg_var_index: 0
+			data_seg_var_index: 0,
+			text_seg_var_index: 0,
 		};
 	}
 	
@@ -107,7 +109,7 @@ impl<'a> CodeGen<'a>
 			Statement::Assign(assign_data) 					=> self.gen_assign_stmt(assign_data, locals),
 			Statement::FunctionCall(function_call_info) 	=> { self.gen_function_call(locals, function_call_info); } 
 			Statement::Return(expression) 				=> self.gen_return_stmt(locals, expression),
-			_ => todo!("Implement if statements in code generation.")
+			Statement::If(if_info)									=> self.gen_if_stmt(locals, if_info),
 		}
 	}
 
@@ -162,5 +164,28 @@ impl<'a> CodeGen<'a>
 		}
 
 		self.gen_function_return();
+	}
+
+	fn gen_if_stmt(&mut self, locals: &Vec<Variable>, if_info: &IfInfo)
+	{
+		let false_lable = self.generate_text_seg_lable();
+
+		#[cfg(debug_assertions)]
+		self.write_text_segment(&format!("\n\t; Start if statement {}, expression:", false_lable.index));
+
+		let expression = self.gen_expression(&if_info.condition, locals);
+
+		self.instr_test(&expression, &expression);
+		self.instr_jz(false_lable);
+
+		#[cfg(debug_assertions)]
+		self.write_text_segment(&format!("\n\t; If statement {}, then:", false_lable.index));
+
+		self.gen_statement(&if_info.then_block, locals);
+
+		self.write_lable(false_lable);
+
+		#[cfg(debug_assertions)]
+		self.write_text_segment(&format!(" \t; End if {}", false_lable.index));
 	}
 }

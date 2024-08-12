@@ -8,6 +8,7 @@ impl<'a> Parser<'a>
 		match self.current_token().kind {
 			TokenKind::LeftCurly 	=> return Some(Statement::Scope(self.parse_scope(variables, function))),
 			TokenKind::VarDecl 		=> return self.parse_var_decl(variables),
+			TokenKind::If			=> return Some(self.parse_if_stmt(variables, function)),
 			TokenKind::Return 		=> return Some(self.parse_return_stmt(variables, function)),
 			TokenKind::Ident 		=> 
 			{
@@ -141,5 +142,20 @@ impl<'a> Parser<'a>
 		self.advance_token();
 
 		return stmt;
+	}
+
+	fn parse_if_stmt(&mut self, variables: &mut LocalVariables, function: &Function) -> Statement
+	{
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing \"if\" statement.");
+		});
+
+		let expression = self.parse_expression(Type::I8, variables);
+
+		let then_statement = self.parse_statement(variables, function).unwrap_or_else(|| {
+			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "The \"then\" block of an \"if\" statement cannot be a variable declaration without a value.");
+		});
+
+		return Statement::If(IfInfo::new(expression, then_statement, None));
 	}
 }

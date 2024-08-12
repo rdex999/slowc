@@ -2,6 +2,9 @@
 
 func global main(argv u64, argc u32) -> i8
 {
-	let res i8 = 4 + 1 * 2 == 5 + 1 * 2 - 1;
-	return res;
+	if 4 + 1 * 2 == 5 + 1 * 2 - 1
+	{
+		return 1;
+	}
+	return 0;
 }

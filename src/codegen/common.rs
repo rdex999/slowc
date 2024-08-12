@@ -34,6 +34,15 @@ impl<'a> CodeGen<'a>
 		self.write_text_segment(&format!("\n{lable}:"));
 	}
 
+	pub fn write_lable(&mut self, lable: Lable)
+	{
+		match lable.kind
+		{
+			LableKind::DataSeg => self.write_data_segment(&format!("\n\t{lable}:")),
+			LableKind::TextSeg => self.write_text_segment(&format!("\n{lable}:")),
+		}
+	}
+
 	pub fn decl_var_data_seg(&mut self, value: &Value) -> Lable
 	{
 		let lable = self.generate_data_seg_lable();
@@ -60,6 +69,13 @@ impl<'a> CodeGen<'a>
 		let index = self.data_seg_var_index;
 		self.data_seg_var_index += 1;
 		return Lable::new(index, LableKind::DataSeg);
+	}
+
+	pub fn generate_text_seg_lable(&mut self) -> Lable
+	{
+		let index = self.text_seg_var_index;
+		self.text_seg_var_index += 1;
+		return Lable::new(index, LableKind::TextSeg);
 	}
 
 	// Returns the size of a value, in bytes

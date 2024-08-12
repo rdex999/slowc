@@ -24,8 +24,8 @@ pub enum PlaceholderKind
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct Lable
 {
-	index: usize,
-	kind: LableKind
+	pub index: usize,
+	pub kind: LableKind
 }
 
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
@@ -729,10 +729,10 @@ impl<'a> CodeGen<'a>
 			self.write_text_segment(&format!("\n\tcmp {} {lhs_placeholder}, {rhs}", Self::size_2_opsize(lhs_placeholder.data_type.size())));
 		} else if lhs_placeholder.data_type == Type::F64
 		{
-			self.write_text_segment(&format!("\n\tcmpsd {lhs_placeholder}, {rhs}"));
+			self.write_text_segment(&format!("\n\tucomisd {lhs_placeholder}, {rhs}"));
 		} else if lhs_placeholder.data_type == Type::F32
 		{
-			self.write_text_segment(&format!("\n\tcmpss {lhs_placeholder}, {rhs}"));
+			self.write_text_segment(&format!("\n\tucomiss {lhs_placeholder}, {rhs}"));
 		}
 
 		if let Some(register) = allocated_register
@@ -744,5 +744,29 @@ impl<'a> CodeGen<'a>
 	pub fn instr_sete(&mut self, destination: &Placeholder)
 	{
 		self.write_text_segment(&format!("\n\tsete {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+	}
+
+	pub fn instr_test(&mut self, lhs: &Placeholder, rhs: &Placeholder)
+	{
+		let mut lhs_placeholder = *lhs;
+		let mut allocated_register = None;	
+		if (lhs.is_location() && rhs.is_location()) || (lhs.is_constant() && (rhs.is_location() || rhs.is_constant()))
+		{
+			allocated_register = self.reg_alloc_allocate(lhs.data_type);
+			lhs_placeholder = Placeholder::new(PlaceholderKind::Reg(allocated_register.unwrap()), lhs.data_type);
+			self.instr_mov(&lhs_placeholder, lhs);
+		}
+
+		self.write_text_segment(&format!("\n\ttest {} {lhs_placeholder}, {rhs}", Self::size_2_opsize(lhs_placeholder.data_type.size())));
+
+		if let Some(allocated_register) = allocated_register
+		{
+			self.reg_alloc_free(allocated_register);
+		}
+	}
+
+	pub fn instr_jz(&mut self, lable: Lable)
+	{
+		self.write_text_segment(&format!("\n\tjz {lable}"));
 	}
 }

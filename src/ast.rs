@@ -34,7 +34,6 @@ pub struct Scope
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub enum Statement
 {
 	Scope(Scope),
@@ -45,12 +44,11 @@ pub enum Statement
 }
 
 #[derive(Debug, Clone)]
-#[allow(dead_code)]
 pub struct IfInfo
 {
-	condition: BinExpr,
-	then_block: Box<Statement>,
-	else_block: Option<Box<Statement>>,
+	pub condition: BinExpr,
+	pub then_block: Box<Statement>,
+	pub else_block: Option<Box<Statement>>,
 }
 
 #[derive(Debug, Clone)]
@@ -188,15 +186,14 @@ impl Scope
 	}
 }
 
-#[allow(dead_code)]
 impl IfInfo
 {
-	pub fn new(condition: BinExpr, then_block: Box<Statement>, else_block: Option<Box<Statement>>) -> Self
+	pub fn new(condition: BinExpr, then_block: Statement, else_block: Option<Statement>) -> Self
 	{
 		return Self {
 			condition,
-			then_block,
-			else_block,
+			then_block: Box::new(then_block),
+			else_block: if let Some(else_block) = else_block { Some(Box::new(else_block)) } else { None },
 		};
 	}
 }
