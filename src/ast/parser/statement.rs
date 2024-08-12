@@ -151,7 +151,7 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing \"if\" statement.");
 		});
 
-		let expression = self.parse_expression(Type::I8, variables);
+		let expression = self.parse_expression(Type::U8, variables);
 
 		let then_statement = self.parse_statement(variables, function).unwrap_or_else(|| {
 			print_errln!(

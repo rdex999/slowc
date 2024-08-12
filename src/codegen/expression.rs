@@ -79,7 +79,8 @@ impl<'a> CodeGen<'a>
 			BinExprOperator::Add 	=> self.instr_add(&destination, rhs),
 			BinExprOperator::Sub 	=> self.instr_sub(&destination, rhs),
 			BinExprOperator::Mul 	=> self.instr_mul(&destination, rhs),
-			BinExprOperator::Div 	=> self.instr_div(&destination, rhs),
+			BinExprOperator::Div 	=> self.instr_div(&destination, rhs, false),
+			BinExprOperator::Modulo => self.instr_div(&destination, rhs, true),
 			BinExprOperator::BoolEq => { self.instr_cmp(&destination, rhs); self.instr_sete(&destination); },
 		}
 		return destination;

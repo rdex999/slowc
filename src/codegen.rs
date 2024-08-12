@@ -202,13 +202,9 @@ impl<'a> CodeGen<'a>
 			self.gen_statement(statement, locals);
 			
 			self.write_lable(end_else.unwrap());
-
-			#[cfg(debug_assertions)]
-			self.write_text_segment(&format!(" \t; End if statement {}", false_lable.index));
-		} else
-		{
-			#[cfg(debug_assertions)]
-			self.write_text_segment(&format!(" \t; End if statement {}", false_lable.index));
 		}
+
+		#[cfg(debug_assertions)]
+		self.write_text_segment(&format!(" \t; End if statement {}", false_lable.index));
 	}
 }

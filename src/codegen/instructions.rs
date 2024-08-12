@@ -585,7 +585,7 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
-	pub fn instr_div(&mut self, destination: &Placeholder, source: &Placeholder)
+	pub fn instr_div(&mut self, destination: &Placeholder, source: &Placeholder, get_modulo_in_dest: bool)
 	{
 		let mut dst = *destination;
 		let mut src = *source;
@@ -602,19 +602,16 @@ impl<'a> CodeGen<'a>
 		if destination.data_type.is_integer()
 		{
 			let rax = Register::from_op_size(Register::RAX, destination.data_type.size());
+			let rax_placeholder = Placeholder::new(PlaceholderKind::Reg(rax), destination.data_type);
 			if !destination.is_register_eq(rax)
 			{
-				dst_reg = self.reg_alloc_allocate(destination.data_type);
-				dst = Placeholder::new(PlaceholderKind::Reg(dst_reg.unwrap()), destination.data_type);
-				self.instr_mov(&dst, &destination);			
+				self.instr_mov(&rax_placeholder, destination);			
 			}
 
 			let rdx_allocated = Register::from_op_size(Register::RDX, src.data_type.size());
-			if src.data_type.size() != OP_BYTE
-			{
-				self.reg_alloc_allocate_forced(rdx_allocated);
-			}
 			
+			let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), src.data_type);
+			let rdx_placeholder = Placeholder::new(PlaceholderKind::Reg(rdx_allocated), src.data_type);
 			if destination.data_type.is_signed()
 			{
 				match src.data_type.size()
@@ -630,17 +627,33 @@ impl<'a> CodeGen<'a>
 			{
 				if src.data_type.size() == OP_BYTE
 				{
-					let ah_placeholder = Placeholder::new(PlaceholderKind::Reg(Register::AH), src.data_type);
 					self.instr_xor(&ah_placeholder, &ah_placeholder);
 				} else
 				{
-					let rdx_placeholder = Placeholder::new(PlaceholderKind::Reg(rdx_allocated), src.data_type);
+					if src.data_type.size() != OP_BYTE && !destination.is_register_eq(rdx_allocated)
+					{
+						self.reg_alloc_allocate_forced(rdx_allocated);
+					}
 					self.instr_xor(&rdx_placeholder, &rdx_placeholder);
 				}
 				self.write_text_segment(&format!("\n\tdiv {} {src}", Self::size_2_opsize(src.data_type.size())));
 			}
 
-			if src.data_type.size() != OP_BYTE
+			if !destination.is_register_eq(rax) && !get_modulo_in_dest
+			{
+				self.instr_mov(destination, &rax_placeholder);
+			} else if get_modulo_in_dest
+			{
+				if src.data_type.size() == OP_BYTE && !destination.is_register_eq(Register::AH)
+				{
+					self.instr_mov(destination, &ah_placeholder);
+				} else if src.data_type.size() != OP_BYTE && !destination.is_register_eq(rdx_allocated)
+				{
+					self.instr_mov(destination, &rdx_placeholder);
+				}
+			}
+
+			if !src.data_type.is_signed() && src.data_type.size() != OP_BYTE && !destination.is_register_eq(rdx_allocated)
 			{
 				self.reg_alloc_free(rdx_allocated);
 			}

@@ -22,6 +22,7 @@ pub enum TokenKind
 	Minus,
 	Asterisk,
 	ForwardSlash,
+	Percent,
 	Equal,
 	// BackwardsSlash,
 	LeftParen,

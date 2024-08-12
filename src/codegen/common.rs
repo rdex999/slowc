@@ -38,8 +38,8 @@ impl<'a> CodeGen<'a>
 	{
 		match lable.kind
 		{
-			LableKind::DataSeg => self.write_data_segment(&format!("\n\t{lable}:")),
-			LableKind::TextSeg => self.write_text_segment(&format!("\n{lable}:")),
+			LableKind::DataSeg => self.write_data_segment(&format!("\n\t{lable}: ")),
+			LableKind::TextSeg => self.write_text_segment(&format!("\n{lable}: ")),
 		}
 	}
 

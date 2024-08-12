@@ -110,6 +110,7 @@ pub enum BinExprOperator
 	Sub,
 	Mul,
 	Div,
+	Modulo,
 
 	BoolEq,
 }
@@ -338,6 +339,7 @@ impl BinExprOperator
 			TokenKind::Minus 		=> BinExprOperator::Sub,
 			TokenKind::Asterisk 	=> BinExprOperator::Mul,
 			TokenKind::ForwardSlash => BinExprOperator::Div,
+			TokenKind::Percent 		=> BinExprOperator::Modulo,
 
 			TokenKind::BoolEq 		=> BinExprOperator::BoolEq,
 			_ => return None
@@ -350,7 +352,7 @@ impl BinExprOperator
 		{
 			BinExprOperator::BoolEq => 1,
 			BinExprOperator::Add | BinExprOperator::Sub => 2,
-			BinExprOperator::Mul | BinExprOperator::Div => 3,
+			BinExprOperator::Mul | BinExprOperator::Div | BinExprOperator::Modulo => 3,
 		};
 	}
 

@@ -69,6 +69,7 @@ impl<'a> Lexer<'a>
 			},
 			'*' => kind = TokenKind::Asterisk,
 			'/' => kind = TokenKind::ForwardSlash,
+			'%' => kind = TokenKind::Percent,
 			'(' => kind = TokenKind::LeftParen,
 			')' => kind = TokenKind::RightParen,
 			'{' => kind = TokenKind::LeftCurly,
