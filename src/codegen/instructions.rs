@@ -702,16 +702,12 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_xor(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		if destination.data_type.is_integer()
-		{
-			self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-		} else if destination.data_type == Type::F64
-		{
-			self.write_text_segment(&format!("\n\txorpd {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-		} else if destination.data_type == Type::F32
-		{
-			self.write_text_segment(&format!("\n\txorps {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-		}
+		self.write_text_segment(&format!("\n\txor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+	}
+	
+	pub fn instr_or(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_call(&mut self, identifier: &str)

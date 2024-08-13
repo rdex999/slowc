@@ -44,6 +44,11 @@ impl<'a> Lexer<'a>
 		let next_ch = self.advance().unwrap_or('\0');
 		
 		match ch {
+			'|' =>
+			{
+				// TODO: Add logical or || here
+				kind = TokenKind::BitwiseOr;
+			},
 			'&' =>
 			{
 				// TODO: Add logical and && here

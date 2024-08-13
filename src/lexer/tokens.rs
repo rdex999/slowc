@@ -19,6 +19,7 @@ pub enum TokenKind
 	IntLit(i64),
 	FloatLit(f64),
 	BoolEq,
+	BitwiseOr,
 	BitwiseXor,
 	BitwiseAnd,
 	BitwiseRightShift,

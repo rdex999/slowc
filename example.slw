@@ -8,5 +8,5 @@ func global main(argv u64, argc u32) -> u32
 	else
 		result = 0;
 	
-	return 15 - 5 * 3 + 5 * 1 ^ 2 * 1 + 2;
+	return 15 - 5 * 3 + 5 * 1 ^ 2 * 1 + 2 | 1 * 2 - 1 * 0;
 }
