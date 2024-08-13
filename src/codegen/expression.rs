@@ -75,19 +75,33 @@ impl<'a> CodeGen<'a>
 		let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
 		self.instr_mov(&destination, lhs);
 
-		match operator {
-			BinExprOperator::BitwiseOr 			=> self.instr_or(&destination, rhs),
-			BinExprOperator::BitwiseXor 		=> self.instr_xor(&destination, rhs),
-			BinExprOperator::BitwiseAnd 		=> self.instr_and(&destination, rhs),
-			BinExprOperator::BitwiseRightShift 	=> self.instr_shr(&destination, rhs),
-			BinExprOperator::BitwiseLeftShift 	=> self.instr_shl(&destination, rhs),
-			BinExprOperator::Add 				=> self.instr_add(&destination, rhs),
-			BinExprOperator::Sub 				=> self.instr_sub(&destination, rhs),
-			BinExprOperator::Mul 				=> self.instr_mul(&destination, rhs),
-			BinExprOperator::Div 				=> self.instr_div(&destination, rhs, false),
-			BinExprOperator::Modulo 			=> self.instr_div(&destination, rhs, true),
-			BinExprOperator::BoolEq 			=> { self.instr_cmp(&destination, rhs); self.instr_sete(&destination); },
+		if operator.is_boolean()
+		{
+			self.instr_cmp(&destination, rhs); 
+
+			match operator
+			{
+				BinExprOperator::BoolEq 			=> self.instr_sete(&destination),
+				BinExprOperator::BoolNotEq			=> self.instr_setne(&destination),
+				_ => panic!("Rust doesnt work"),
+			}	
+		} else
+		{
+			match operator {
+				BinExprOperator::BitwiseOr 			=> self.instr_or(&destination, rhs),
+				BinExprOperator::BitwiseXor 		=> self.instr_xor(&destination, rhs),
+				BinExprOperator::BitwiseAnd 		=> self.instr_and(&destination, rhs),
+				BinExprOperator::BitwiseRightShift 	=> self.instr_shr(&destination, rhs),
+				BinExprOperator::BitwiseLeftShift 	=> self.instr_shl(&destination, rhs),
+				BinExprOperator::Add 				=> self.instr_add(&destination, rhs),
+				BinExprOperator::Sub 				=> self.instr_sub(&destination, rhs),
+				BinExprOperator::Mul 				=> self.instr_mul(&destination, rhs),
+				BinExprOperator::Div 				=> self.instr_div(&destination, rhs, false),
+				BinExprOperator::Modulo 			=> self.instr_div(&destination, rhs, true),
+				_ => panic!("Rust doesnt work."),
+			}
 		}
+
 		return destination;
 	}
 

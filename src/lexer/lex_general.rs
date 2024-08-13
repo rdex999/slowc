@@ -44,6 +44,18 @@ impl<'a> Lexer<'a>
 		let next_ch = self.advance().unwrap_or('\0');
 		
 		match ch {
+			'!' =>
+			{
+				if next_ch == '='
+				{
+					self.advance();
+					kind = TokenKind::BoolNotEq;
+				} else
+				{
+					todo!("Add boolean not operator ! here");
+					// kind = TokenKind::BoolNot
+				}
+			},
 			'|' =>
 			{
 				// TODO: Add logical or || here

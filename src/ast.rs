@@ -106,6 +106,9 @@ pub struct BinExprOperation
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum BinExprOperator
 {
+	BoolEq,
+	BoolNotEq,
+
 	BitwiseOr,
 	BitwiseXor,
 	BitwiseAnd,
@@ -116,8 +119,6 @@ pub enum BinExprOperator
 	Mul,
 	Div,
 	Modulo,
-
-	BoolEq,
 }
 
 
@@ -340,18 +341,19 @@ impl BinExprOperator
 	{
 		return Some(match token_kind
 		{
-			TokenKind::BitwiseOr 			=> BinExprOperator::BitwiseOr,
-			TokenKind::BitwiseXor 			=> BinExprOperator::BitwiseXor,
-			TokenKind::BitwiseAnd 			=> BinExprOperator::BitwiseAnd,
-			TokenKind::BitwiseRightShift 	=> BinExprOperator::BitwiseRightShift,
-			TokenKind::BitwiseLeftShift 	=> BinExprOperator::BitwiseLeftShift,
-			TokenKind::Plus 				=> BinExprOperator::Add,
-			TokenKind::Minus 				=> BinExprOperator::Sub,
-			TokenKind::Asterisk 			=> BinExprOperator::Mul,
-			TokenKind::ForwardSlash 		=> BinExprOperator::Div,
-			TokenKind::Percent 				=> BinExprOperator::Modulo,
+			TokenKind::BoolEq 				=> Self::BoolEq,
+			TokenKind::BoolNotEq 			=> Self::BoolNotEq,
 
-			TokenKind::BoolEq 		=> BinExprOperator::BoolEq,
+			TokenKind::BitwiseOr 			=> Self::BitwiseOr,
+			TokenKind::BitwiseXor 			=> Self::BitwiseXor,
+			TokenKind::BitwiseAnd 			=> Self::BitwiseAnd,
+			TokenKind::BitwiseRightShift 	=> Self::BitwiseRightShift,
+			TokenKind::BitwiseLeftShift 	=> Self::BitwiseLeftShift,
+			TokenKind::Plus 				=> Self::Add,
+			TokenKind::Minus 				=> Self::Sub,
+			TokenKind::Asterisk 			=> Self::Mul,
+			TokenKind::ForwardSlash 		=> Self::Div,
+			TokenKind::Percent 				=> Self::Modulo,
 			_ => return None
 		});
 	}
@@ -360,19 +362,19 @@ impl BinExprOperator
 	{
 		return match *self
 		{
-			BinExprOperator::BoolEq 												=> 1,
-			BinExprOperator::BitwiseOr 												=> 2,
-			BinExprOperator::BitwiseXor 											=> 3,
-			BinExprOperator::BitwiseAnd 											=> 4,
-			BinExprOperator::BitwiseRightShift | BinExprOperator::BitwiseLeftShift 	=> 5,
-			BinExprOperator::Add | BinExprOperator::Sub 							=> 6,
-			BinExprOperator::Mul | BinExprOperator::Div | BinExprOperator::Modulo 	=> 7,
+			Self::BoolEq | Self::BoolNotEq 						=> 1,
+			Self::BitwiseOr 									=> 2,
+			Self::BitwiseXor 									=> 3,
+			Self::BitwiseAnd 									=> 4,
+			Self::BitwiseRightShift | Self::BitwiseLeftShift 	=> 5,
+			Self::Add | Self::Sub 								=> 6,
+			Self::Mul | Self::Div | Self::Modulo 				=> 7,
 		};
 	}
 
 	pub fn is_boolean(&self) -> bool
 	{
-		return *self as u8 >= BinExprOperator::BoolEq as u8;
+		return *self as u8 >= Self::BoolEq as u8 && *self as u8 <= Self::BoolNotEq as u8;
 	}
 }
 
