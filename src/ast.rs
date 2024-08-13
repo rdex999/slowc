@@ -108,6 +108,7 @@ pub enum BinExprOperator
 {
 	BoolEq,
 	BoolNotEq,
+	BoolGreater,
 
 	BitwiseOr,
 	BitwiseXor,
@@ -343,6 +344,7 @@ impl BinExprOperator
 		{
 			TokenKind::BoolEq 				=> Self::BoolEq,
 			TokenKind::BoolNotEq 			=> Self::BoolNotEq,
+			TokenKind::BoolGreater 			=> Self::BoolGreater,
 
 			TokenKind::BitwiseOr 			=> Self::BitwiseOr,
 			TokenKind::BitwiseXor 			=> Self::BitwiseXor,
@@ -362,7 +364,7 @@ impl BinExprOperator
 	{
 		return match *self
 		{
-			Self::BoolEq | Self::BoolNotEq 						=> 1,
+			Self::BoolEq | Self::BoolNotEq | Self::BoolGreater	=> 1,
 			Self::BitwiseOr 									=> 2,
 			Self::BitwiseXor 									=> 3,
 			Self::BitwiseAnd 									=> 4,
@@ -374,7 +376,7 @@ impl BinExprOperator
 
 	pub fn is_boolean(&self) -> bool
 	{
-		return *self as u8 >= Self::BoolEq as u8 && *self as u8 <= Self::BoolNotEq as u8;
+		return *self as u8 >= Self::BoolEq as u8 && *self as u8 <= Self::BoolGreater as u8;
 	}
 }
 

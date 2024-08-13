@@ -20,6 +20,7 @@ pub enum TokenKind
 	FloatLit(f64),
 	BoolEq,
 	BoolNotEq,
+	BoolGreater,
 	BitwiseOr,
 	BitwiseXor,
 	BitwiseAnd,
