@@ -94,6 +94,7 @@ impl<'a> Lexer<'a>
 					kind = TokenKind::Equal
 				}
 			},
+			'^' => kind = TokenKind::BitwiseXor,
 			'*' => kind = TokenKind::Asterisk,
 			'/' => kind = TokenKind::ForwardSlash,
 			'%' => kind = TokenKind::Percent,

@@ -109,6 +109,7 @@ pub enum BinExprOperator
 	BitwiseAnd,
 	BitwiseRightShift,
 	BitwiseLeftShift,
+	BitwiseXor,
 	Add,
 	Sub,
 	Mul,
@@ -332,12 +333,13 @@ impl std::fmt::Display for Type
 impl BinExprOperator
 {
 	const LOWEST_PRECEDENCE: u8 = 1;
-	const HIGHEST_PRECEDENCE: u8 = 5;
+	const HIGHEST_PRECEDENCE: u8 = 6;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
 		return Some(match token_kind
 		{
+			TokenKind::BitwiseXor 			=> BinExprOperator::BitwiseXor,
 			TokenKind::BitwiseAnd 			=> BinExprOperator::BitwiseAnd,
 			TokenKind::BitwiseRightShift 	=> BinExprOperator::BitwiseRightShift,
 			TokenKind::BitwiseLeftShift 	=> BinExprOperator::BitwiseLeftShift,
@@ -357,10 +359,11 @@ impl BinExprOperator
 		return match *self
 		{
 			BinExprOperator::BoolEq 												=> 1,
-			BinExprOperator::BitwiseAnd 											=> 2,
-			BinExprOperator::BitwiseRightShift | BinExprOperator::BitwiseLeftShift 	=> 3,
-			BinExprOperator::Add | BinExprOperator::Sub 							=> 4,
-			BinExprOperator::Mul | BinExprOperator::Div | BinExprOperator::Modulo 	=> 5,
+			BinExprOperator::BitwiseXor 											=> 2,
+			BinExprOperator::BitwiseAnd 											=> 3,
+			BinExprOperator::BitwiseRightShift | BinExprOperator::BitwiseLeftShift 	=> 4,
+			BinExprOperator::Add | BinExprOperator::Sub 							=> 5,
+			BinExprOperator::Mul | BinExprOperator::Div | BinExprOperator::Modulo 	=> 6,
 		};
 	}
 
