@@ -4,15 +4,34 @@ use super::{Parser, variable::*, };
 
 impl<'a> Parser<'a>
 {
-	pub fn parse_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr 
+	pub fn parse_expression(&mut self, data_type: Option<Type>, variables: &LocalVariables) -> BinExpr 
 	{
-		if data_type.is_bin_expr_type()
+		if let Some(data_type) = data_type
 		{
 			return self.parse_bin_expression(data_type, variables);
-		} else
-		{
-			todo!("Dev error!! parse_expression() - None binary expressions are not yet supported.");
 		}
+		let data_type = self.get_expression_type(variables);
+		return self.parse_bin_expression(data_type, variables);
+	}
+
+	// Doesnt actually mutate self
+	pub fn get_expression_type(&mut self, variables: &LocalVariables) -> Type
+	{
+		let position = self.position;
+
+		while self.current_token().kind == TokenKind::LeftParen 
+		{ 
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese.");
+			});
+		}
+
+		let value = self.parse_value(None, variables, false).unwrap_or_else(|| {
+			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found in binary expression.");
+		});
+
+		self.position = position;
+		return self.value_type(&value, variables);	
 	}
 	
 	pub fn parse_value(&mut self, data_type: Option<Type>, variables: &LocalVariables, is_lvalue: bool) -> Option<Value>
@@ -125,10 +144,6 @@ impl<'a> Parser<'a>
 		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{
 			self.parse_bin_operator();
-			if operator.is_boolean() && data_type.size() != 1
-			{
-				print_errln!(CompileError::TypeError(data_type, Type::U8), self.source, self.current_token().span.start, "Found boolean operator in a non-boolean expression.");
-			}
 
 			let rhs = self.parse_bin_expression_high_precedence(
 				data_type, 
@@ -150,11 +165,6 @@ impl<'a> Parser<'a>
 			if operator.precedence() < precedence
 			{
 				break;
-			}
-
-			if operator.is_boolean() && data_type.size() != 1
-			{
-				print_errln!(CompileError::TypeError(data_type, Type::U8), self.source, self.current_token().span.start, "Found boolean operator in a non-boolean expression.");
 			}
 
 			self.parse_bin_operator();	

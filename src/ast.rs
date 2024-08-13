@@ -269,17 +269,6 @@ impl VarUpdateInfo
 
 impl Type
 {
-	pub fn is_bin_expr_type(&self) -> bool
-	{
-		return match self
-		{
-			Type::I8  | Type::U8  | Type::I16 | Type::U16 | 
-			Type::I32 | Type::U32 | Type::I64 | Type::U64 |
-			Type::F32 | Type::F64 => true,
-			_ => false,
-		}
-	}
-	
 	// Will return None if the given token kind is not a type
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Type>
 	{

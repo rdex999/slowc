@@ -265,7 +265,7 @@ impl<'a> Parser<'a>
 				}
 				
 				let data_type = parameter.data_type;
-				let argument = self.parse_expression(data_type, variables);
+				let argument = self.parse_expression(Some(data_type), variables);
 				arguments.push(argument);
 
 				if self.current_token().kind == TokenKind::RightParen

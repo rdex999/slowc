@@ -260,6 +260,12 @@ impl Register
 		}
 		return Register::try_from(idx).unwrap();
 	}
+
+	pub fn of_size(&self, size: OpSize) -> Register
+	{
+		let base = self.base_register();
+		return Register::from_op_size(base, size);
+	}
 }
 
 impl TryFrom<OpSize> for Register
@@ -321,6 +327,15 @@ impl Placeholder
 		}
 
 		return false;
+	}
+
+	pub fn of_type(&self, data_type: Type) -> Placeholder
+	{
+		if let PlaceholderKind::Reg(register) = self.kind
+		{
+			return Placeholder::new(PlaceholderKind::Reg(register.of_size(data_type.size())), data_type);
+		}
+		return Placeholder::new(self.kind, data_type);
 	}
 }
 
@@ -765,51 +780,61 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_sete(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsete {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setne(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetne {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setg(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetg {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_seta(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tseta {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setl(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetl {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setb(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetb {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setge(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetge {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setae(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetae {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setle(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetle {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setbe(&mut self, destination: &Placeholder)
 	{
+		let destination = destination.of_type(Type::U8);
 		self.write_text_segment(&format!("\n\tsetbe {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 

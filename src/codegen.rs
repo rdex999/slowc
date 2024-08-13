@@ -174,7 +174,7 @@ impl<'a> CodeGen<'a>
 		#[cfg(debug_assertions)]
 		self.write_text_segment(&format!("\n\t; Start if statement {}, expression:", false_lable.index));
 
-		let expression = self.gen_expression(&if_info.condition, locals);
+		let expression = self.gen_expression(&if_info.condition, locals).of_type(Type::U8);
 
 		self.instr_test(&expression, &expression);
 		self.instr_jz(false_lable);

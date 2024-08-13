@@ -85,7 +85,7 @@ impl<'a> Parser<'a>
 		// Will get here is there is an initial assignment to the variable
 		self.advance_token(); 	/* Skip equal token, now self.current_token is the first token of the expression */
 
-		let expr = self.parse_expression(data_type, variables);
+		let expr = self.parse_expression(Some(data_type), variables);
 
 		if self.current_token().kind != TokenKind::Semicolon
 		{
@@ -109,7 +109,7 @@ impl<'a> Parser<'a>
 			TokenKind::Equal =>
 			{
 				self.advance_token();
-				let rvalue = self.parse_expression(self.value_type(&destination, &variables), variables);
+				let rvalue = self.parse_expression(Some(self.value_type(&destination, &variables)), variables);
 				if self.current_token().kind != TokenKind::Semicolon
 				{
 					print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon.");
@@ -132,7 +132,7 @@ impl<'a> Parser<'a>
 
 		if function.return_type != Type::Void
 		{
-			let expr = self.parse_expression(function.return_type, variables);
+			let expr = self.parse_expression(Some(function.return_type), variables);
 			stmt = Statement::Return(Some(expr));
 		}
 
@@ -151,7 +151,7 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing \"if\" statement.");
 		});
 
-		let expression = self.parse_expression(Type::U8, variables);
+		let expression = self.parse_expression(None, variables);
 
 		let then_statement = self.parse_statement(variables, function).unwrap_or_else(|| {
 			print_errln!(
