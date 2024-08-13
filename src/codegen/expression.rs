@@ -84,6 +84,7 @@ impl<'a> CodeGen<'a>
 				BinExprOperator::BoolEq 		=> self.instr_sete(&destination),
 				BinExprOperator::BoolNotEq		=> self.instr_setne(&destination),
 				BinExprOperator::BoolGreater	=> if destination.data_type.is_signed() {self.instr_setg(&destination)} else {self.instr_seta(&destination)},
+				BinExprOperator::BoolLess		=> if destination.data_type.is_signed() {self.instr_setl(&destination)} else {self.instr_setb(&destination)},
 				_ => panic!("Rust doesnt work"),
 			}	
 		} else

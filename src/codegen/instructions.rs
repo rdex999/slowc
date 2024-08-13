@@ -783,6 +783,16 @@ impl<'a> CodeGen<'a>
 		self.write_text_segment(&format!("\n\tseta {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
+	pub fn instr_setl(&mut self, destination: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tsetl {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+	}
+
+	pub fn instr_setb(&mut self, destination: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tsetb {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+	}
+
 	pub fn instr_test(&mut self, lhs: &Placeholder, rhs: &Placeholder)
 	{
 		let mut lhs_placeholder = *lhs;

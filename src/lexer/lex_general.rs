@@ -87,9 +87,13 @@ impl<'a> Lexer<'a>
 				{
 					self.advance();
 					kind = TokenKind::BitwiseLeftShift;
+				} else if next_ch == '='
+				{
+					// self.advance();
+					todo!("Add less equal operator >=");
 				} else
 				{
-					todo!("Add less than operator");
+					kind = TokenKind::BoolLess;
 				}
 			}
 			'+' => kind = TokenKind::Plus,
