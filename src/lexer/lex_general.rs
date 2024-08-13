@@ -74,8 +74,8 @@ impl<'a> Lexer<'a>
 					kind = TokenKind::BitwiseRightShift;
 				} else if next_ch == '='
 				{
-					// self.advance();
-					todo!("Add greater equal operator >=");
+					self.advance();
+					kind = TokenKind::BoolGreaterEq;
 				} else
 				{
 					kind = TokenKind::BoolGreater;
