@@ -3,7 +3,7 @@
 func global main(argv u64, argc u32) -> u32
 {
 	let result u32;
-	if 10 >= 5 << 1
+	if 5 << 3 <= 5 << 3
 		result = 1;	
 	else
 		result = 0;
