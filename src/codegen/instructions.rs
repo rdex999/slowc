@@ -793,49 +793,49 @@ impl<'a> CodeGen<'a>
 	pub fn instr_setg(&mut self, destination: &Placeholder)
 	{
 		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetg {} {destination}", Self::size_2_opsize(destination.data_type.size())));
-	}
-
-	pub fn instr_seta(&mut self, destination: &Placeholder)
-	{
-		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tseta {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_signed() && destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tsetg {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			self.write_text_segment(&format!("\n\tseta {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		}
 	}
 
 	pub fn instr_setl(&mut self, destination: &Placeholder)
 	{
 		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetl {} {destination}", Self::size_2_opsize(destination.data_type.size())));
-	}
-
-	pub fn instr_setb(&mut self, destination: &Placeholder)
-	{
-		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetb {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_signed() && destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tsetl {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			self.write_text_segment(&format!("\n\tsetb {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		}
 	}
 
 	pub fn instr_setge(&mut self, destination: &Placeholder)
 	{
 		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetge {} {destination}", Self::size_2_opsize(destination.data_type.size())));
-	}
-
-	pub fn instr_setae(&mut self, destination: &Placeholder)
-	{
-		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetae {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_signed() && destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tsetge {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			self.write_text_segment(&format!("\n\tsetae {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		}
 	}
 
 	pub fn instr_setle(&mut self, destination: &Placeholder)
 	{
 		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetle {} {destination}", Self::size_2_opsize(destination.data_type.size())));
-	}
-
-	pub fn instr_setbe(&mut self, destination: &Placeholder)
-	{
-		let destination = destination.of_type(Type::U8);
-		self.write_text_segment(&format!("\n\tsetbe {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		if destination.data_type.is_signed() && destination.data_type.is_integer()
+		{
+			self.write_text_segment(&format!("\n\tsetle {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			self.write_text_segment(&format!("\n\tsetbe {} {destination}", Self::size_2_opsize(destination.data_type.size())));
+		}
 	}
 
 	pub fn instr_test(&mut self, lhs: &Placeholder, rhs: &Placeholder)

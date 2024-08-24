@@ -70,28 +70,37 @@ impl<'a> CodeGen<'a>
 
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder) -> Placeholder 
 	{
-		// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
-		let dst_register = Register::from_op_size(Register::default_for_type(lhs.data_type), lhs.data_type.size());
-		let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
-		self.instr_mov(&destination, lhs);
-
 		if operator.is_boolean()
 		{
-			self.instr_cmp(&destination, rhs); 
+			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::U8);
+
+			if operator == BinExprOperator::BoolAnd
+			{
+				self.instr_mov(&destination, lhs);
+				self.instr_and(&destination, rhs);
+				return destination;
+			}
+
+			self.instr_cmp(lhs, rhs); 
 
 			match operator
 			{
-				BinExprOperator::BoolAnd		=> self.instr_and(&destination, rhs),
 				BinExprOperator::BoolEq 		=> self.instr_sete(&destination),
 				BinExprOperator::BoolNotEq		=> self.instr_setne(&destination),
-				BinExprOperator::BoolGreater	=> if destination.data_type.is_signed() {self.instr_setg(&destination)} else {self.instr_seta(&destination)},
-				BinExprOperator::BoolLess		=> if destination.data_type.is_signed() {self.instr_setl(&destination)} else {self.instr_setb(&destination)},
-				BinExprOperator::BoolGreaterEq	=> if destination.data_type.is_signed() {self.instr_setge(&destination)} else {self.instr_setae(&destination)},
-				BinExprOperator::BoolLessEq		=> if destination.data_type.is_signed() {self.instr_setle(&destination)} else {self.instr_setbe(&destination)},
+				BinExprOperator::BoolGreater	=> self.instr_setg(&destination),
+				BinExprOperator::BoolLess		=> self.instr_setl(&destination),
+				BinExprOperator::BoolGreaterEq	=> self.instr_setge(&destination),
+				BinExprOperator::BoolLessEq		=> self.instr_setle(&destination),
 				_ => panic!("Rust doesnt work"),
-			}	
+			}
+			return destination;
 		} else
 		{
+			// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
+			let dst_register = Register::from_op_size(Register::default_for_type(lhs.data_type), lhs.data_type.size());
+			let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
+			self.instr_mov(&destination, lhs);
+
 			match operator {
 				BinExprOperator::BitwiseOr 			=> self.instr_or(&destination, rhs),
 				BinExprOperator::BitwiseXor 		=> self.instr_xor(&destination, rhs),
@@ -105,9 +114,9 @@ impl<'a> CodeGen<'a>
 				BinExprOperator::Modulo 			=> self.instr_div(&destination, rhs, true),
 				_ => panic!("Rust doesnt work."),
 			}
-		}
 
-		return destination;
+			return destination;
+		}
 	}
 
 	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>) -> Placeholder
@@ -146,7 +155,7 @@ impl<'a> CodeGen<'a>
 
 			BinExprPart::Operation(op) =>
 			{
-				let lhs = self.gen_bin_expr_recurse(&op, locals);
+				let lhs = self.gen_bin_expr_recurse(op, locals);
 				let register = self.reg_alloc_allocate(lhs.data_type).unwrap();
 				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.data_type);
 				let result;

@@ -1,9 +1,10 @@
 #intext to_include.hslw
 
-func global main(argv u64, argc u32) -> u32
+func global main(argv u64, argc u32) -> i32
 {
-	let result u32 = 500;
-	if result % 2 == 0 and result >= 500
+	let num f32 = 500.0;
+	let result i32;
+	if num / 2.0 == 250.0 and num >= 500.0
 		result = 1;
 	else
 		result = 0;
