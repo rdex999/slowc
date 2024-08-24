@@ -18,6 +18,7 @@ pub enum TokenKind
 	// Eof,
 	IntLit(i64),
 	FloatLit(f64),
+	BoolAnd,
 	BoolEq,
 	BoolNotEq,
 	BoolGreater,

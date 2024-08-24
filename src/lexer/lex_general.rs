@@ -63,8 +63,14 @@ impl<'a> Lexer<'a>
 			},
 			'&' =>
 			{
-				// TODO: Add logical and && here
-				kind = TokenKind::BitwiseAnd;
+				if next_ch == '&'
+				{
+					self.advance();
+					kind = TokenKind::BoolAnd;
+				} else
+				{
+					kind = TokenKind::BitwiseAnd;
+				}
 			},
 			'>' =>
 			{
@@ -183,6 +189,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_EXTERN		=> kind = TokenKind::Extern,
 			KEYWORD_IF			=> kind = TokenKind::If,
 			KEYWORD_ELSE		=> kind = TokenKind::Else,
+			KEYWORD_AND			=> kind = TokenKind::BoolAnd,
 			_ => kind = TokenKind::Ident
 		}
 

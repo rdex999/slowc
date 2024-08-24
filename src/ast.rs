@@ -106,6 +106,7 @@ pub struct BinExprOperation
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub enum BinExprOperator
 {
+	BoolAnd,
 	BoolEq,
 	BoolNotEq,
 	BoolGreater,
@@ -328,12 +329,13 @@ impl std::fmt::Display for Type
 impl BinExprOperator
 {
 	const LOWEST_PRECEDENCE: u8 = 1;
-	const HIGHEST_PRECEDENCE: u8 = 7;
+	const HIGHEST_PRECEDENCE: u8 = 8;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
 		return Some(match token_kind
 		{
+			TokenKind::BoolAnd 				=> Self::BoolAnd,
 			TokenKind::BoolEq 				=> Self::BoolEq,
 			TokenKind::BoolNotEq 			=> Self::BoolNotEq,
 			TokenKind::BoolGreater 			=> Self::BoolGreater,
@@ -359,20 +361,21 @@ impl BinExprOperator
 	{
 		return match *self
 		{
+			Self::BoolAnd															=> 1,
 			Self::BoolEq | Self::BoolNotEq | Self::BoolGreater | Self::BoolLess	|
-			Self::BoolGreaterEq	| Self::BoolLessEq									=> 1,
-			Self::BitwiseOr 														=> 2,
-			Self::BitwiseXor 														=> 3,
-			Self::BitwiseAnd 														=> 4,
-			Self::BitwiseRightShift | Self::BitwiseLeftShift 						=> 5,
-			Self::Add | Self::Sub 													=> 6,
-			Self::Mul | Self::Div | Self::Modulo 									=> 7,
+			Self::BoolGreaterEq	| Self::BoolLessEq									=> 2,
+			Self::BitwiseOr 														=> 3,
+			Self::BitwiseXor 														=> 4,
+			Self::BitwiseAnd 														=> 5,
+			Self::BitwiseRightShift | Self::BitwiseLeftShift 						=> 6,
+			Self::Add | Self::Sub 													=> 7,
+			Self::Mul | Self::Div | Self::Modulo 									=> 8,
 		};
 	}
 
 	pub fn is_boolean(&self) -> bool
 	{
-		return *self as u8 >= Self::BoolEq as u8 && *self as u8 <= Self::BoolLessEq as u8;
+		return *self as u8 >= Self::BoolAnd as u8 && *self as u8 <= Self::BoolLessEq as u8;
 	}
 }
 

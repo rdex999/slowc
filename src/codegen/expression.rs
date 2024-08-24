@@ -81,6 +81,7 @@ impl<'a> CodeGen<'a>
 
 			match operator
 			{
+				BinExprOperator::BoolAnd		=> self.instr_and(&destination, rhs),
 				BinExprOperator::BoolEq 		=> self.instr_sete(&destination),
 				BinExprOperator::BoolNotEq		=> self.instr_setne(&destination),
 				BinExprOperator::BoolGreater	=> if destination.data_type.is_signed() {self.instr_setg(&destination)} else {self.instr_seta(&destination)},

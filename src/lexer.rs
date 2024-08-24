@@ -42,6 +42,7 @@ pub const KEYWORD_GLOBAL	: &str = create_keyword!("גלובלי", "global");
 pub const KEYWORD_EXTERN 	: &str = create_keyword!("חיצוני", "extern");
 pub const KEYWORD_IF 		: &str = create_keyword!("אם", "if");
 pub const KEYWORD_ELSE 		: &str = create_keyword!("אחרת", "else");
+pub const KEYWORD_AND 		: &str = create_keyword!("וגם", "and");
 
 pub struct Lexer<'a>
 {
