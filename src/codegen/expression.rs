@@ -74,10 +74,15 @@ impl<'a> CodeGen<'a>
 		{
 			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::U8);
 
-			if operator == BinExprOperator::BoolAnd
+			if operator == BinExprOperator::BoolAnd || operator == BinExprOperator::BoolOr
 			{
 				self.instr_mov(&destination, lhs);
-				self.instr_and(&destination, rhs);
+				match operator
+				{
+					BinExprOperator::BoolAnd => self.instr_and(&destination, rhs),
+					BinExprOperator::BoolOr  => self.instr_or(&destination, rhs),
+					_ => panic!("Rust doesnt work"),
+				}
 				return destination;
 			}
 

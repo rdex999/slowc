@@ -3,8 +3,8 @@
 func global main(argv u64, argc u32) -> i32
 {
 	let num f32 = 500.0;
-	let result i32;
-	if num / 2.0 == 250.0 and num >= 500.0
+	let result i32 = 0;
+	if num / 2.0 == 100.0 or num >= 500.0
 		result = 1;
 	else
 		result = 0;

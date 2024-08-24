@@ -58,8 +58,14 @@ impl<'a> Lexer<'a>
 			},
 			'|' =>
 			{
-				// TODO: Add logical or || here
-				kind = TokenKind::BitwiseOr;
+				if next_ch == '|'
+				{
+					self.advance();
+					kind = TokenKind::BoolOr;
+				} else
+				{
+					kind = TokenKind::BitwiseOr;
+				}
 			},
 			'&' =>
 			{
@@ -190,6 +196,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_IF			=> kind = TokenKind::If,
 			KEYWORD_ELSE		=> kind = TokenKind::Else,
 			KEYWORD_AND			=> kind = TokenKind::BoolAnd,
+			KEYWORD_OR			=> kind = TokenKind::BoolOr,
 			_ => kind = TokenKind::Ident
 		}
 

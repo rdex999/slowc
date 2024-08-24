@@ -107,6 +107,7 @@ pub struct BinExprOperation
 pub enum BinExprOperator
 {
 	BoolAnd,
+	BoolOr,
 	BoolEq,
 	BoolNotEq,
 	BoolGreater,
@@ -336,6 +337,7 @@ impl BinExprOperator
 		return Some(match token_kind
 		{
 			TokenKind::BoolAnd 				=> Self::BoolAnd,
+			TokenKind::BoolOr 				=> Self::BoolOr,
 			TokenKind::BoolEq 				=> Self::BoolEq,
 			TokenKind::BoolNotEq 			=> Self::BoolNotEq,
 			TokenKind::BoolGreater 			=> Self::BoolGreater,
@@ -361,7 +363,7 @@ impl BinExprOperator
 	{
 		return match *self
 		{
-			Self::BoolAnd															=> 1,
+			Self::BoolAnd | Self::BoolOr											=> 1,
 			Self::BoolEq | Self::BoolNotEq | Self::BoolGreater | Self::BoolLess	|
 			Self::BoolGreaterEq	| Self::BoolLessEq									=> 2,
 			Self::BitwiseOr 														=> 3,
