@@ -72,10 +72,12 @@ impl<'a> CodeGen<'a>
 	{
 		if operator.is_boolean()
 		{
-			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::U8);
-
+			
 			if operator == BinExprOperator::BoolAnd || operator == BinExprOperator::BoolOr
 			{
+				// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
+				let dst_register = Register::from_op_size(Register::RAX, lhs.data_type.size());
+				let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
 				self.instr_mov(&destination, lhs);
 				match operator
 				{
@@ -85,7 +87,8 @@ impl<'a> CodeGen<'a>
 				}
 				return destination;
 			}
-
+			
+			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::U8);
 			self.instr_cmp(lhs, rhs); 
 
 			match operator

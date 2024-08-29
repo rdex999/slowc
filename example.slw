@@ -2,9 +2,11 @@
 
 func global main(argv u64, argc u32) -> i32
 {
-	let num f32 = 500.0;
+	let num f32 = 200.0;
 	let result i32 = 0;
-	if num / 2.0 == 100.0 or num >= 500.0
+
+	// f32 here 			  i32 here
+	if num / 2.0 == 100.0 or (result >= 500 && result <= 1000)
 		result = 1;
 	else
 		result = 0;

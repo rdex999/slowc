@@ -133,7 +133,7 @@ impl<'a> Parser<'a>
 		return BinExpr::new(expression_root);
 	}
 
-	fn parse_bin_expression_part(&mut self, data_type: Type, variables: &LocalVariables) -> BinExprPart
+	fn parse_bin_expression_part(&mut self, mut data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
 		let mut root = self.parse_bin_expression_high_precedence(
 			data_type, 
@@ -145,10 +145,16 @@ impl<'a> Parser<'a>
 		{
 			self.parse_bin_operator();
 
+			// After a && or a || the numeric expression can have a different data type. For example: if 5 > 6 && 1.420 < 2.5
+			if operator == BinExprOperator::BoolAnd || operator == BinExprOperator::BoolOr
+			{
+				data_type = self.get_expression_type(variables);
+			}
+
 			let rhs = self.parse_bin_expression_high_precedence(
 				data_type, 
 				variables, 
-				BinExprOperator::LOWEST_PRECEDENCE + 1//if operator.precedence() == BinExprOperator::HIGHEST_PRECEDENCE {operator.precedence()} else {operator.precedence() + 1}
+				BinExprOperator::LOWEST_PRECEDENCE + 1 // if operator.precedence() == BinExprOperator::HIGHEST_PRECEDENCE {operator.precedence()} else {operator.precedence() + 1}
 			);
 
 			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
