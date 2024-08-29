@@ -9,7 +9,9 @@ impl<'a> Parser<'a>
 			TokenKind::LeftCurly 	=> return Some(Statement::Scope(self.parse_scope(variables, function))),
 			TokenKind::VarDecl 		=> return self.parse_var_decl(variables),
 			TokenKind::If			=> return Some(self.parse_if_stmt(variables, function)),
+			TokenKind::For			=> return Some(self.parse_for_stmt(variables, function)),
 			TokenKind::Return 		=> return Some(self.parse_return_stmt(variables, function)),
+			TokenKind::Semicolon 	=> return None,
 			TokenKind::Ident 		=> 
 			{
 				if let Some(next_token) = self.peek(1)
@@ -148,7 +150,7 @@ impl<'a> Parser<'a>
 	fn parse_if_stmt(&mut self, variables: &mut LocalVariables, function: &Function) -> Statement
 	{
 		self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing \"if\" statement.");
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_IF} statement.");
 		});
 
 		let expression = self.parse_expression(None, variables);
@@ -167,7 +169,7 @@ impl<'a> Parser<'a>
 		if self.current_token().kind == TokenKind::Else
 		{
 			self.advance_token().unwrap_or_else(|| {
-				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing \"else\" statement.");
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_ELSE} statement.");
 			});
 
 			else_statement = Some(self.parse_statement(variables, function).unwrap_or_else(|| {
@@ -181,5 +183,46 @@ impl<'a> Parser<'a>
 		}
 
 		return Statement::If(IfInfo::new(expression, then_statement, else_statement));
+	}
+
+	fn parse_for_stmt(&mut self, variables: &mut LocalVariables, function: &Function) -> Statement
+	{
+		// For loop syntax: 	for let i i32 = 0; i < 420; i += 1;
+		// 							<CODE>
+
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_FOR} statement.");
+		});
+
+		let initializer = self.parse_statement(variables, function);
+		let condition;
+		let update;
+		let code_block;
+
+		// Condition parsing
+		if self.current_token().kind == TokenKind::Semicolon 
+		{
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_FOR} loop condition.");
+			});
+			condition = None;
+		} else
+		{
+			condition = Some(self.parse_expression(None, variables));
+			if self.current_token().kind != TokenKind::Semicolon
+			{
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected semicolon after {KEYWORD_FOR} loop condition.");
+			}
+			self.advance_token().unwrap_or_else(|| {
+				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_FOR} loop condition.");
+			});
+		}
+		
+		update = self.parse_statement(variables, function);
+		code_block = self.parse_statement(variables, function).unwrap_or_else(|| {
+			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "{KEYWORD_FOR} loop code block must be a valid statement.");
+		});
+
+		return Statement::For(ForLoopInfo::new(initializer, condition, update, code_block));
 	}
 }

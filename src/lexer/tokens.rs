@@ -64,6 +64,7 @@ pub enum TokenKind
 	Extern,
 	If,
 	Else,
+	For,
 }
 
 impl Token

@@ -197,6 +197,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_ELSE		=> kind = TokenKind::Else,
 			KEYWORD_AND			=> kind = TokenKind::BoolAnd,
 			KEYWORD_OR			=> kind = TokenKind::BoolOr,
+			KEYWORD_FOR			=> kind = TokenKind::For,
 			_ => kind = TokenKind::Ident
 		}
 

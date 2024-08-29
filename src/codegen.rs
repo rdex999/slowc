@@ -110,6 +110,7 @@ impl<'a> CodeGen<'a>
 			Statement::FunctionCall(function_call_info) 	=> { self.gen_function_call(locals, function_call_info); } 
 			Statement::Return(expression) 				=> self.gen_return_stmt(locals, expression),
 			Statement::If(if_info)									=> self.gen_if_stmt(locals, if_info),
+			Statement::For(_for_info) 							=> todo!("Implement for loops in code generation!!"),
 		}
 	}
 

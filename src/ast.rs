@@ -38,6 +38,7 @@ pub enum Statement
 {
 	Scope(Scope),
 	If(IfInfo),
+	For(ForLoopInfo),
 	Assign(VarUpdateInfo),
 	FunctionCall(FunctionCallInfo),
 	Return(Option<BinExpr>),
@@ -49,6 +50,15 @@ pub struct IfInfo
 	pub condition: BinExpr,
 	pub then_block: Box<Statement>,
 	pub else_block: Option<Box<Statement>>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ForLoopInfo
+{
+	pub initializer: Option<Box<Statement>>,
+	pub condition: Option<BinExpr>,
+	pub update: Option<Box<Statement>>,
+	pub code_block: Box<Statement>,
 }
 
 #[derive(Debug, Clone)]
@@ -207,6 +217,19 @@ impl IfInfo
 			condition,
 			then_block: Box::new(then_block),
 			else_block: if let Some(else_block) = else_block { Some(Box::new(else_block)) } else { None },
+		};
+	}
+}
+
+impl ForLoopInfo
+{
+	pub fn new(initializer: Option<Statement>, condition: Option<BinExpr>, update: Option<Statement>, code_block: Statement) -> Self
+	{
+		return Self {
+			initializer: if let Some(statement) = initializer { Some(Box::new(statement)) } else { None },
+			condition,
+			update: if let Some(statement) = update { Some(Box::new(statement)) } else { None },
+			code_block: Box::new(code_block),
 		};
 	}
 }

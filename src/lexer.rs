@@ -44,6 +44,7 @@ pub const KEYWORD_IF 		: &str = create_keyword!("אם", "if");
 pub const KEYWORD_ELSE 		: &str = create_keyword!("אחרת", "else");
 pub const KEYWORD_AND 		: &str = create_keyword!("וגם", "and");
 pub const KEYWORD_OR 		: &str = create_keyword!("או", "or");
+pub const KEYWORD_FOR 		: &str = create_keyword!("לכל", "for");
 
 pub struct Lexer<'a>
 {
