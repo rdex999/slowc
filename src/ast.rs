@@ -59,6 +59,7 @@ pub struct ForLoopInfo
 	pub condition: Option<BinExpr>,
 	pub update: Option<Box<Statement>>,
 	pub code_block: Box<Statement>,
+	pub stack_size: usize,
 }
 
 #[derive(Debug, Clone)]
@@ -223,13 +224,14 @@ impl IfInfo
 
 impl ForLoopInfo
 {
-	pub fn new(initializer: Option<Statement>, condition: Option<BinExpr>, update: Option<Statement>, code_block: Statement) -> Self
+	pub fn new(initializer: Option<Statement>, condition: Option<BinExpr>, update: Option<Statement>, code_block: Statement, stack_size: usize) -> Self
 	{
 		return Self {
 			initializer: if let Some(statement) = initializer { Some(Box::new(statement)) } else { None },
 			condition,
 			update: if let Some(statement) = update { Some(Box::new(statement)) } else { None },
 			code_block: Box::new(code_block),
+			stack_size
 		};
 	}
 }

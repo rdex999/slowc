@@ -867,6 +867,11 @@ impl<'a> CodeGen<'a>
 		self.write_text_segment(&format!("\n\tjz {lable}"));
 	}
 
+	pub fn instr_jnz(&mut self, lable: Lable)
+	{
+		self.write_text_segment(&format!("\n\tjnz {lable}"));
+	}
+
 	pub fn instr_shr(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
 		let mut src_placeholder = *source;

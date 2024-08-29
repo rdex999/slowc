@@ -11,7 +11,7 @@ impl<'a> Parser<'a>
 			TokenKind::If			=> return Some(self.parse_if_stmt(variables, function)),
 			TokenKind::For			=> return Some(self.parse_for_stmt(variables, function)),
 			TokenKind::Return 		=> return Some(self.parse_return_stmt(variables, function)),
-			TokenKind::Semicolon 	=> return None,
+			TokenKind::Semicolon 	=> { self.advance_token(); return None; },
 			TokenKind::Ident 		=> 
 			{
 				if let Some(next_token) = self.peek(1)
@@ -194,6 +194,9 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing {KEYWORD_FOR} statement.");
 		});
 
+		// Start a scope before parsing initializer for statement (because it is most likely to be a variable declaration)
+		variables.start_scope();
+
 		let initializer = self.parse_statement(variables, function);
 		let condition;
 		let update;
@@ -219,10 +222,13 @@ impl<'a> Parser<'a>
 		}
 		
 		update = self.parse_statement(variables, function);
+
 		code_block = self.parse_statement(variables, function).unwrap_or_else(|| {
 			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "{KEYWORD_FOR} loop code block must be a valid statement.");
 		});
 
-		return Statement::For(ForLoopInfo::new(initializer, condition, update, code_block));
+		let stack_size = variables.end_scope();
+		let for_stmt = Statement::For(ForLoopInfo::new(initializer, condition, update, code_block, stack_size));
+		return for_stmt;
 	}
 }

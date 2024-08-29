@@ -110,7 +110,7 @@ impl<'a> CodeGen<'a>
 			Statement::FunctionCall(function_call_info) 	=> { self.gen_function_call(locals, function_call_info); } 
 			Statement::Return(expression) 				=> self.gen_return_stmt(locals, expression),
 			Statement::If(if_info)									=> self.gen_if_stmt(locals, if_info),
-			Statement::For(_for_info) 							=> todo!("Implement for loops in code generation!!"),
+			Statement::For(for_info) 							=> self.gen_for_stmt(locals, for_info),
 		}
 	}
 
@@ -207,5 +207,85 @@ impl<'a> CodeGen<'a>
 
 		#[cfg(debug_assertions)]
 		self.write_text_segment(&format!(" \t; End if statement {}", false_lable.index));
+	}
+
+	fn gen_for_stmt(&mut self, locals: &Vec<Variable>, for_info: &ForLoopInfo)
+	{
+		let loop_start = self.generate_text_seg_lable();
+		let condition_lable = self.generate_text_seg_lable();
+
+		let mut stack_size = for_info.stack_size;
+		if let Statement::Scope(scope) = &*for_info.code_block 	/* Borrow the dereference, sure */
+		{
+			stack_size += scope.stack_size;
+		}
+
+		if stack_size != 0
+		{
+			self.instr_sub(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Integer(stack_size as u64), Type::U64),
+			);
+		}
+
+		if let Some(initializer_stmt) = &for_info.initializer
+		{
+			#[cfg(debug_assertions)]
+			self.write_text_segment(&format!("\n\t; For loop initializer statement"));
+
+			self.gen_statement(initializer_stmt, locals);
+		}
+
+		if let Some(_) = for_info.condition
+		{
+			self.instr_jmp(condition_lable);
+		}
+		
+		self.write_lable(loop_start);
+
+		#[cfg(debug_assertions)]
+		self.write_text_segment(&format!("\t; For loop body"));
+
+		if let Statement::Scope(scope) = &*for_info.code_block 	/* Borrow the dereference, sure */
+		{
+			for statement in &scope.statements
+			{
+				self.gen_statement(statement, locals);
+			}
+		} else
+		{
+			self.gen_statement(&for_info.code_block, locals);
+		}
+
+		if let Some(update_stmt) = &for_info.update
+		{
+			#[cfg(debug_assertions)]
+			self.write_text_segment(&format!("\n\t; For loop update statement"));
+
+			self.gen_statement(update_stmt, locals);
+		}
+
+		self.write_lable(condition_lable);
+
+		if let Some(condition_expr) = &for_info.condition
+		{
+			#[cfg(debug_assertions)]
+			self.write_text_segment(&format!("\t; For loop condition expression"));
+
+			let result = self.gen_expression(condition_expr, locals);
+			self.instr_test(&result, &result);
+			self.instr_jnz(loop_start);
+		} else
+		{
+			self.instr_jmp(loop_start);
+		}
+
+		if stack_size != 0
+		{
+			self.instr_add(
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
+				&Placeholder::new(PlaceholderKind::Integer(stack_size as u64), Type::U64),
+			);		
+		}
 	}
 }
