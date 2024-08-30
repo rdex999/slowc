@@ -3,9 +3,16 @@ use crate::{ast::*, print_err, CompileError};
 pub struct LocalVariables
 {
 	index: u8,
-	next_scope: u8,
+	scopes: Vec<usize>,
+	next_scope_idx: u8,
 	variables: HashMap<String, Vec<Variable>>,
 	variables_arr: Vec<Variable>,
+	function_attributes: AttributeType,
+
+	stack_var_position: isize, 				// Location counter for local variables, also used for determining the functions stack size
+	stack_parameter_position: usize,		// Location counter for parameters that were passed on the stack 
+	integer_parameters: u8,					// Count parameters that were passed in rdi, rsi, rdx, rcx, r8, r9
+	float_parameters: u8, 					// Count parameters that were passed in xmm1-15
 }
 
 pub struct LocalVariablesInfo
@@ -32,13 +39,22 @@ impl LocalVariablesInfo
 
 impl LocalVariables
 {
-	pub fn new() -> Self
+	pub fn new(function_attributes: AttributeType) -> Self
 	{
+		let mut scopes: Vec<usize> = Vec::with_capacity(10);
+		scopes.push(0);
 		return Self {
 			index: 0,
-			next_scope: 0,
+			scopes,
+			next_scope_idx: 0,
 			variables: HashMap::new(),
 			variables_arr: Vec::new(),
+			function_attributes,
+
+			stack_var_position: 0,
+			stack_parameter_position: 8 + 8,		/* Return address(8), base pointer(8) */
+			integer_parameters: 0,
+			float_parameters: 0,
 		};
 	}
 
@@ -52,8 +68,17 @@ impl LocalVariables
 		{
 			scope = self.current_scope();
 		}
-
-		let variable = Variable::new(data_type, attributes, self.index, scope);
+		
+		let mut variable = Variable::new(data_type, attributes, self.index, scope);
+		
+		if self.function_attributes & attribute::SYS_V_ABI_X86_64 != 0
+		{
+			self.update_var_info_sys_v_abi_x86_64(&mut variable);
+		}else
+		{
+			panic!("Unimplemented calling convenction used.");
+		}
+		
 		if let Some(vars) = self.variables.get_mut(&identifier)
 		{
 			if vars[vars.len() - 1].scope == scope
@@ -67,6 +92,7 @@ impl LocalVariables
 		}
 		self.index += 1;
 		self.variables_arr.push(variable);
+		*self.scopes.last_mut().unwrap() += variable.data_type.size() as usize;
 		return variable;
 	}
 
@@ -81,22 +107,20 @@ impl LocalVariables
 
 	pub fn start_scope(&mut self)
 	{
+		if self.next_scope_idx != 0
+		{
+			self.scopes.push(0);
+		}
 		self.advance_scope();
 	}
 
 	// End the scope and returns its stack size.
 	pub fn end_scope(&mut self) -> usize
 	{
-		let mut stack_size = 0;
 		for (identifier, vars) in self.variables.clone().into_iter()
 		{
 			for (i, variable) in vars.iter().enumerate()
 			{
-				if variable.scope == self.current_scope()
-				{
-					stack_size += variable.data_type.size() as usize;
-				}
-
 				if variable.scope >= self.current_scope()
 				{
 					if i == 0
@@ -111,8 +135,10 @@ impl LocalVariables
 				}
 			}
 		}
-		self.next_scope -= 1;
-		return stack_size;	
+		let stack_size = if self.scopes.len() == 1 { self.scopes[0] as isize } else { self.scopes.pop().unwrap() as isize };
+		self.stack_var_position += stack_size;
+		self.next_scope_idx -= 1;
+		return stack_size as usize;
 	}
 
 	pub fn get_variable_by_index(&self, index: u8) -> Option<&Variable>
@@ -130,82 +156,59 @@ impl LocalVariables
 		return self.index;
 	}
 
-	pub fn get_variables_info(self, function_attributes: AttributeType) -> LocalVariablesInfo
+	pub fn get_variables_info(self) -> LocalVariablesInfo
 	{
-		if function_attributes & attribute::SYS_V_ABI_X86_64 != 0
-		{
-			return self.update_var_info_sys_v_abi_x86_64();
-		} else
-		{
-			todo!("Unsupported calling convenction.");
-		}
+		return LocalVariablesInfo::new(
+			self.variables_arr, 
+			self.scopes[0],
+			self.stack_parameter_position - 8 - 8
+		);
 	}
 
 	fn current_scope(&self) -> u8
 	{
-		return self.next_scope - 1;
+		return self.next_scope_idx - 1;
 	}
 
 	fn advance_scope(&mut self)
 	{
-		self.next_scope += 1;
+		self.next_scope_idx += 1;
 	}
 
-	fn update_var_info_sys_v_abi_x86_64(mut self) -> LocalVariablesInfo
+	fn update_var_info_sys_v_abi_x86_64(&mut self, variable: &mut Variable)
 	{
-		// Location counter for local variables, also used for determining the functions stack size
-		let mut stack_var_position: isize = 0;
-
-		// Location counter for parameters that were passed on the stack 
-		let mut stack_parameter_position: usize = 8 + 8;		/* Return address(8), base pointer(8) */
-
-		// Count parameters that were passed in rdi, rsi, rdx, rcx, r8, r9
-		let mut integer_parameters: u8 = 0;
-
-		// Count parameters that were passed in xmm1-15
-		let mut float_parameters: u8 = 0;
-
-		for variable in self.variables_arr.iter_mut()
+		// If the variable is not a function parameter
+		if variable.attributes & attribute::FUNCTION_PARAMETER == 0
 		{
-			// If the current variable is not a function parameter
-			if variable.attributes & attribute::FUNCTION_PARAMETER == 0
-			{
-				stack_var_position -= variable.data_type.size() as isize;	
-				variable.location = stack_var_position;
-				continue;
-			}
-
-			if variable.data_type.is_integer()	
-			{
-				if integer_parameters < 6	/* rdi, rsi, rdx, rcx, r8, r9 (6 registers)*/
-				{
-					stack_var_position -= variable.data_type.size() as isize;
-					variable.location = stack_var_position;
-					integer_parameters += 1;
-				} else
-				{
-					variable.location = stack_parameter_position as isize;
-					stack_parameter_position += variable.data_type.size() as usize;
-				}
-			} else
-			{
-				if float_parameters < 15		/* XMM1-15 (15 registers) */
-				{
-					stack_var_position -= variable.data_type.size() as isize;
-					variable.location = stack_var_position;
-					float_parameters += 1;
-				} else
-				{
-					variable.location = stack_parameter_position as isize;
-					stack_parameter_position += variable.data_type.size() as usize;
-				}
-			}
+			self.stack_var_position -= variable.data_type.size() as isize;
+			variable.location = self.stack_var_position;
+			return;
 		}
 
-		return LocalVariablesInfo::new(
-			self.variables_arr,
-			(stack_var_position * -1) as usize, 
-			stack_parameter_position - 8 - 8
-		);
+		if variable.data_type.is_integer()	
+		{
+			if self.integer_parameters < 6	/* rdi, rsi, rdx, rcx, r8, r9 (6 registers)*/
+			{
+				self.stack_var_position -= variable.data_type.size() as isize;
+				variable.location = self.stack_var_position;
+				self.integer_parameters += 1;
+			} else
+			{
+				variable.location = self.stack_parameter_position as isize;
+				self.stack_parameter_position += variable.data_type.size() as usize;
+			}
+		} else
+		{
+			if self.float_parameters < 15		/* XMM1-15 (15 registers) */
+			{
+				self.stack_var_position -= variable.data_type.size() as isize;
+				variable.location = self.stack_var_position;
+				self.float_parameters += 1;
+			} else
+			{
+				variable.location = self.stack_parameter_position as isize;
+				self.stack_parameter_position += variable.data_type.size() as usize;
+			}
+		}
 	}
 }

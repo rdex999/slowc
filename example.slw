@@ -2,14 +2,34 @@
 
 func global main() -> i32
 {
-	for let i u8 = 0; i < 5; i = i + 1;
+	let num u8 = 1 + 48;
 	{
-		for let i u8 = 0; i < 10; i = i + 1;
-			putchar(i + 3 * 16);
-		putchar(10);
-		putchar(i + 3 * 16);
-		putchar(10);
+		let num u8 = 2 + 48;
+		putchar(num);
 	}
+	putchar(num);
+
+	{
+		let num u8 = 3 + 48;
+		putchar(num);
+		{
+			let num u8 = 4 + 48;
+			putchar(num);
+		}
+		putchar(num);
+	}
+	putchar(num);
+
+	{
+		let num u8 = 5 + 48;
+		putchar(num);
+	}
+
+	{
+		let num u8 = 6 + 48;
+		putchar(num);
+	}
+	putchar(num);
 
 	return 0;
 }

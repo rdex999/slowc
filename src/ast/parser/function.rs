@@ -72,7 +72,7 @@ impl<'a> Parser<'a>
 		}
 		
 		self.advance_token();
-		let mut variables = self.parse_function_decl_parameters();
+		let mut variables = self.parse_function_decl_parameters(attributes);
 		
 		let args_end_pos = self.current_token().span.end;
 		let token_ret_type_specifier = self.advance_token().unwrap_or_else(|| {
@@ -102,7 +102,7 @@ impl<'a> Parser<'a>
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
 			self.advance_token();
-			let locals = variables.get_variables_info(attributes);	
+			let locals = variables.get_variables_info();	
 			function.locals = locals.vars;
 			function.code_block.stack_size = locals.stack_size;
 			function.parameters_stack_size = locals.parameters_stack_size;
@@ -132,7 +132,7 @@ impl<'a> Parser<'a>
 			}
 		}
 
-		let locals = variables.get_variables_info(attributes);
+		let locals = variables.get_variables_info();
 		function.locals = locals.vars;
 		function.parameters_stack_size = locals.parameters_stack_size;
 
@@ -165,9 +165,9 @@ impl<'a> Parser<'a>
 		return scope;
 	}
 
-	fn parse_function_decl_parameters(&mut self) -> LocalVariables
+	fn parse_function_decl_parameters(&mut self, attributes: AttributeType) -> LocalVariables
 	{
-		let mut args = LocalVariables::new();
+		let mut args = LocalVariables::new(attributes);
 		loop 
 		{
 			let token = self.current_token();
