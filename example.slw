@@ -1,10 +1,13 @@
 #intext to_include.hslw
 
-func global main(argv u64, argc u32) -> i32
+func global main() -> i32
 {
-	for let i u8 = 0; i < 10; i = i + 1;
+	for let i u8 = 0; i < 5; i = i + 1;
 	{
-		putchar(i + 3 * 16); 	// 0x30
+		for let i u8 = 0; i < 10; i = i + 1;
+			putchar(i + 3 * 16);
+		putchar(10);
+		putchar(i + 3 * 16);
 		putchar(10);
 	}
 

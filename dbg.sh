@@ -13,7 +13,7 @@ done
 if [[ "$1" == "run" ]]; then
 	./a.out
 	EXIT_CODE=$?
-	echo -e "EXITED WITH: $EXIT_CODE"
+	echo -e "\nEXITED WITH: $EXIT_CODE"
 else
 	gdb a.out \
 		-ex "lay src" \

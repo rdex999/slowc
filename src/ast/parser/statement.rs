@@ -46,10 +46,10 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Expected identifier after {KEYWORD_VAR_DECL}.");
 		}
-		if let Some(_) = variables.get_variable(&identifier[..])
-		{
-			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Variable \"{identifier}\" was already declared.");
-		}
+		// if let Some(_) = variables.get_variable(&identifier[..])
+		// {
+		// 	print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Variable \"{identifier}\" was already declared.");
+		// }
 
 		let token_data_type = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing variable declaration. Expected data type.");

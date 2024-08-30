@@ -1,10 +1,11 @@
-use crate::ast::*;
+use crate::{ast::*, print_err, CompileError};
 
 pub struct LocalVariables
 {
 	index: u8,
 	next_scope: u8,
-	variables: HashMap<String, Variable>,
+	variables: HashMap<String, Vec<Variable>>,
+	variables_arr: Vec<Variable>,
 }
 
 pub struct LocalVariablesInfo
@@ -37,6 +38,7 @@ impl LocalVariables
 			index: 0,
 			next_scope: 0,
 			variables: HashMap::new(),
+			variables_arr: Vec::new(),
 		};
 	}
 
@@ -51,23 +53,30 @@ impl LocalVariables
 			scope = self.current_scope();
 		}
 
-		let var = Variable::new(data_type, attributes, self.index, scope);	
+		let variable = Variable::new(data_type, attributes, self.index, scope);
+		if let Some(vars) = self.variables.get_mut(&identifier)
+		{
+			if vars[vars.len() - 1].scope == scope
+			{
+				print_err!(CompileError::Syntax, "Variable \"{identifier}\" was already declared in the current scope.");
+			}
+			vars.push(variable);
+		} else
+		{
+			self.variables.insert(identifier, Vec::from([variable]));
+		}
 		self.index += 1;
-		self.variables.insert(identifier, var.clone());
-		return var;
+		self.variables_arr.push(variable);
+		return variable;
 	}
 
 	pub fn get_variable(&self, identifier: &str) -> Option<&Variable>
 	{
-		let variable = self.variables.get(identifier);
-		if let Some(variable) = variable
+		if let Some(vars) = self.variables.get(identifier)
 		{
-			if variable.scope > self.current_scope()
-			{
-				return None;
-			}
+			return Some(&vars[vars.len() - 1]);
 		}
-		return variable;
+		return None;
 	}
 
 	pub fn start_scope(&mut self)
@@ -79,11 +88,27 @@ impl LocalVariables
 	pub fn end_scope(&mut self) -> usize
 	{
 		let mut stack_size = 0;
-		for variable in self.variables.values()
+		for (identifier, vars) in self.variables.clone().into_iter()
 		{
-			if variable.scope == self.current_scope()
+			for (i, variable) in vars.iter().enumerate()
 			{
-				stack_size += variable.data_type.size() as usize;
+				if variable.scope == self.current_scope()
+				{
+					stack_size += variable.data_type.size() as usize;
+				}
+
+				if variable.scope >= self.current_scope()
+				{
+					if i == 0
+					{
+						self.variables.remove(&identifier);
+					} else
+					{
+						let vars = self.variables.get_mut(&identifier).unwrap();
+						vars.drain(i..vars.len());
+						break;
+					}
+				}
 			}
 		}
 		self.next_scope -= 1;
@@ -92,15 +117,12 @@ impl LocalVariables
 
 	pub fn get_variable_by_index(&self, index: u8) -> Option<&Variable>
 	{
-		let variable = self.variables.values().find(|var| var.index == index);
-		if let Some(variable) = variable
+		let variable = &self.variables_arr[index as usize];
+		if variable.scope > self.current_scope()
 		{
-			if variable.scope > self.current_scope()
-			{
-				return None;
-			}
+			return None;
 		}
-		return variable;
+		return Some(variable);
 	}
 
 	pub fn get_variable_count(&self) -> u8
@@ -110,12 +132,9 @@ impl LocalVariables
 
 	pub fn get_variables_info(self, function_attributes: AttributeType) -> LocalVariablesInfo
 	{
-		let mut array: Vec<Variable> = self.variables.into_values().collect();
-		array.sort_by_cached_key(|var| var.index);
-
 		if function_attributes & attribute::SYS_V_ABI_X86_64 != 0
 		{
-			return Self::update_var_info_sys_v_abi_x86_64(array);
+			return self.update_var_info_sys_v_abi_x86_64();
 		} else
 		{
 			todo!("Unsupported calling convenction.");
@@ -132,7 +151,7 @@ impl LocalVariables
 		self.next_scope += 1;
 	}
 
-	fn update_var_info_sys_v_abi_x86_64(mut variables: Vec<Variable>) -> LocalVariablesInfo
+	fn update_var_info_sys_v_abi_x86_64(mut self) -> LocalVariablesInfo
 	{
 		// Location counter for local variables, also used for determining the functions stack size
 		let mut stack_var_position: isize = 0;
@@ -146,7 +165,7 @@ impl LocalVariables
 		// Count parameters that were passed in xmm1-15
 		let mut float_parameters: u8 = 0;
 
-		for variable in variables.iter_mut()
+		for variable in self.variables_arr.iter_mut()
 		{
 			// If the current variable is not a function parameter
 			if variable.attributes & attribute::FUNCTION_PARAMETER == 0
@@ -184,7 +203,7 @@ impl LocalVariables
 		}
 
 		return LocalVariablesInfo::new(
-			variables, 
+			self.variables_arr,
 			(stack_var_position * -1) as usize, 
 			stack_parameter_position - 8 - 8
 		);
