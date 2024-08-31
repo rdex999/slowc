@@ -102,9 +102,9 @@ impl<'a> Parser<'a>
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
 			self.advance_token();
+			function.code_block.stack_size = variables.end_scope();
 			let locals = variables.get_variables_info();	
 			function.locals = locals.vars;
-			function.code_block.stack_size = locals.stack_size;
 			function.parameters_stack_size = locals.parameters_stack_size;
 			self.func_manager.add(function);
 			return;
@@ -112,25 +112,22 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
+		
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, token_scope_start.span.start, "While parsing function scope.");
+		});
 
-		let mut code_block = self.parse_scope(&mut variables, &function);
+		let mut code_block = Scope::new(Vec::new());
 
-		if function.return_type != Type::Void
+		while self.current_token().kind != TokenKind::RightCurly
 		{
-			let mut has_return_stmt = false;
-			for statement in &code_block.statements
+			if let Some(statement) = self.parse_statement(&mut variables, &function)
 			{
-				if let Statement::Return(_) = statement
-				{
-					has_return_stmt = true;
-					break;
-				}
-			}
-			if !has_return_stmt
-			{
-				print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected return statement because of the functions return type.");
+				code_block.add_statement(statement);
 			}
 		}
+		self.advance_token();
+		code_block.stack_size = variables.end_scope();
 
 		let locals = variables.get_variables_info();
 		function.locals = locals.vars;
@@ -165,9 +162,11 @@ impl<'a> Parser<'a>
 		return scope;
 	}
 
+	// NOTE: This function creates the LocalVariables struct and starts a scope, the callee must end the scope. end_scope()
 	fn parse_function_decl_parameters(&mut self, attributes: AttributeType) -> LocalVariables
 	{
 		let mut args = LocalVariables::new(attributes);
+		args.start_scope();
 		loop 
 		{
 			let token = self.current_token();

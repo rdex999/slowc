@@ -19,19 +19,15 @@ pub struct LocalVariablesInfo
 {
 	pub vars: Vec<Variable>,
 	
-	// The amount of bytes to subtract from the RSP register
-	pub stack_size: usize,
-
 	pub parameters_stack_size: usize,
 }
 
 impl LocalVariablesInfo
 {
-	pub fn new(vars: Vec<Variable>, stack_size: usize, parameters_stack_size: usize) -> Self
+	pub fn new(vars: Vec<Variable>, parameters_stack_size: usize) -> Self
 	{
 		return Self {
 			vars,
-			stack_size,
 			parameters_stack_size,
 		};
 	}
@@ -41,11 +37,9 @@ impl LocalVariables
 {
 	pub fn new(function_attributes: AttributeType) -> Self
 	{
-		let mut scopes: Vec<usize> = Vec::with_capacity(10);
-		scopes.push(0);
 		return Self {
 			index: 0,
-			scopes,
+			scopes: Vec::with_capacity(10),
 			next_scope_idx: 0,
 			variables: HashMap::new(),
 			variables_arr: Vec::new(),
@@ -107,10 +101,7 @@ impl LocalVariables
 
 	pub fn start_scope(&mut self)
 	{
-		if self.next_scope_idx != 0
-		{
-			self.scopes.push(0);
-		}
+		self.scopes.push(0);
 		self.advance_scope();
 	}
 
@@ -135,7 +126,7 @@ impl LocalVariables
 				}
 			}
 		}
-		let stack_size = if self.scopes.len() == 1 { self.scopes[0] as isize } else { self.scopes.pop().unwrap() as isize };
+		let stack_size = self.scopes.pop().unwrap() as isize; //if self.scopes.len() == 1 { self.scopes[0] as isize } else { self.scopes.pop().unwrap() as isize };
 		self.stack_var_position += stack_size;
 		self.next_scope_idx -= 1;
 		return stack_size as usize;
@@ -160,7 +151,6 @@ impl LocalVariables
 	{
 		return LocalVariablesInfo::new(
 			self.variables_arr, 
-			self.scopes[0],
 			self.stack_parameter_position - 8 - 8
 		);
 	}
