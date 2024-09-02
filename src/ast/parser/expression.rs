@@ -26,12 +26,18 @@ impl<'a> Parser<'a>
 			});
 		}
 
-		let value = self.parse_value(None, variables, false).unwrap_or_else(|| {
-			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found in binary expression.");
-		});
-
-		self.position = position;
-		return self.value_type(&value, variables);	
+		if let Some(data_type) = Type::from_token_kind(&self.current_token().kind)
+		{
+			self.position = position;
+			return data_type;
+		} else
+		{
+			let value = self.parse_value(None, variables, false).unwrap_or_else(|| {
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Unexpected token found in binary expression.");
+			});
+			self.position = position;
+			return self.value_type(&value, variables);	
+		}
 	}
 	
 	pub fn parse_value(&mut self, data_type: Option<Type>, variables: &LocalVariables, is_lvalue: bool) -> Option<Value>

@@ -444,6 +444,52 @@ impl<'a> CodeGen<'a>
 		));
 	}
 
+	// Convert single floating point (64/32 bit) into an integer
+	pub fn instr_cvttsf2si(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		let destination = if destination.data_type.size() < 4 { destination.of_type(Type::U32) } else { *destination };
+		if source.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\tcvttsd2si {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		} else if source.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\tcvttss2si {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+		} else
+		{
+			panic!("instr_cvttsf2si called with a non floating point source.");
+		}
+	}
+
+	// Convert single integer into single floating point (32/64 bit)
+	pub fn instr_cvtsi2sf(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		let source = if source.data_type.size() < 4 { source.of_type(Type::U32) } else { *source };
+		if destination.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\tcvtsi2sd {destination}, {source}"));
+		} else if destination.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\tcvtsi2ss {destination}, {source}" ));
+		} else
+		{
+			panic!("instr_cvttsi2sf called with a non floating point destination.");
+		}
+	}
+
+	pub fn instr_cvtsf2sf(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		if source.data_type == Type::F64
+		{
+			self.write_text_segment(&format!("\n\tcvtsd2sf {destination}, {source}"));
+		} else if source.data_type == Type::F32
+		{
+			self.write_text_segment(&format!("\n\tcvtss2sd {destination}, {source}"));
+		} else
+		{
+			panic!("instr_cvttsi2sf called with a non floating point source.");
+		}
+	}
+
 	pub fn instr_push(&mut self, source: &Placeholder)
 	{
 		if let PlaceholderKind::Reg(register) = source.kind

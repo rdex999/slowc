@@ -288,7 +288,35 @@ impl<'a> CodeGen<'a>
 					return rax;
 				}
 			}
+
+		// Float into integer
+		} else if type_cast_info.into_type.is_integer() && !type_cast_info.from_type.is_integer()
+		{
+			let rax = Placeholder::new(PlaceholderKind::Reg(Register::RAX.of_size(type_cast_info.into_type.size())), type_cast_info.into_type);
+			self.instr_cvttsf2si(
+					&rax,
+				&expression
+			);
+			return rax;
+		// Integer into float
+		} else if !type_cast_info.into_type.is_integer() && type_cast_info.from_type.is_integer()
+		{
+			let xmm0 = Placeholder::new(PlaceholderKind::Reg(Register::XMM0), type_cast_info.into_type);
+			self.instr_cvtsi2sf(
+				&xmm0, 
+				&expression
+			);
+			return xmm0;
+
+		// F32 into F64 or F64 into F32
+		} else
+		{
+			let xmm0 = Placeholder::new(PlaceholderKind::Reg(Register::XMM0), type_cast_info.into_type);
+			self.instr_cvtsf2sf(
+				&xmm0,	
+				&expression
+			);
+			return xmm0;
 		}
-		todo!();
 	}
 }
