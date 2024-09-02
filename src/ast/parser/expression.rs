@@ -304,7 +304,7 @@ impl<'a> Parser<'a>
 		let expression = self.parse_value_expr(from_type, variables);
 		if from_type == into_type
 		{
-			print_wrnln!(self.source, self.current_token().span.start, "Type cast ignored, casting to the same data type.");
+			print_wrnln!(self.source, token_into_type.span.start, "Type cast ignored, casting to the same data type.");
 			return expression;
 		}
 

@@ -58,17 +58,7 @@ impl<'a> CodeGen<'a>
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
 		}	
 	}
-
-	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
-	{
-		match &bin_expr.root
-		{
-			BinExprPart::Val(value) => return self.gen_value(value, locals),
-			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals),
-			_ => todo!("Implement type casts."),
-		}
-	}
-
+	
 	fn gen_bin_operation(&mut self, operator: BinExprOperator, lhs: &Placeholder, rhs: &Placeholder) -> Placeholder 
 	{
 		if operator.is_boolean()
@@ -91,7 +81,7 @@ impl<'a> CodeGen<'a>
 			
 			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::U8);
 			self.instr_cmp(lhs, rhs); 
-
+			
 			match operator
 			{
 				BinExprOperator::BoolEq 		=> self.instr_sete(&destination),
@@ -109,7 +99,7 @@ impl<'a> CodeGen<'a>
 			let dst_register = Register::from_op_size(Register::default_for_type(lhs.data_type), lhs.data_type.size());
 			let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
 			self.instr_mov(&destination, lhs);
-
+			
 			match operator {
 				BinExprOperator::BitwiseOr 			=> self.instr_or(&destination, rhs),
 				BinExprOperator::BitwiseXor 		=> self.instr_xor(&destination, rhs),
@@ -123,87 +113,57 @@ impl<'a> CodeGen<'a>
 				BinExprOperator::Modulo 			=> self.instr_div(&destination, rhs, true),
 				_ => panic!("Rust doesnt work."),
 			}
-
+			
 			return destination;
 		}
 	}
-
-	fn gen_bin_expr_recurse(&mut self, operation: &Box<BinExprOperation>, locals: &Vec<Variable>) -> Placeholder
+	
+	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
-		match &operation.lhs
-		{
-			BinExprPart::Val(lhs) =>
+		return self.gen_bin_expr_recurse(locals, &bin_expr.root)		
+	}
+	
+	fn gen_bin_expr_recurse(&mut self, locals: &Vec<Variable>, expr_part: &BinExprPart) -> Placeholder
+	{
+		match expr_part {
+			BinExprPart::Val(value) => return self.gen_value(value, locals),
+			BinExprPart::Operation(operation) =>
 			{
-				match &operation.rhs
+				let mut lhs_allocated_reg = None;
+				let mut lhs = self.gen_bin_expr_recurse(locals, &operation.lhs);
+				if lhs.is_register()
 				{
-					BinExprPart::Val(rhs) =>
-					{
-						let lhs = self.gen_value(lhs, locals);
-						let rhs = self.gen_value(rhs, locals);
-						return self.gen_bin_operation(operation.operator, &lhs, &rhs);
-					},
-
-					BinExprPart::Operation(op) =>
-					{
-						let rhs = self.gen_bin_expr_recurse(&op, locals);
-						let register = self.reg_alloc_allocate(rhs.data_type).unwrap();
-						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(register), rhs.data_type);
-						self.instr_mov(
-							&rhs_placeholder, 
-							&rhs
-						);
-						
-						let lhs = self.gen_value(lhs, locals);
-
-						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder);
-						self.reg_alloc_free(register);
-						return result;
-					},
-					_ => todo!("Implement type casts."),
+					lhs_allocated_reg = Some(self.reg_alloc_allocate(lhs.data_type).unwrap());
+					let new_lhs = Placeholder::new(PlaceholderKind::Reg(lhs_allocated_reg.unwrap()), lhs.data_type);
+					self.instr_mov(&new_lhs, &lhs);
+					lhs = new_lhs;
 				}
-			},
 
-			BinExprPart::Operation(op) =>
-			{
-				let lhs = self.gen_bin_expr_recurse(op, locals);
-				let register = self.reg_alloc_allocate(lhs.data_type).unwrap();
-				let lhs_placeholder = &Placeholder::new(PlaceholderKind::Reg(register), lhs.data_type);
-				let result;
-				self.instr_mov(
-					&lhs_placeholder, 
-					&lhs
-				);
-
-				match &operation.rhs
+				let mut rhs_allocated_reg = None;
+				let mut rhs = self.gen_bin_expr_recurse(locals, &operation.rhs);
+				if rhs.is_register()
 				{
-					BinExprPart::Val(value) => 
-					{
-						let rhs = self.gen_value(value, locals);
-						let rhs_reg = self.reg_alloc_allocate(rhs.data_type).unwrap();
-						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.data_type);
-						self.instr_mov(&rhs_placeholder, &rhs);
+					rhs_allocated_reg = Some(self.reg_alloc_allocate(rhs.data_type).unwrap());
+					let new_rhs = Placeholder::new(PlaceholderKind::Reg(rhs_allocated_reg.unwrap()), rhs.data_type);
+					self.instr_mov(&new_rhs, &rhs);
+					rhs = new_rhs;
+				}	
+				
+				let result = self.gen_bin_operation(operation.operator, &lhs, &rhs);
 
-						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder);
-						self.reg_alloc_free(rhs_reg);
-					},
-
-					BinExprPart::Operation(rhs_op) => 
-					{
-						let rhs = self.gen_bin_expr_recurse(rhs_op, locals);
-						let rhs_reg = self.reg_alloc_allocate(rhs.data_type).unwrap();
-						let rhs_placeholder = Placeholder::new(PlaceholderKind::Reg(rhs_reg), rhs.data_type);
-						self.instr_mov(&rhs_placeholder, &rhs);
-						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder);
-						self.reg_alloc_free(rhs_reg);
-					},
-
-					_ => todo!("Implement type casts."),
+				if let Some(allocated_register) = lhs_allocated_reg
+				{
+					self.reg_alloc_free(allocated_register);
 				}
-				self.reg_alloc_free(register);
+
+				if let Some(allocated_register) = rhs_allocated_reg
+				{
+					self.reg_alloc_free(allocated_register);
+				}
 				return result;
 			},
-
 			_ => todo!("Implement type casts."),
 		}
+
 	}
 }
