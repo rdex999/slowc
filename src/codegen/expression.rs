@@ -196,6 +196,7 @@ impl<'a> CodeGen<'a>
 							self.instr_movzx(&rax, &expression);
 						} else
 						{
+							// TODO: When switching to the GNU assembler, replace this crap with instr_and();
 							if expression.is_register_eq(Register::RAX.of_size(expression.data_type.size()))
 							{
 								let allocated_reg = self.reg_alloc_allocate(expression.data_type).unwrap();
@@ -216,9 +217,76 @@ impl<'a> CodeGen<'a>
 				}
 				
 				return rax;
+
+			// If one is signed and the other is unsigned
 			} else
 			{
-				todo!();
+				if type_cast_info.into_type.size() <= type_cast_info.from_type.size()
+				{
+					return expression.of_type(type_cast_info.into_type);
+				}
+
+				// if true, then from_type is unsigned. Also we know that sizeof(into_type) > sizeof(from_type)
+				if type_cast_info.into_type.is_signed()
+				{
+					let rax = Placeholder::new(
+						PlaceholderKind::Reg(Register::RAX.of_size(type_cast_info.into_type.size())), 
+						type_cast_info.into_type
+					);
+
+					match type_cast_info.into_type
+					{
+						Type::I16 | Type::I32 => self.instr_movzx(&rax, &expression),
+						Type::I64 =>
+						{
+							if type_cast_info.from_type == Type::I16 || type_cast_info.from_type == Type::I8
+							{
+								self.instr_movsx(&rax, &expression);
+							} else
+							{
+								if !expression.is_register_eq(Register::RAX.of_size(expression.data_type.size()))
+								{
+									self.instr_mov(
+										&Placeholder::new(
+											PlaceholderKind::Reg(Register::RAX.of_size(expression.data_type.size())), 
+											expression.data_type
+										), 
+										&expression
+									);
+								}
+								self.instr_cdqe();
+							} 
+						},
+						_ => panic!("type_cast_info.into_type cannot be U8 as it must be greater than type_cast_info.from_type"),
+					}
+					
+					return rax;	
+
+				// Means into_type is unsigned and from_type is signed and sizeof(into_type) > sizeof(from_type)
+				} else
+				{
+					let rax = Placeholder::new(
+						PlaceholderKind::Reg(Register::RAX.of_size(type_cast_info.into_type.size())), 
+						type_cast_info.into_type
+					);
+
+					if expression.is_register_eq(Register::RAX.of_size(expression.data_type.size()))
+					{
+						let allocated_reg = self.reg_alloc_allocate(expression.data_type).unwrap();
+						let placeholder = Placeholder::new(PlaceholderKind::Reg(allocated_reg), expression.data_type);
+						self.instr_mov(&placeholder, &expression);
+						self.reg_alloc_free(allocated_reg);
+						expression = placeholder
+					}
+
+					self.instr_xor(&rax, &rax);
+					self.instr_mov(
+						&Placeholder::new(PlaceholderKind::Reg(Register::RAX.of_size(expression.data_type.size())), expression.data_type), 
+						&expression
+					);
+
+					return rax;
+				}
 			}
 		}
 		todo!();

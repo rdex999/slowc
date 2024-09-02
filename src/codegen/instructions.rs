@@ -435,6 +435,15 @@ impl<'a> CodeGen<'a>
 		));
 	}
 
+	pub fn instr_movsx(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!(
+			"\n\tmovsx {} {destination}, {} {source}",
+			Self::size_2_opsize(destination.data_type.size()),
+			Self::size_2_opsize(source.data_type.size())
+		));
+	}
+
 	pub fn instr_push(&mut self, source: &Placeholder)
 	{
 		if let PlaceholderKind::Reg(register) = source.kind
@@ -757,6 +766,11 @@ impl<'a> CodeGen<'a>
 	pub fn instr_cqo(&mut self)
 	{
 		self.write_text_segment("\n\tcqo");
+	}
+
+	pub fn instr_cdqe(&mut self)
+	{
+		self.write_text_segment("\n\tcdqe");
 	}
 
 	pub fn instr_cmp(&mut self, lhs: &Placeholder, rhs: &Placeholder)

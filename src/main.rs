@@ -16,8 +16,10 @@ fn main() {
     let obj_file = slowc_compile_file(&argv[1]);
 
     // Linking with the C standard library is temporary. Il create my own in the future
-    std::process::Command::new("gcc")
+    std::process::Command::new("ld")
         .args(["-o", executable_path])
+        .args(["-dynamic-linker", "/lib64/ld-linux-x86-64.so.2"])
+        .args(["/usr/lib/crt1.o", "/usr/lib/crti.o", "-lc", "/usr/lib/crtn.o"])
         .arg(obj_file)
         .spawn()
         .expect("Error, failed to link program.");
