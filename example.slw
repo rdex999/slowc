@@ -2,7 +2,7 @@
 
 func global main() -> u64
 {
-	let num u64 = 123;
-	let casted u64 = (u64)num;
+	let num u32 = 123;
+	let casted u64 = (u64)(num + 2);
 	return casted;
 }

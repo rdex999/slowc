@@ -426,6 +426,15 @@ impl<'a> CodeGen<'a>
 		}
 	}
 
+	pub fn instr_movzx(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!(
+			"\n\tmovzx {} {destination}, {} {source}",
+			Self::size_2_opsize(destination.data_type.size()),
+			Self::size_2_opsize(source.data_type.size())
+		));
+	}
+
 	pub fn instr_push(&mut self, source: &Placeholder)
 	{
 		if let PlaceholderKind::Reg(register) = source.kind

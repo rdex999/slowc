@@ -162,8 +162,65 @@ impl<'a> CodeGen<'a>
 				}
 				return result;
 			},
-			_ => todo!("Implement type casts."),
+			BinExprPart::TypeCast(type_cast_info) => return self.gen_type_cast(locals, type_cast_info),
 		}
+	}
 
+	fn gen_type_cast(&mut self, locals: &Vec<Variable>, type_cast_info: &TypeCastInfo) -> Placeholder
+	{
+		let mut expression = self.gen_bin_expr_recurse(locals, &type_cast_info.expression);
+
+		if type_cast_info.from_type.is_integer() && type_cast_info.into_type.is_integer()
+		{
+			if !type_cast_info.from_type.is_signed() && !type_cast_info.into_type.is_signed()
+			{
+				if type_cast_info.into_type.size() < type_cast_info.from_type.size()
+				{
+					return expression.of_type(type_cast_info.into_type);
+				}
+
+				// Here we know that sizeof(into_type) > sizeof(from_type), 
+				// so the casting is just a bitwise AND operation (to remove crap that was in the register)
+				let rax = Placeholder::new(
+					PlaceholderKind::Reg(Register::RAX.of_size(type_cast_info.into_type.size())), 
+					type_cast_info.into_type
+				);
+
+				match type_cast_info.into_type
+				{
+					Type::U16 | Type::U32 => self.instr_movzx(&rax, &expression),
+					Type::U64 =>
+					{
+						if type_cast_info.from_type == Type::U16 || type_cast_info.from_type == Type::U8
+						{
+							self.instr_movzx(&rax, &expression);
+						} else
+						{
+							if expression.is_register_eq(Register::RAX.of_size(expression.data_type.size()))
+							{
+								let allocated_reg = self.reg_alloc_allocate(expression.data_type).unwrap();
+								let placeholder = Placeholder::new(PlaceholderKind::Reg(allocated_reg), expression.data_type);
+								self.instr_mov(
+									&placeholder,
+									&expression 
+								);
+								self.reg_alloc_free(allocated_reg);
+								expression = placeholder;
+							}
+							self.instr_xor(&rax, &rax);
+							self.instr_mov(&rax.of_type(expression.data_type), &expression);
+
+						} 
+					},
+					_ => panic!("type_cast_info.into_type cannot be U8 as it must be greater than type_cast_info.from_type"),
+				}
+				
+				return rax;
+			} else
+			{
+				todo!();
+			}
+		}
+		todo!();
 	}
 }
