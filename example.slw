@@ -1,35 +1,8 @@
 #intext to_include.hslw
 
-func global main() -> i32
+func global main() -> u64
 {
-	let num u8 = 1 + 48;
-	{
-		let num u8 = 2 + 48;
-		putchar(num);
-	}
-	putchar(num);
-
-	{
-		let num u8 = 3 + 48;
-		putchar(num);
-		{
-			let num u8 = 4 + 48;
-			putchar(num);
-		}
-		putchar(num);
-	}
-	putchar(num);
-
-	{
-		let num u8 = 5 + 48;
-		putchar(num);
-	}
-
-	{
-		let num u8 = 6 + 48;
-		putchar(num);
-	}
-	putchar(num);
-
-	return 0;
+	let num u64 = 123;
+	let casted u64 = (u64)num;
+	return casted;
 }

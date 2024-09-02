@@ -64,7 +64,8 @@ impl<'a> CodeGen<'a>
 		match &bin_expr.root
 		{
 			BinExprPart::Val(value) => return self.gen_value(value, locals),
-			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals)
+			BinExprPart::Operation(op) => return self.gen_bin_expr_recurse(op, locals),
+			_ => todo!("Implement type casts."),
 		}
 	}
 
@@ -157,7 +158,8 @@ impl<'a> CodeGen<'a>
 						let result = self.gen_bin_operation(operation.operator, &lhs, &rhs_placeholder);
 						self.reg_alloc_free(register);
 						return result;
-					}
+					},
+					_ => todo!("Implement type casts."),
 				}
 			},
 
@@ -193,11 +195,15 @@ impl<'a> CodeGen<'a>
 						self.instr_mov(&rhs_placeholder, &rhs);
 						result = self.gen_bin_operation(operation.operator, &lhs_placeholder, &rhs_placeholder);
 						self.reg_alloc_free(rhs_reg);
-					}
+					},
+
+					_ => todo!("Implement type casts."),
 				}
 				self.reg_alloc_free(register);
 				return result;
-			}
+			},
+
+			_ => todo!("Implement type casts."),
 		}
 	}
 }

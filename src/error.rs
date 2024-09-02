@@ -199,6 +199,18 @@ macro_rules! print_wrn
 	}
 }
 
+#[macro_export]
+macro_rules! print_wrnln {
+	($source:expr, $source_index:expr, $( $print_data:tt )* ) => {
+		// Print "slow: warning - " while "slow" is in bold and "warning" is in yellow bold
+		print!("\x1b[1mslowc\x1b[0m: \x1b[93;1mwarning\x1b[0m - ");
+		println!($($print_data)*);
+		let line = crate::error::get_line_from_index($source, $source_index);
+		println!("\tOn line {}: {}", line.line_index + 1, line.line_contents);
+		println!("\t  {}{}\x1b[1mHere: <---->\x1b[0m", str::repeat(" ", line.column), str::repeat("\t", line.tabs_count as usize));
+	};
+}
+
 // Prints a formatted message to stdout.
 #[macro_export]
 macro_rules! print_msg

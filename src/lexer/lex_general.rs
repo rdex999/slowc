@@ -189,6 +189,7 @@ impl<'a> Lexer<'a>
 			KEYWORD_U64			=> kind = TokenKind::U64,
 			KEYWORD_F32			=> kind = TokenKind::F32,
 			KEYWORD_F64			=> kind = TokenKind::F64,
+			KEYWORD_AS			=> kind = TokenKind::As,
 			KEYWORD_FUNC_DECL	=> kind = TokenKind::FuncDecl,
 			KEYWORD_RETURN		=> kind = TokenKind::Return,
 			KEYWORD_GLOBAL		=> kind = TokenKind::Global,

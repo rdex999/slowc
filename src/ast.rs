@@ -94,6 +94,14 @@ pub enum Value
 }
 
 #[derive(Debug, Clone)]
+pub struct TypeCastInfo
+{
+	pub into_type: Type,
+	pub from_type: Type,
+	pub expression: BinExprPart,
+}
+
+#[derive(Debug, Clone)]
 pub struct BinExpr
 {
 	pub root: BinExprPart,
@@ -104,6 +112,7 @@ pub enum BinExprPart
 {
 	Operation(Box<BinExprOperation>),
 	Val(Value),
+	TypeCast(Box<TypeCastInfo>),
 }
 
 #[derive(Debug, Clone)]
@@ -416,6 +425,18 @@ impl Value
 	// 		_ => true,
 	// 	};
 	// }
+}
+
+impl TypeCastInfo
+{
+	pub fn new(into_type: Type, from_type: Type, expression: BinExprPart) -> Self
+	{
+		return Self {
+			into_type,
+			from_type,
+			expression,
+		}
+	}
 }
 
 pub mod attribute

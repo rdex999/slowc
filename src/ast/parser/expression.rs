@@ -1,5 +1,5 @@
-use parser::TokenKind;
-use crate::{ast::*, error::CompileError, print_errln };
+use super::*;
+use crate::{ast::*, error::CompileError, print_errln, print_wrnln };
 use super::{Parser, variable::*, };
 
 impl<'a> Parser<'a>
@@ -190,31 +190,68 @@ impl<'a> Parser<'a>
 
 	fn parse_value_expr(&mut self, data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
+		let result;
 		if self.current_token().kind == TokenKind::LeftParen
 		{
-			let value;
-			self.advance_token().unwrap_or_else(|| {
+			let next_token = self.peek(1).unwrap_or_else(|| {
 				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
 			});
-
-			value = self.parse_bin_expression_part(data_type, variables);
-
-			if self.current_token().kind != TokenKind::RightParen
+			// If casting to a data type. (u64)420
+			if let Some(_) = Type::from_token_kind(&next_token.kind)
 			{
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese.");
+				result = self.parse_type_cast(variables, Some(data_type));
+				
+				// Else, if its just normal parentheses 5 * (2 + 10)
+			} else
+			{
+				self.advance_token().unwrap_or_else(|| {
+					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
+				});
+				result = self.parse_bin_expression_part(data_type, variables);
+	
+				if self.current_token().kind != TokenKind::RightParen
+				{
+					print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese.");
+				}
+	
+				self.advance_token().unwrap_or_else(|| {
+					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
+				});
 			}
 
-			self.advance_token().unwrap_or_else(|| {
-				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
-			});
-
-			return value;
 		} else
 		{
-			return BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
+			result = BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
 				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
 			}));
 		}
+
+		// if self.current_token().kind == TokenKind::As
+		// {
+		// 	let to_type_tok = self.advance_token().unwrap_or_else(|| {
+		// 		print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing type cast.");
+		// 	});
+		// 	let to_type = Type::from_token_kind(&to_type_tok.kind).unwrap_or_else(|| {
+		// 		print_errln!(CompileError::Syntax, self.source, to_type_tok.span.start, "Expected data type after \"{KEYWORD_AS}\" keyword.");
+		// 	});
+
+		// 	if to_type == Type::Void
+		// 	{
+		// 		print_errln!(CompileError::Syntax, self.source, to_type_tok.span.start, "Cannot cast to {} data type.", Type::Void.to_string());
+		// 	}
+
+		// 	if to_type != data_type
+		// 	{
+		// 		print_errln!(CompileError::TypeError(data_type, to_type), self.source, to_type_tok.span.start, "Can only cast to the expressions") 
+		// 	}
+
+		// 	self.advance_token().unwrap_or_else(|| {
+		// 		print_errln!(CompileError::UnexpectedEof, self.source, to_type_tok.span.end, "While parsing expression.");
+		// 	});
+
+
+		// }
+		return result;
 	}
 	
 	fn parse_bin_operator(&mut self) -> BinExprOperator
@@ -228,5 +265,49 @@ impl<'a> Parser<'a>
 		print_errln!(CompileError::Syntax, self.source, token.span.start, "None-binary operator found in binary expression.");
 	}
 
+	fn parse_type_cast(&mut self, variables: &LocalVariables, data_type: Option<Type>) -> BinExprPart
+	{
+		let token_into_type = self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.end, "While parsing expression.");
+		});
+		let into_type = Type::from_token_kind(&token_into_type.kind).unwrap_or_else(|| {
+			panic!("Dev error, parse_type_cast called on a non type cast.");
+		});
+		
+		if into_type == Type::Void
+		{
+			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Cannot cast to {} data type.", Type::Void.to_string());
+		}
+		
+		if data_type != None && into_type != data_type.unwrap()
+		{
+			print_errln!(
+				CompileError::TypeError(data_type.unwrap(), into_type), 
+				self.source, 
+				self.current_token().span.start, 
+				"Can only cast to the expressions data type."
+			);
+		}
+		
+		let token_right_paren = self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing type cast.");
+		});
+		if token_right_paren.kind != TokenKind::RightParen
+		{
+			print_errln!(CompileError::Syntax, self.source, token_right_paren.span.start, "Expected closing parenthese on type cast.");
+		}
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, token_right_paren.span.end, "While parsing expression.");
+		});
 
+		let from_type = self.get_expression_type(variables);
+		let expression = self.parse_value_expr(from_type, variables);
+		if from_type == into_type
+		{
+			print_wrnln!(self.source, self.current_token().span.start, "Type cast ignored, casting to the same data type.");
+			return expression;
+		}
+
+		return BinExprPart::TypeCast(Box::from(TypeCastInfo::new(into_type, from_type, expression)));
+	}
 }
