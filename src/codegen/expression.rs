@@ -96,7 +96,7 @@ impl<'a> CodeGen<'a>
 		} else
 		{
 			// TODO: Make an is_writable function in Placeholder, and check if lhs is a writable, so no need to move to RAX and stuff
-			let dst_register = Register::from_op_size(Register::default_for_type(lhs.data_type), lhs.data_type.size());
+			let dst_register = Register::default_for_type(lhs.data_type);
 			let destination = Placeholder::new(PlaceholderKind::Reg(dst_register), lhs.data_type);
 			self.instr_mov(&destination, lhs);
 			
@@ -127,6 +127,7 @@ impl<'a> CodeGen<'a>
 	{
 		match expr_part {
 			BinExprPart::Val(value) => return self.gen_value(value, locals),
+			BinExprPart::TypeCast(type_cast_info) => return self.gen_type_cast(locals, type_cast_info),
 			BinExprPart::Operation(operation) =>
 			{
 				let mut lhs_allocated_reg = None;
@@ -162,7 +163,26 @@ impl<'a> CodeGen<'a>
 				}
 				return result;
 			},
-			BinExprPart::TypeCast(type_cast_info) => return self.gen_type_cast(locals, type_cast_info),
+			BinExprPart::SelfOperation(self_operation) =>
+			{
+				let mut expression = self.gen_bin_expr_recurse(locals, &self_operation.expression);
+				if !expression.is_register()
+				{
+					let new_placeholder = Placeholder::new(
+						PlaceholderKind::Reg(Register::default_for_type(expression.data_type)), 
+						expression.data_type
+					);
+
+					self.instr_mov(&new_placeholder, &expression);
+					expression = new_placeholder;
+				}
+
+				match self_operation.operator {
+					BinExprOperator::BitwiseNot => self.instr_not(&expression),
+					_ => panic!("gen_bin_expr_recurse(), BinExprPart::SelfOperation.operator, not a binary operator.\n{:#?}", self_operation),
+				}
+				return expression;
+			}
 		}
 	}
 

@@ -16,12 +16,12 @@ impl<'a> Lexer<'a>
 			self.advance();
 		}
 
-		match number.parse::<i64>()
+		match number.parse::<u64>()
 		{
 			Ok(number) => 
 			{
 				return Token::new(
-					TokenKind::IntLit(number), 
+					TokenKind::IntLit(number as i64), 
 					TextSpan::new(start, self.position)
 				);
 			}
@@ -135,6 +135,7 @@ impl<'a> Lexer<'a>
 			'*' => kind = TokenKind::Asterisk,
 			'/' => kind = TokenKind::ForwardSlash,
 			'%' => kind = TokenKind::Percent,
+			'~' => kind = TokenKind::BitwiseNot,
 			'(' => kind = TokenKind::LeftParen,
 			')' => kind = TokenKind::RightParen,
 			'{' => kind = TokenKind::LeftCurly,

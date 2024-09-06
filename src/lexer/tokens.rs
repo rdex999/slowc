@@ -31,6 +31,7 @@ pub enum TokenKind
 	BitwiseAnd,
 	BitwiseRightShift,
 	BitwiseLeftShift,
+	BitwiseNot,
 	Plus,
 	Minus,
 	Asterisk,

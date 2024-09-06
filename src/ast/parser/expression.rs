@@ -19,7 +19,7 @@ impl<'a> Parser<'a>
 	{
 		let position = self.position;
 
-		while self.current_token().kind == TokenKind::LeftParen 
+		while self.current_token().kind == TokenKind::LeftParen || BinExprOperator::from_token_kind(&self.current_token().kind) != None
 		{ 
 			self.advance_token().unwrap_or_else(|| {
 				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese.");
@@ -141,14 +141,32 @@ impl<'a> Parser<'a>
 
 	fn parse_bin_expression_part(&mut self, mut data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
-		let mut root = self.parse_bin_expression_high_precedence(
-			data_type, 
-			variables, 
-			BinExprOperator::LOWEST_PRECEDENCE + 1
-		);
+		let mut root;
+		
+		if let Some(expression) = self.parse_self_operator(data_type, variables)
+		{
+			root = expression;
+		} else
+		{
+			root = self.parse_bin_expression_high_precedence(
+				data_type, 
+				variables, 
+				BinExprOperator::LOWEST_PRECEDENCE + 1
+			);
+		}
 
 		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{
+			if operator.is_self_operator()
+			{
+				print_errln!(
+					CompileError::Syntax, 
+					self.source, 
+					self.current_token().span.start, 
+					"Expected two-side operator (+, -, *, /, ...), found {}", self.get_text(&self.current_token().span)
+				);
+			}	
+			
 			self.parse_bin_operator();
 
 			// After a && or a || the numeric expression can have a different data type. For example: if 5 > 6 && 1.420 < 2.5
@@ -168,9 +186,33 @@ impl<'a> Parser<'a>
 		return root;
 	}
 
+	fn parse_self_operator(&mut self, data_type: Type, variables: &LocalVariables) -> Option<BinExprPart>
+	{
+		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+		{
+			if operator.is_self_operator()
+			{
+				self.parse_bin_operator();
+				let expression = self.parse_bin_expression_high_precedence(data_type, variables, operator.precedence());
+				return Some(BinExprPart::SelfOperation(Box::new(BinExprSelfOperation::new(operator, expression))));
+			} else
+			{
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected value or self operator (~, !).");
+			}
+		}
+		return None;
+	}
+
 	fn parse_bin_expression_high_precedence(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
 	{
-		let mut root = self.parse_value_expr(data_type, variables);
+		let mut root;
+		if let Some(expression) = self.parse_self_operator(data_type, variables)
+		{
+			root = expression;
+		} else
+		{
+			root = self.parse_value_expr(data_type, variables);
+		}
 
 		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
 		{

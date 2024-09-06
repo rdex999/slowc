@@ -1,8 +1,8 @@
 #intext to_include.hslw
 
-func global main() -> i64
+func global main() -> i32
 {
-	let num i64 = 123;
-	let casted f64 = (f64)num;
+	let num i32 = 0;
+	let casted f64 = (f64)(~num - 5 * 10);	// -1 - 6
 	return num;
 }

@@ -243,7 +243,7 @@ impl Register
 	{
 		if data_type.is_integer()
 		{
-			return Register::RAX;
+			return Register::RAX.of_size(data_type.size());
 		}
 		return Register::XMM0;
 	}
@@ -466,10 +466,10 @@ impl<'a> CodeGen<'a>
 		let source = if source.data_type.size() < 4 { source.of_type(Type::U32) } else { *source };
 		if destination.data_type == Type::F64
 		{
-			self.write_text_segment(&format!("\n\tcvtsi2sd {destination}, {source}"));
+			self.write_text_segment(&format!("\n\tcvtsi2sd {destination}, {} {source}", Self::size_2_opsize(source.data_type.size())));
 		} else if destination.data_type == Type::F32
 		{
-			self.write_text_segment(&format!("\n\tcvtsi2ss {destination}, {source}" ));
+			self.write_text_segment(&format!("\n\tcvtsi2ss {destination}, {} {source}", Self::size_2_opsize(source.data_type.size()) ));
 		} else
 		{
 			panic!("instr_cvttsi2sf called with a non floating point destination.");
@@ -480,7 +480,7 @@ impl<'a> CodeGen<'a>
 	{
 		if source.data_type == Type::F64
 		{
-			self.write_text_segment(&format!("\n\tcvtsd2sf {destination}, {source}"));
+			self.write_text_segment(&format!("\n\tcvtsd2ss {destination}, {source}"));
 		} else if source.data_type == Type::F32
 		{
 			self.write_text_segment(&format!("\n\tcvtss2sd {destination}, {source}"));
@@ -787,6 +787,11 @@ impl<'a> CodeGen<'a>
 	pub fn instr_or(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
 		self.write_text_segment(&format!("\n\tor {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
+	}
+
+	pub fn instr_not(&mut self, destination: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tnot {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_call(&mut self, identifier: &str)

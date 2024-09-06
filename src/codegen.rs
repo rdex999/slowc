@@ -144,7 +144,7 @@ impl<'a> CodeGen<'a>
 		}
 
 		let expr_placeholder = self.gen_expression(expr, locals);
-		let return_register = Register::from_op_size(Register::default_for_type(expr_placeholder.data_type), expr_placeholder.data_type.size());
+		let return_register = Register::default_for_type(expr_placeholder.data_type);
 
 		// I hate Rust
 		if let PlaceholderKind::Reg(reg) = expr_placeholder.kind

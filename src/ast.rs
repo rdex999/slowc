@@ -110,6 +110,7 @@ pub struct BinExpr
 #[derive(Debug, Clone)]
 pub enum BinExprPart
 {
+	SelfOperation(Box<BinExprSelfOperation>),
 	Operation(Box<BinExprOperation>),
 	Val(Value),
 	TypeCast(Box<TypeCastInfo>),
@@ -121,6 +122,14 @@ pub struct BinExprOperation
 	pub operator: BinExprOperator,
 	pub lhs: BinExprPart,
 	pub rhs: BinExprPart,
+}
+
+// If yall know a better name for this let me know
+#[derive(Debug, Clone)]
+pub struct BinExprSelfOperation
+{
+	pub operator: BinExprOperator,
+	pub expression: BinExprPart,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -145,6 +154,7 @@ pub enum BinExprOperator
 	Mul,
 	Div,
 	Modulo,
+	BitwiseNot,
 }
 
 
@@ -278,6 +288,17 @@ impl BinExprOperation
 	}
 }
 
+impl BinExprSelfOperation
+{
+	pub fn new(operator: BinExprOperator, expression: BinExprPart) -> Self
+	{
+		return Self {
+			operator, 
+			expression,
+		};
+	}
+}
+
 impl Variable
 {
 	pub fn new(data_type: Type, attributes: AttributeType, index: u8, scope: u8) -> Self 
@@ -364,7 +385,7 @@ impl std::fmt::Display for Type
 impl BinExprOperator
 {
 	const LOWEST_PRECEDENCE: u8 = 1;
-	const HIGHEST_PRECEDENCE: u8 = 8;
+	const HIGHEST_PRECEDENCE: u8 = 9;
 	
 	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
@@ -389,6 +410,7 @@ impl BinExprOperator
 			TokenKind::Asterisk 			=> Self::Mul,
 			TokenKind::ForwardSlash 		=> Self::Div,
 			TokenKind::Percent 				=> Self::Modulo,
+			TokenKind::BitwiseNot			=> Self::BitwiseNot,
 			_ => return None
 		});
 	}
@@ -406,6 +428,7 @@ impl BinExprOperator
 			Self::BitwiseRightShift | Self::BitwiseLeftShift 						=> 6,
 			Self::Add | Self::Sub 													=> 7,
 			Self::Mul | Self::Div | Self::Modulo 									=> 8,
+			Self::BitwiseNot					 									=> 9,
 		};
 	}
 
@@ -413,10 +436,15 @@ impl BinExprOperator
 	{
 		return *self as u8 >= Self::BoolAnd as u8 && *self as u8 <= Self::BoolLessEq as u8;
 	}
+
+	pub fn is_self_operator(&self) -> bool
+	{
+		return *self as u8 >= Self::BitwiseNot as u8; 	/* TODO: Add: && *self as u8 <= ... */
+	}
 }
 
-impl Value
-{
+// impl Value
+// {
 	// pub fn is_constant(&self) -> bool
 	// {
 	// 	return match *self
@@ -425,7 +453,7 @@ impl Value
 	// 		_ => true,
 	// 	};
 	// }
-}
+// }
 
 impl TypeCastInfo
 {
