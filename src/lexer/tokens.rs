@@ -26,6 +26,7 @@ pub enum TokenKind
 	BoolLess,
 	BoolGreaterEq,
 	BoolLessEq,
+	BoolNot,
 	BitwiseOr,
 	BitwiseXor,
 	BitwiseAnd,

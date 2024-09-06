@@ -155,6 +155,7 @@ pub enum BinExprOperator
 	Div,
 	Modulo,
 	BitwiseNot,
+	BoolNot,
 }
 
 
@@ -411,6 +412,7 @@ impl BinExprOperator
 			TokenKind::ForwardSlash 		=> Self::Div,
 			TokenKind::Percent 				=> Self::Modulo,
 			TokenKind::BitwiseNot			=> Self::BitwiseNot,
+			TokenKind::BoolNot				=> Self::BoolNot,
 			_ => return None
 		});
 	}
@@ -428,18 +430,18 @@ impl BinExprOperator
 			Self::BitwiseRightShift | Self::BitwiseLeftShift 						=> 6,
 			Self::Add | Self::Sub 													=> 7,
 			Self::Mul | Self::Div | Self::Modulo 									=> 8,
-			Self::BitwiseNot					 									=> 9,
+			Self::BitwiseNot | Self::BoolNot					 					=> 9,
 		};
 	}
 
 	pub fn is_boolean(&self) -> bool
 	{
-		return *self as u8 >= Self::BoolAnd as u8 && *self as u8 <= Self::BoolLessEq as u8;
+		return (*self as u8 >= Self::BoolAnd as u8 && *self as u8 <= Self::BoolLessEq as u8) || *self == Self::BoolNot;
 	}
 
 	pub fn is_self_operator(&self) -> bool
 	{
-		return *self as u8 >= Self::BitwiseNot as u8; 	/* TODO: Add: && *self as u8 <= ... */
+		return *self as u8 >= Self::BitwiseNot as u8 && *self as u8 <= Self::BoolNot as u8;
 	}
 }
 

@@ -52,8 +52,7 @@ impl<'a> Lexer<'a>
 					kind = TokenKind::BoolNotEq;
 				} else
 				{
-					todo!("Add boolean not operator ! here");
-					// kind = TokenKind::BoolNot
+					kind = TokenKind::BoolNot
 				}
 			},
 			'|' =>

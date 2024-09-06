@@ -117,6 +117,28 @@ impl<'a> CodeGen<'a>
 			return destination;
 		}
 	}
+
+	fn gen_bin_self_operation(&mut self, locals: &Vec<Variable>, operation: &BinExprSelfOperation) -> Placeholder
+	{
+		let mut expression = self.gen_bin_expr_recurse(locals, &operation.expression);
+		if !expression.is_register()
+		{
+			let new_placeholder = Placeholder::new(
+				PlaceholderKind::Reg(Register::default_for_type(expression.data_type)), 
+				expression.data_type
+			);
+
+			self.instr_mov(&new_placeholder, &expression);
+			expression = new_placeholder;
+		}
+
+		match operation.operator {
+			BinExprOperator::BitwiseNot => self.instr_not(&expression),
+			BinExprOperator::BoolNot	=> {self.instr_test(&expression, &expression); self.instr_setz(&expression); }
+			_ => panic!("gen_bin_expr_recurse(), BinExprPart::SelfOperation.operator, not a binary operator.\n{:#?}", operation),
+		}
+		return expression;
+	}
 	
 	fn gen_bin_expr(&mut self, bin_expr: &BinExpr, locals: &Vec<Variable>) -> Placeholder
 	{
@@ -128,6 +150,7 @@ impl<'a> CodeGen<'a>
 		match expr_part {
 			BinExprPart::Val(value) => return self.gen_value(value, locals),
 			BinExprPart::TypeCast(type_cast_info) => return self.gen_type_cast(locals, type_cast_info),
+			BinExprPart::SelfOperation(operation) => return self.gen_bin_self_operation(locals, operation),
 			BinExprPart::Operation(operation) =>
 			{
 				let mut lhs_allocated_reg = None;
@@ -163,26 +186,6 @@ impl<'a> CodeGen<'a>
 				}
 				return result;
 			},
-			BinExprPart::SelfOperation(self_operation) =>
-			{
-				let mut expression = self.gen_bin_expr_recurse(locals, &self_operation.expression);
-				if !expression.is_register()
-				{
-					let new_placeholder = Placeholder::new(
-						PlaceholderKind::Reg(Register::default_for_type(expression.data_type)), 
-						expression.data_type
-					);
-
-					self.instr_mov(&new_placeholder, &expression);
-					expression = new_placeholder;
-				}
-
-				match self_operation.operator {
-					BinExprOperator::BitwiseNot => self.instr_not(&expression),
-					_ => panic!("gen_bin_expr_recurse(), BinExprPart::SelfOperation.operator, not a binary operator.\n{:#?}", self_operation),
-				}
-				return expression;
-			}
 		}
 	}
 

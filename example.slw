@@ -2,7 +2,8 @@
 
 func global main() -> i32
 {
-	let num i32 = 0;
-	let casted f64 = (f64)(~num - 5 * 10);	// -1 - 6
-	return num;
+	if !(5 - 2 * 5 != 0-5) && 4 == 4
+		return 1;
+	else
+		return 0;
 }
