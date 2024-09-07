@@ -156,6 +156,7 @@ pub enum BinExprOperator
 	Modulo,
 	BitwiseNot,
 	BoolNot,
+	AddressOf,
 }
 
 
@@ -388,7 +389,7 @@ impl BinExprOperator
 	const LOWEST_PRECEDENCE: u8 = 1;
 	const HIGHEST_PRECEDENCE: u8 = 9;
 	
-	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
+	pub fn from_token_kind(token_kind: &TokenKind, is_prev_operator: bool) -> Option<Self>
 	{
 		return Some(match token_kind
 		{
@@ -403,7 +404,7 @@ impl BinExprOperator
 
 			TokenKind::BitwiseOr 			=> Self::BitwiseOr,
 			TokenKind::BitwiseXor 			=> Self::BitwiseXor,
-			TokenKind::BitwiseAnd 			=> Self::BitwiseAnd,
+			TokenKind::BitwiseAnd 			=> if is_prev_operator { Self::AddressOf } else { Self::BitwiseAnd },
 			TokenKind::BitwiseRightShift 	=> Self::BitwiseRightShift,
 			TokenKind::BitwiseLeftShift 	=> Self::BitwiseLeftShift,
 			TokenKind::Plus 				=> Self::Add,
@@ -430,7 +431,7 @@ impl BinExprOperator
 			Self::BitwiseRightShift | Self::BitwiseLeftShift 						=> 6,
 			Self::Add | Self::Sub 													=> 7,
 			Self::Mul | Self::Div | Self::Modulo 									=> 8,
-			Self::BitwiseNot | Self::BoolNot					 					=> 9,
+			Self::BitwiseNot | Self::BoolNot | Self::AddressOf				 		=> 9,
 		};
 	}
 
@@ -441,7 +442,7 @@ impl BinExprOperator
 
 	pub fn is_self_operator(&self) -> bool
 	{
-		return *self as u8 >= Self::BitwiseNot as u8 && *self as u8 <= Self::BoolNot as u8;
+		return *self as u8 >= Self::BitwiseNot as u8 && *self as u8 <= Self::AddressOf as u8;
 	}
 }
 

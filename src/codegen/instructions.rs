@@ -444,6 +444,11 @@ impl<'a> CodeGen<'a>
 		));
 	}
 
+	pub fn instr_lea(&mut self, destination: &Placeholder, source: &Placeholder)
+	{
+		self.write_text_segment(&format!("\n\tlea {destination}, {source}"));
+	}
+
 	// Convert single floating point (64/32 bit) into an integer
 	pub fn instr_cvttsf2si(&mut self, destination: &Placeholder, source: &Placeholder)
 	{

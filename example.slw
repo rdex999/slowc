@@ -2,8 +2,7 @@
 
 func global main() -> i32
 {
-	if !(5 - 2 * 5 != 0-5) && 4 == 4
-		return 1;
-	else
-		return 0;
+	let num i32 = 123;
+	let address_of_num u64 = &num;
+	return num;
 }

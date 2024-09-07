@@ -19,7 +19,7 @@ impl<'a> Parser<'a>
 	{
 		let position = self.position;
 
-		while self.current_token().kind == TokenKind::LeftParen || BinExprOperator::from_token_kind(&self.current_token().kind) != None
+		while self.current_token().kind == TokenKind::LeftParen || BinExprOperator::from_token_kind(&self.current_token().kind, true) != None
 		{ 
 			self.advance_token().unwrap_or_else(|| {
 				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected closing parenthese.");
@@ -155,7 +155,7 @@ impl<'a> Parser<'a>
 			);
 		}
 
-		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind, false)
 		{
 			if operator.is_self_operator()
 			{
@@ -188,17 +188,41 @@ impl<'a> Parser<'a>
 
 	fn parse_self_operator(&mut self, data_type: Type, variables: &LocalVariables) -> Option<BinExprPart>
 	{
-		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind, true)
 		{
-			if operator.is_self_operator()
+			if !operator.is_self_operator()
 			{
-				self.parse_bin_operator();
-				let expression = self.parse_bin_expression_high_precedence(data_type, variables, operator.precedence());
-				return Some(BinExprPart::SelfOperation(Box::new(BinExprSelfOperation::new(operator, expression))));
-			} else
-			{
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected value or self operator (~, !).");
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected value or self operator (~, !, &).");
 			}
+
+			let operator_token = self.current_token();
+			if operator == BinExprOperator::AddressOf 
+			{
+				if data_type != Type::U64		/* TODO: Switch to pointer-type */
+				{
+					print_errln!(
+						CompileError::TypeError(data_type, Type::U64), 		/* TODO: Switch to pointer-type */
+						self.source, 
+						operator_token.span.start, 
+						"Expected pointer data type ( * ) or {}.", Type::U64.to_string()
+					);
+				}
+
+				self.parse_bin_operator();
+				let value = self.parse_value(None, variables, true).unwrap_or_else(|| {
+					print_errln!(
+						CompileError::Syntax, 
+						self.source, 
+						operator_token.span.end, 
+						"The address-of operator ( & ) cannot be applied to expressions. (As they are not stored in RAM)"
+					);
+				});
+				return Some(BinExprPart::SelfOperation(Box::new(BinExprSelfOperation::new(operator, BinExprPart::Val(value)))));
+			}
+
+			self.parse_bin_operator();
+			let expression = self.parse_bin_expression_high_precedence(data_type, variables, operator.precedence());
+			return Some(BinExprPart::SelfOperation(Box::new(BinExprSelfOperation::new(operator, expression))));
 		}
 		return None;
 	}
@@ -214,7 +238,7 @@ impl<'a> Parser<'a>
 			root = self.parse_value_expr(data_type, variables);
 		}
 
-		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind)
+		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind, false)
 		{
 			if operator.precedence() < precedence
 			{
@@ -266,39 +290,12 @@ impl<'a> Parser<'a>
 					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
 				});
 			}
-
 		} else
 		{
 			result = BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
 				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
 			}));
 		}
-
-		// if self.current_token().kind == TokenKind::As
-		// {
-		// 	let to_type_tok = self.advance_token().unwrap_or_else(|| {
-		// 		print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing type cast.");
-		// 	});
-		// 	let to_type = Type::from_token_kind(&to_type_tok.kind).unwrap_or_else(|| {
-		// 		print_errln!(CompileError::Syntax, self.source, to_type_tok.span.start, "Expected data type after \"{KEYWORD_AS}\" keyword.");
-		// 	});
-
-		// 	if to_type == Type::Void
-		// 	{
-		// 		print_errln!(CompileError::Syntax, self.source, to_type_tok.span.start, "Cannot cast to {} data type.", Type::Void.to_string());
-		// 	}
-
-		// 	if to_type != data_type
-		// 	{
-		// 		print_errln!(CompileError::TypeError(data_type, to_type), self.source, to_type_tok.span.start, "Can only cast to the expressions") 
-		// 	}
-
-		// 	self.advance_token().unwrap_or_else(|| {
-		// 		print_errln!(CompileError::UnexpectedEof, self.source, to_type_tok.span.end, "While parsing expression.");
-		// 	});
-
-
-		// }
 		return result;
 	}
 	
@@ -306,7 +303,7 @@ impl<'a> Parser<'a>
 	{
 		let token = self.current_token();
 		self.advance_token();
-		if let Some(operator) = BinExprOperator::from_token_kind(&token.kind)
+		if let Some(operator) = BinExprOperator::from_token_kind(&token.kind, false)
 		{
 			return operator;
 		} 

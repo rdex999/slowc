@@ -121,20 +121,29 @@ impl<'a> CodeGen<'a>
 	fn gen_bin_self_operation(&mut self, locals: &Vec<Variable>, operation: &BinExprSelfOperation) -> Placeholder
 	{
 		let mut expression = self.gen_bin_expr_recurse(locals, &operation.expression);
-		if !expression.is_register()
+		if operation.operator != BinExprOperator::AddressOf
 		{
-			let new_placeholder = Placeholder::new(
-				PlaceholderKind::Reg(Register::default_for_type(expression.data_type)), 
-				expression.data_type
-			);
-
-			self.instr_mov(&new_placeholder, &expression);
-			expression = new_placeholder;
+			if !expression.is_register()
+			{
+				let new_placeholder = Placeholder::new(
+					PlaceholderKind::Reg(Register::default_for_type(expression.data_type)), 
+					expression.data_type
+				);
+	
+				self.instr_mov(&new_placeholder, &expression);
+				expression = new_placeholder;
+			}
 		}
 
 		match operation.operator {
-			BinExprOperator::BitwiseNot => self.instr_not(&expression),
-			BinExprOperator::BoolNot	=> {self.instr_test(&expression, &expression); self.instr_setz(&expression); }
+			BinExprOperator::BitwiseNot 	=> self.instr_not(&expression),
+			BinExprOperator::BoolNot		=> {self.instr_test(&expression, &expression); self.instr_setz(&expression); },
+			BinExprOperator::AddressOf		=>
+			{
+				let rax = Placeholder::new(PlaceholderKind::Reg(Register::RAX), Type::U64);
+				self.instr_lea(&rax, &expression);
+				return rax;
+			}
 			_ => panic!("gen_bin_expr_recurse(), BinExprPart::SelfOperation.operator, not a binary operator.\n{:#?}", operation),
 		}
 		return expression;
