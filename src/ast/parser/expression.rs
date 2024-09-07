@@ -8,16 +8,20 @@ impl<'a> Parser<'a>
 	{
 		if let Some(data_type) = data_type
 		{
-			return self.parse_bin_expression(Some(data_type), variables);
+			return self.parse_bin_expression(data_type, variables);
 		}
 		let data_type = self.get_expression_type(variables);
-		return self.parse_bin_expression(Some(data_type), variables);
+		return self.parse_bin_expression(data_type, variables);
 	}
 
 	// Doesnt actually mutate self
 	pub fn get_expression_type(&mut self, variables: &LocalVariables) -> Type
 	{
 		let position = self.position;
+
+		// As long as the current token is a parenthese/operator(not address-of), continue skiping tokens.
+		// If there is an address-of operator ( & ) then the data type is u64/pointer.
+		// If there is a type cast, then the data type is the casts data type.
 		loop
 		{ 
 			if self.current_token().kind == TokenKind::LeftParen
@@ -25,15 +29,19 @@ impl<'a> Parser<'a>
 				self.advance_token().unwrap_or_else(|| {
 					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
 				});
+				
+				// If there is an opening parenthese and then a data type, then its a type cast.
+				// TODO: Make a function for getting the type cast data type.
+				if let Some(data_type) = Type::from_token_kind(&self.current_token().kind) 
+				{
+					self.position = position;
+					return data_type;
+				}
 				continue;
 			}
 			
-			if let Some(data_type) = Type::from_token_kind(&self.current_token().kind)
-			{
-				self.position = position;
-				return data_type;
-			}
-			
+			// If it enters this while loop, continue skiping tokens. Otherwise if it did not enter the while loop, break out.
+			let mut was_operator = false;	
 			while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind, true)
 			{
 				if operator == BinExprOperator::AddressOf
@@ -41,18 +49,18 @@ impl<'a> Parser<'a>
 					self.position = position;
 					return Type::U64;
 				}
+				was_operator = true;
 				self.advance_token().unwrap_or_else(|| {
 					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
 				});
 			}
 
-			if self.current_token().kind == TokenKind::LeftParen
+			// See comment above while loop
+			if was_operator
 			{
-				self.advance_token().unwrap_or_else(|| {
-					print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
-				});
 				continue;
 			}
+
 			break;
 		}
 		
@@ -156,13 +164,13 @@ impl<'a> Parser<'a>
 		}
 	}
 
-	fn parse_bin_expression(&mut self, data_type: Option<Type>, variables: &LocalVariables) -> BinExpr
+	fn parse_bin_expression(&mut self, data_type: Type, variables: &LocalVariables) -> BinExpr
 	{
 		let expression_root = self.parse_bin_expression_part(data_type, variables);
 		return BinExpr::new(expression_root);
 	}
 
-	fn parse_bin_expression_part(&mut self, mut data_type: Option<Type>, variables: &LocalVariables) -> BinExprPart
+	fn parse_bin_expression_part(&mut self, mut data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
 		let mut root;
 		
@@ -195,7 +203,7 @@ impl<'a> Parser<'a>
 			// After a && or a || the numeric expression can have a different data type. For example: if 5 > 6 && 1.420 < 2.5
 			if operator == BinExprOperator::BoolAnd || operator == BinExprOperator::BoolOr
 			{
-				data_type = Some(self.get_expression_type(variables));
+				data_type = self.get_expression_type(variables);
 			}
 
 			let rhs = self.parse_bin_expression_high_precedence(
@@ -209,7 +217,7 @@ impl<'a> Parser<'a>
 		return root;
 	}
 
-	fn parse_self_operator(&mut self, data_type: Option<Type>, variables: &LocalVariables) -> Option<BinExprPart>
+	fn parse_self_operator(&mut self, data_type: Type, variables: &LocalVariables) -> Option<BinExprPart>
 	{
 		if let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind, true)
 		{
@@ -221,10 +229,10 @@ impl<'a> Parser<'a>
 			let operator_token = self.current_token();
 			if operator == BinExprOperator::AddressOf 
 			{
-				if data_type != None && data_type.unwrap() != Type::U64		/* TODO: Switch to pointer-type */
+				if data_type != Type::U64		/* TODO: Switch to pointer-type */
 				{
 					print_errln!(
-						CompileError::TypeError(data_type.unwrap(), Type::U64), 		/* TODO: Switch to pointer-type */
+						CompileError::TypeError(data_type, Type::U64), 		/* TODO: Switch to pointer-type */
 						self.source, 
 						operator_token.span.start, 
 						"Expected pointer data type ( * ) or {}.", Type::U64.to_string()
@@ -250,7 +258,7 @@ impl<'a> Parser<'a>
 		return None;
 	}
 
-	fn parse_bin_expression_high_precedence(&mut self, data_type: Option<Type>, variables: &LocalVariables, precedence: u8) -> BinExprPart
+	fn parse_bin_expression_high_precedence(&mut self, data_type: Type, variables: &LocalVariables, precedence: u8) -> BinExprPart
 	{
 		let mut root;
 		if let Some(expression) = self.parse_self_operator(data_type, variables)
@@ -283,7 +291,7 @@ impl<'a> Parser<'a>
 
 	}
 
-	fn parse_value_expr(&mut self, data_type: Option<Type>, variables: &LocalVariables) -> BinExprPart
+	fn parse_value_expr(&mut self, data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
 		let result;
 		if self.current_token().kind == TokenKind::LeftParen
@@ -318,7 +326,7 @@ impl<'a> Parser<'a>
 			result = self.parse_self_operator(data_type, variables).unwrap();
 		} else
 		{
-			result = BinExprPart::Val(self.parse_value(data_type, variables, false).unwrap_or_else(|| {
+			result = BinExprPart::Val(self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
 				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "None-binary token found in binary expression.");
 			}));
 		}
@@ -336,7 +344,7 @@ impl<'a> Parser<'a>
 		print_errln!(CompileError::Syntax, self.source, token.span.start, "None-binary operator found in binary expression.");
 	}
 
-	fn parse_type_cast(&mut self, variables: &LocalVariables, data_type: Option<Type>) -> BinExprPart
+	fn parse_type_cast(&mut self, variables: &LocalVariables, data_type: Type) -> BinExprPart
 	{
 		let token_into_type = self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.end, "While parsing expression.");
@@ -350,10 +358,10 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Cannot cast to {} data type.", Type::Void.to_string());
 		}
 		
-		if data_type != None && into_type != data_type.unwrap()
+		if into_type != data_type
 		{
 			print_errln!(
-				CompileError::TypeError(data_type.unwrap(), into_type), 
+				CompileError::TypeError(data_type, into_type), 
 				self.source, 
 				self.current_token().span.start, 
 				"Can only cast to the expressions data type."
@@ -372,7 +380,7 @@ impl<'a> Parser<'a>
 		});
 
 		let from_type = self.get_expression_type(variables);
-		let expression = self.parse_value_expr(Some(from_type), variables);
+		let expression = self.parse_value_expr(from_type, variables);
 		if from_type == into_type
 		{
 			print_wrnln!(self.source, token_into_type.span.start, "Type cast ignored, casting to the same data type.");
