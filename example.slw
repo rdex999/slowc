@@ -3,6 +3,6 @@
 func global main() -> i32
 {
 	let num i32 = 123;
-	let address_of_num u64 = &num;
-	return num;
+	let address_of_num_in32_bits u32 = (u32)(&num & (u64)(u32)~0);
+	return 0;
 }
