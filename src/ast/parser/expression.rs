@@ -94,7 +94,8 @@ impl<'a> Parser<'a>
 						TypeKind::I32 						=> Some(Value::I32(value as i32)),
 						TypeKind::U32 						=> Some(Value::U32(value as u32)),
 						TypeKind::I64 						=> Some(Value::I64(value)),
-						TypeKind::U64 | TypeKind::Pointer 	=> Some(Value::U64(value as u64)),
+						TypeKind::U64 						=> Some(Value::U64(value as u64)),
+						TypeKind::Pointer					=> Some(Value::U64(value as u64 * data_type.dereference(1).size() as u64)),
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::new(TypeKind::I32)), self.source, first_token.span.start, ""); }
 					}
 				}
@@ -443,22 +444,38 @@ impl<'a> Parser<'a>
 		}
 
 		let token_right_paren = self.current_token();
-
 		if token_right_paren.kind != TokenKind::RightParen
 		{
 			print_errln!(CompileError::Syntax, self.source, token_right_paren.span.start, "Expected closing parenthese on type cast.");
 		}
-
+		
 		self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_right_paren.span.end, "While parsing expression.");
 		});
-
+		
 		let from_type = self.get_expression_type(variables);
-		let expression = self.parse_value_expr(from_type, variables);
+		let mut expression = self.parse_value_expr(from_type, variables);
 		if from_type == into_type
 		{
 			print_wrnln!(self.source, token_left_paren.span.end, "Type cast ignored, casting to the same data type.");
 			return expression;
+		}
+
+		// If casting to a pointer of different size, cast first to u64 then to the pointer
+		if into_type.kind == TypeKind::Pointer && from_type.size() != into_type.size()
+		{
+			expression = BinExprPart::TypeCast(Box::new(TypeCastInfo::new(Type::new(TypeKind::U64), from_type, expression)));
+
+			// If casting to a pointer from a type of different size, multiply it by the size of the data type that into_type dereferences into
+			// int* pointer = &num + (int*)5;		// 5 is multiplied by sizeof(*(int*)) -> sizeof(int)	// &num + 5 * 4
+			if into_type.dereference(1).size() != 1
+			{
+				expression = BinExprPart::Operation(Box::new(BinExprOperation::new(
+					BinExprOperator::Mul, 
+					expression, 
+					BinExprPart::Val(Value::U64(into_type.dereference(1).size() as u64))
+				)));
+			}
 		}
 
 		return BinExprPart::TypeCast(Box::from(TypeCastInfo::new(into_type, from_type, expression)));
