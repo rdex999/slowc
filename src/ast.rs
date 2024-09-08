@@ -421,6 +421,22 @@ impl Type
 	{
 		return self.kind.is_integer();
 	}
+
+	pub fn dereference(&self, count: u8) -> Type
+	{
+		if self.kind != TypeKind::Pointer || count > self.pointer_level
+		{
+			panic!("Type.dereference was not called on a pointer data type.");
+		}
+
+		let new_ptr_level = self.pointer_level - count;
+		if new_ptr_level == 0
+		{
+			return Type::new(self.points_to);
+		}
+
+		return Type::new_ptr(TypeKind::Pointer, self.points_to, new_ptr_level);
+	}
 }
 
 impl std::fmt::Display for Type

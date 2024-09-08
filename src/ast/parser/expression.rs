@@ -228,7 +228,7 @@ impl<'a> Parser<'a>
 			let operator_token = self.current_token();
 			if operator == BinExprOperator::AddressOf 
 			{
-				if data_type != Type::new(TypeKind::U64)		/* TODO: Switch to pointer-type */
+				if data_type != Type::new(TypeKind::U64) && data_type.kind != TypeKind::Pointer	/* TODO: Switch to pointer-type */
 				{
 					print_errln!(
 						CompileError::TypeError(data_type, Type::new(TypeKind::U64)), 		/* TODO: Switch to pointer-type */
@@ -239,7 +239,20 @@ impl<'a> Parser<'a>
 				}
 
 				self.parse_bin_operator();
-				let value = self.parse_value(None, variables, true).unwrap_or_else(|| {
+
+				// Say we have the following code:
+				// 	let num i32 = 123;
+				// 	let pointer *i32 = &num;
+				// The data type of "num" must be: *typeof(pointer)		// Which is, i32
+				let request_data_type;
+				if data_type.kind == TypeKind::Pointer 
+				{
+					request_data_type = Some(data_type.dereference(1));
+				} else {
+					request_data_type = None;
+				}
+
+				let value = self.parse_value(request_data_type, variables, true).unwrap_or_else(|| {
 					print_errln!(
 						CompileError::Syntax, 
 						self.source, 
