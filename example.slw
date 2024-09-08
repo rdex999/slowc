@@ -2,7 +2,10 @@
 
 func global main() -> i32
 {
-	let num i32 = 123;
-	let address_of_num_in32_bits u32 = (u32)(&num & (u64)(u32)~0);
+	let num **i32 = 123 + 2;
+
+	// Pointer type cast
+	let num2 *i32 = (*i32)num - 2;
+	//let address_of_num_in32_bits u32 = (u32)(&num & (u64)(u32)~0);
 	return 0;
 }

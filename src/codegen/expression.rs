@@ -202,6 +202,11 @@ impl<'a> CodeGen<'a>
 	{
 		let mut expression = self.gen_bin_expr_recurse(locals, &type_cast_info.expression);
 
+		if type_cast_info.from_type.kind == TypeKind::Pointer && type_cast_info.from_type.kind == TypeKind::Pointer
+		{
+			return expression.of_type(type_cast_info.into_type);
+		}
+
 		if type_cast_info.from_type.is_integer() && type_cast_info.into_type.is_integer()
 		{
 			if !type_cast_info.from_type.is_signed() && !type_cast_info.into_type.is_signed()
@@ -221,7 +226,7 @@ impl<'a> CodeGen<'a>
 				match type_cast_info.into_type.kind
 				{
 					TypeKind::U16 | TypeKind::U32 => self.instr_movzx(&rax, &expression),
-					TypeKind::U64 =>
+					TypeKind::U64 | TypeKind::Pointer =>
 					{
 						if type_cast_info.from_type == Type::new(TypeKind::U16) || type_cast_info.from_type == Type::new(TypeKind::U8)
 						{

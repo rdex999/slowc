@@ -58,12 +58,40 @@ impl<'a> Parser<'a>
 		}
 	}
 
+	// Self is not mutated if None is returned
 	pub fn parse_data_type(&mut self) -> Option<Type>
 	{
-		let kind = if let Some(kind) = TypeKind::from_token_kind(&self.current_token().kind) { kind } else { return None; };
+		let position = self.position;
+		let mut pointer_level: u8 = 0;
+		while self.current_token().kind == TokenKind::Asterisk
+		{
+			pointer_level += 1;
+			if let None = self.advance_token()
+			{
+				self.position = position;
+				return None;
+			}
+		}
+
+		let kind = if let Some(kind) = TypeKind::from_token_kind(&self.current_token().kind) 
+		{ 
+			kind 
+		} else 
+		{ 
+			self.position = position;
+			return None; 
+		};
 		self.advance_token();
-		return Some(Type::new(kind));
+
+		if pointer_level == 0
+		{
+			return Some(Type::new(kind));
+		} else
+		{
+			return Some(Type::new_ptr(TypeKind::Pointer, kind, pointer_level));
+		}
 	}
+
 
 	// Doesnt mutate self
 	pub fn parse_data_type_non_mut(&mut self, offset: usize) -> Option<Type>

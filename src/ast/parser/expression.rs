@@ -87,15 +87,14 @@ impl<'a> Parser<'a>
 				if let Some(data_type) = data_type
 				{
 					return match data_type.kind {
-						TypeKind::I8  => Some(Value::I8(value as i8)),
-						TypeKind::U8  => Some(Value::U8(value as u8)),
-						TypeKind::I16 => Some(Value::I16(value as i16)),
-						TypeKind::U16 => Some(Value::U16(value as u16)),
-						TypeKind::I32 => Some(Value::I32(value as i32)),
-						TypeKind::U32 => Some(Value::U32(value as u32)),
-						TypeKind::I64 => Some(Value::I64(value)),
-						TypeKind::U64 => Some(Value::U64(value as u64)),
-						// TODO: Add pointer
+						TypeKind::I8  						=> Some(Value::I8(value as i8)),
+						TypeKind::U8  						=> Some(Value::U8(value as u8)),
+						TypeKind::I16 						=> Some(Value::I16(value as i16)),
+						TypeKind::U16 						=> Some(Value::U16(value as u16)),
+						TypeKind::I32 						=> Some(Value::I32(value as i32)),
+						TypeKind::U32 						=> Some(Value::U32(value as u32)),
+						TypeKind::I64 						=> Some(Value::I64(value)),
+						TypeKind::U64 | TypeKind::Pointer 	=> Some(Value::U64(value as u64)),
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::new(TypeKind::I32)), self.source, first_token.span.start, ""); }
 					}
 				}
@@ -116,7 +115,6 @@ impl<'a> Parser<'a>
 					{
 						TypeKind::F32 => Some(Value::F32(value as f32)),
 						TypeKind::F64 => Some(Value::F64(value)),
-						// TODO: Add pointer
 						_ => { print_errln!(CompileError::TypeError(data_type, Type::new(TypeKind::F32)), self.source, first_token.span.start, ""); }
 					}
 				}
