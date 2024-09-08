@@ -7,6 +7,7 @@ func global main() -> i32
 	let pointer *i32 = &num;
 
 	let offset i32 = 1;
-	let num_copy i32 = *(pointer + (*i32)offset);		// Gets the value of first_num
+	*(pointer + (*i32)offset) = 23;						// Modify first_num
+	let num_copy i32 = *(pointer + (*i32)offset);		// Get the value of first_num
 	return num_copy;
 }

@@ -6,13 +6,14 @@ impl<'a> Parser<'a>
 	pub fn parse_statement(&mut self, variables: &mut LocalVariables, function: &Function) -> Option<Statement>
 	{
 		match self.current_token().kind {
-			TokenKind::LeftCurly 	=> return Some(Statement::Scope(self.parse_scope(variables, function))),
-			TokenKind::VarDecl 		=> return self.parse_var_decl(variables),
-			TokenKind::If			=> return Some(self.parse_if_stmt(variables, function)),
-			TokenKind::For			=> return Some(self.parse_for_stmt(variables, function)),
-			TokenKind::Return 		=> return Some(self.parse_return_stmt(variables, function)),
-			TokenKind::Semicolon 	=> { self.advance_token(); return None; },
-			TokenKind::Ident 		=> 
+			TokenKind::LeftCurly 					=> return Some(Statement::Scope(self.parse_scope(variables, function))),
+			TokenKind::VarDecl 						=> return self.parse_var_decl(variables),
+			TokenKind::If							=> return Some(self.parse_if_stmt(variables, function)),
+			TokenKind::For							=> return Some(self.parse_for_stmt(variables, function)),
+			TokenKind::Return 						=> return Some(self.parse_return_stmt(variables, function)),
+			TokenKind::Semicolon 					=> { self.advance_token(); return None; },
+			TokenKind::Asterisk 	=> return Some(self.parse_var_update(variables)),
+			TokenKind::Ident 		=>
 			{
 				if let Some(next_token) = self.peek(1)
 				{

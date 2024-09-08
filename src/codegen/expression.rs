@@ -23,7 +23,26 @@ impl<'a> CodeGen<'a>
 					)), 
 					variable.data_type
 				);
-			}, 
+			},
+			Value::Dereference(info) =>
+			{
+				if info.dereference_count == 1
+				{
+					let expression = self.gen_expression(&info.expression, locals);
+					return Placeholder::new(
+						PlaceholderKind::Location(LocationExpr::from_placeholder(&expression)), 
+						info.data_type.dereference(1)
+					);
+				}
+
+				let mut info = info.clone();
+				info.dereference_count -= 1;
+				let expression = self.gen_pointer_dereference(locals, &info);
+				return Placeholder::new(
+					PlaceholderKind::Location(LocationExpr::from_placeholder(&expression)), 
+					info.data_type.dereference(info.dereference_count)
+				);
+			}
 			_ => panic!("Dev error! gen_value_access() called with none-writable value. {:#?}", value),
 		}
 	}
