@@ -46,47 +46,48 @@ impl<'a> Parser<'a>
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Expected identifier after {KEYWORD_VAR_DECL}.");
 		}
-		// if let Some(_) = variables.get_variable(&identifier[..])
-		// {
-		// 	print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Variable \"{identifier}\" was already declared.");
-		// }
 
-		let token_data_type = self.advance_token().unwrap_or_else(|| {
+		self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing variable declaration. Expected data type.");
 		});
 		
-		let data_type = Type::from_token_kind(&token_data_type.kind).unwrap_or_else(|| {
-			print_errln!(CompileError::Syntax, self.source, token_data_type.span.start, "Expected data type after variable identifier.");
+		let data_type = self.parse_data_type().unwrap_or_else(|| {
+			print_errln!(CompileError::Syntax, self.source, token_ident.span.end, "Expected data type after variable identifier.");
 		});
 
-		if data_type == Type::Void
+		if data_type == Type::new(TypeKind::Void)
 		{
 			print_errln!(
-				CompileError::TypeError(Type::I32, Type::Void), 
+				CompileError::TypeError(Type::new(TypeKind::I32), Type::new(TypeKind::Void)), 
 				self.source, 
-				token_data_type.span.start, 
+				self.current_token().span.start,
 				"Cannot declare variable of type \"{KEYWORD_VOID}\", it makes no sense."
 			);
 		}
 
-		let new_var = variables.add_variable(identifier, 0, data_type.clone());		/* Dont kill me for using clone(), its a pure enum */
+		// FIXME: Might be able to use the variable inside its declaration expression.
+		let new_var = variables.add_variable(identifier, 0, data_type);
 
-		let token_assign_or_semi = self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, token_data_type.span.end, "While parsing variable declaration. Expected semicolon or assign operator (=).");
+		let token_assign_or_semi = self.current_token();
+
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(
+				CompileError::UnexpectedEof, 
+				self.source, 
+				self.current_token().span.start, 
+				"While parsing variable declaration. Expected semicolon or assign operator ( = )."
+			);
 		});
 
 		if token_assign_or_semi.kind == TokenKind::Semicolon
 		{
-			self.advance_token();
 			return None;
 		} else if token_assign_or_semi.kind != TokenKind::Equal
 		{
-			print_errln!(CompileError::Syntax, self.source, token_assign_or_semi.span.start, "Expected assign operator (=) or semicolon.");
+			print_errln!(CompileError::Syntax, self.source, token_assign_or_semi.span.start, "Expected assign operator ( = ) or semicolon ( ; ).");
 		}
 
 		// Will get here is there is an initial assignment to the variable
-		self.advance_token(); 	/* Skip equal token, now self.current_token is the first token of the expression */
-
 		let expr = self.parse_expression(Some(data_type), variables);
 
 		if self.current_token().kind != TokenKind::Semicolon
@@ -132,7 +133,7 @@ impl<'a> Parser<'a>
 
 		let mut stmt = Statement::Return(None);
 
-		if function.return_type != Type::Void
+		if function.return_type != Type::new(TypeKind::Void)
 		{
 			let expr = self.parse_expression(Some(function.return_type), variables);
 			stmt = Statement::Return(Some(expr));

@@ -71,34 +71,35 @@ impl<'a> Parser<'a>
 			print_errln!(CompileError::Syntax, self.source, token_left_paren.span.start, "Expected argument list after function identifier.");
 		}
 		
-		self.advance_token();
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function parameters.");
+		});
+
 		let mut variables = self.parse_function_decl_parameters(attributes);
-		
-		let args_end_pos = self.current_token().span.end;
+
+		// Skip Closing parenthese, as its the exit condition for self.parse_function_decl_parameters(attributes);
 		let token_ret_type_specifier = self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, args_end_pos, "While parsing function return type specifier (Arrow operator \"->\")");
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing function parameters.");
 		});
 		
 		if token_ret_type_specifier.kind != TokenKind::Arrow
 		{
 			print_errln!(CompileError::Syntax, self.source, token_ret_type_specifier.span.start, "Expected return type specifier (Arrow operator \"->\") after parameter list in function declaration.");
 		}
-		
-		let token_ret_type = self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type_specifier.span.end, "While parsing function return type.");
+
+		self.advance_token().unwrap_or_else(|| {
+			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing functions return type.");
 		});
-		
-		let return_type = Type::from_token_kind(&token_ret_type.kind).unwrap_or_else(|| {
-			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected function return type after return type specifier.");
+
+		let return_type = self.parse_data_type().unwrap_or_else(|| {
+			print_errln!(CompileError::Syntax, self.source, token_ret_type_specifier.span.end, "Expected function return type after return type specifier.");
 		});
-		
-		let token_scope_start = self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, token_ret_type.span.end, "While parsing function declaration.");
-		});
+
+		let token_scope_start = self.current_token();
 		
 		let mut function = Function::new(identifier.to_string(), return_type, attributes);
 		function.parameter_count = variables.get_variable_count();
-
+		
 		if token_scope_start.kind == TokenKind::Semicolon
 		{
 			self.advance_token();
@@ -110,7 +111,7 @@ impl<'a> Parser<'a>
 			return;
 		} else if token_scope_start.kind != TokenKind::LeftCurly
 		{
-			print_errln!(CompileError::Syntax, self.source, token_ret_type.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
+			print_errln!(CompileError::Syntax, self.source, token_scope_start.span.start, "Expected scope begin operator \"{{\" or semicolon after function return type.");
 		}
 		
 		self.advance_token().unwrap_or_else(|| {
@@ -169,28 +170,28 @@ impl<'a> Parser<'a>
 		args.start_scope();
 		loop 
 		{
-			let token = self.current_token();
-			let token_span = token.span;
-			match token.kind 
+			let token_ident = self.current_token();
+			match token_ident.kind 
 			{
 				TokenKind::RightParen => break,
 				TokenKind::Ident =>
 				{
-					let ident = self.get_text(&token_span).to_string();
-					let token_arg_type = self.advance_token().unwrap_or_else(|| {
-						print_errln!(CompileError::UnexpectedEof, self.source, token_span.end, "While parsing function parameters.");
+					let ident = self.get_text(&token_ident.span).to_string();
+					
+					self.advance_token().unwrap_or_else(|| {
+						print_errln!(CompileError::UnexpectedEof, self.source, token_ident.span.end, "While parsing function parameters.");
 					});
 
-					let data_type = Type::from_token_kind(&token_arg_type.kind).unwrap_or_else(|| {
-						print_errln!(CompileError::Syntax, self.source, token_arg_type.span.start, "Expected parameter type after identifier.");
+					let data_type = self.parse_data_type().unwrap_or_else(|| {
+						print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected parameter type after identifier.");
 					});
 
-					if data_type == Type::Void
+					if data_type == Type::new(TypeKind::Void)
 					{
 						print_errln!(
-							CompileError::TypeError(Type::I32, Type::Void), 
+							CompileError::Syntax,
 							self.source, 
-							token_arg_type.span.start, 
+							token_ident.span.end, 
 							"Cannot declare variable of type \"{KEYWORD_VOID}\", it makes no sense."
 						);
 					}
@@ -199,18 +200,23 @@ impl<'a> Parser<'a>
 					// The stack location (this variable will exist in the future) will just be positive
 					args.add_variable(ident, attribute::FUNCTION_PARAMETER, data_type);
 
-					let token_comma = self.advance_token().unwrap_or_else(|| {
-						print_errln!(CompileError::UnexpectedEof, self.source, token_arg_type.span.end, "While parsing function parameters.");
-					});
+					let token_comma = self.current_token();
 
+					
 					match token_comma.kind {
-						TokenKind::Comma => { self.advance_token(); continue; },
+						TokenKind::Comma => 
+						{ 
+							self.advance_token().unwrap_or_else(|| {
+								print_errln!(CompileError::UnexpectedEof, self.source, token_comma.span.end, "While parsing function parameters.");
+							});
+							continue; 
+						},
 						TokenKind::RightParen => break,
-						_ => { print_errln!(CompileError::Syntax, self.source, token_span.start, "Unexpected token while parsing function parameters."); }
+						_ => { print_errln!(CompileError::Syntax, self.source, token_comma.span.start, "Unexpected token while parsing function parameters."); }
 					}
 				
 				},
-				_ => { print_errln!(CompileError::Syntax, self.source, token_span.start, "Unexpected token while parsing function parameters."); }
+				_ => { print_errln!(CompileError::Syntax, self.source, token_ident.span.start, "Unexpected token while parsing function parameters."); }
 			}
 		}
 		return args;	

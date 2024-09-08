@@ -39,16 +39,16 @@ impl<'a> Parser<'a>
 	pub fn value_type(&self, value: &Value, variables: &LocalVariables) -> Type
 	{
 		match value {
-			Value::I8(_)  => Type::I8,
-			Value::U8(_)  => Type::U8,
-			Value::I16(_) => Type::I16,
-			Value::U16(_) => Type::U16,
-			Value::I32(_) => Type::I32,
-			Value::U32(_) => Type::U32,
-			Value::I64(_) => Type::I64,
-			Value::U64(_) => Type::U64,
-			Value::F32(_) => Type::F32,
-			Value::F64(_) => Type::F64,
+			Value::I8(_)  => Type::new(TypeKind::I8),
+			Value::U8(_)  => Type::new(TypeKind::U8),
+			Value::I16(_) => Type::new(TypeKind::I16),
+			Value::U16(_) => Type::new(TypeKind::U16),
+			Value::I32(_) => Type::new(TypeKind::I32),
+			Value::U32(_) => Type::new(TypeKind::U32),
+			Value::I64(_) => Type::new(TypeKind::I64),
+			Value::U64(_) => Type::new(TypeKind::U64),
+			Value::F32(_) => Type::new(TypeKind::F32),
+			Value::F64(_) => Type::new(TypeKind::F64),
 			Value::Var(index) => 
 			{
 				let var = variables.get_variable_by_index(*index).unwrap();
@@ -56,5 +56,22 @@ impl<'a> Parser<'a>
 			},
 			Value::FuncCall(func_call) => return self.func_manager.get_by_index(func_call.index).unwrap().return_type,
 		}
+	}
+
+	pub fn parse_data_type(&mut self) -> Option<Type>
+	{
+		let kind = if let Some(kind) = TypeKind::from_token_kind(&self.current_token().kind) { kind } else { return None; };
+		self.advance_token();
+		return Some(Type::new(kind));
+	}
+
+	// Doesnt mutate self
+	pub fn parse_data_type_non_mut(&mut self, offset: usize) -> Option<Type>
+	{
+		let position = self.position;
+		self.position += offset;
+		let data_type = self.parse_data_type();
+		self.position = position;
+		return data_type;
 	}
 }

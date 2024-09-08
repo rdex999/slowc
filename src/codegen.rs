@@ -82,8 +82,8 @@ impl<'a> CodeGen<'a>
 		if scope.stack_size != 0
 		{
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Integer(scope.stack_size as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::new(TypeKind::U64)), 
+				&Placeholder::new(PlaceholderKind::Integer(scope.stack_size as u64), Type::new(TypeKind::U64))
 			);
 		}
 
@@ -95,8 +95,8 @@ impl<'a> CodeGen<'a>
 		if scope.stack_size != 0
 		{
 			self.instr_add(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Integer(scope.stack_size as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::new(TypeKind::U64)), 
+				&Placeholder::new(PlaceholderKind::Integer(scope.stack_size as u64), Type::new(TypeKind::U64))
 			);
 		}
 	}
@@ -175,7 +175,7 @@ impl<'a> CodeGen<'a>
 		#[cfg(debug_assertions)]
 		self.write_text_segment(&format!("\n\t; Start if statement {}, expression:", false_lable.index));
 
-		let expression = self.gen_expression(&if_info.condition, locals).of_type(Type::U8);
+		let expression = self.gen_expression(&if_info.condition, locals).of_type(Type::new(TypeKind::U8));
 
 		self.instr_test(&expression, &expression);
 		self.instr_jz(false_lable);
@@ -223,8 +223,8 @@ impl<'a> CodeGen<'a>
 		if stack_size != 0
 		{
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Integer(stack_size as u64), Type::U64),
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::new(TypeKind::U64)), 
+				&Placeholder::new(PlaceholderKind::Integer(stack_size as u64), Type::new(TypeKind::U64)),
 			);
 		}
 
@@ -283,8 +283,8 @@ impl<'a> CodeGen<'a>
 		if stack_size != 0
 		{
 			self.instr_add(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Integer(stack_size as u64), Type::U64),
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::new(TypeKind::U64)), 
+				&Placeholder::new(PlaceholderKind::Integer(stack_size as u64), Type::new(TypeKind::U64)),
 			);		
 		}
 	}

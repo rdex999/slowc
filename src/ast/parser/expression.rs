@@ -32,7 +32,7 @@ impl<'a> Parser<'a>
 				
 				// If there is an opening parenthese and then a data type, then its a type cast.
 				// TODO: Make a function for getting the type cast data type.
-				if let Some(data_type) = Type::from_token_kind(&self.current_token().kind) 
+				if let Some(data_type) = self.parse_data_type() 
 				{
 					self.position = position;
 					return data_type;
@@ -47,7 +47,7 @@ impl<'a> Parser<'a>
 				if operator == BinExprOperator::AddressOf
 				{
 					self.position = position;
-					return Type::U64;
+					return Type::new(TypeKind::U64);		/* TODO: Replace with TypeKind::Pointer */
 				}
 				was_operator = true;
 				self.advance_token().unwrap_or_else(|| {
@@ -86,17 +86,17 @@ impl<'a> Parser<'a>
 	
 				if let Some(data_type) = data_type
 				{
-					return match data_type {
-						Type::I8  => Some(Value::I8(value as i8)),
-						Type::U8  => Some(Value::U8(value as u8)),
-						Type::I16 => Some(Value::I16(value as i16)),
-						Type::U16 => Some(Value::U16(value as u16)),
-						Type::I32 => Some(Value::I32(value as i32)),
-						Type::U32 => Some(Value::U32(value as u32)),
-						Type::I64 => Some(Value::I64(value)),
-						Type::U64 => Some(Value::U64(value as u64)),
-	
-						_ => { print_errln!(CompileError::TypeError(data_type, Type::I32), self.source, first_token.span.start, ""); }
+					return match data_type.kind {
+						TypeKind::I8  => Some(Value::I8(value as i8)),
+						TypeKind::U8  => Some(Value::U8(value as u8)),
+						TypeKind::I16 => Some(Value::I16(value as i16)),
+						TypeKind::U16 => Some(Value::U16(value as u16)),
+						TypeKind::I32 => Some(Value::I32(value as i32)),
+						TypeKind::U32 => Some(Value::U32(value as u32)),
+						TypeKind::I64 => Some(Value::I64(value)),
+						TypeKind::U64 => Some(Value::U64(value as u64)),
+						// TODO: Add pointer
+						_ => { print_errln!(CompileError::TypeError(data_type, Type::new(TypeKind::I32)), self.source, first_token.span.start, ""); }
 					}
 				}
 				return Some(Value::I32(value as i32));
@@ -112,11 +112,12 @@ impl<'a> Parser<'a>
 
 				if let Some(data_type) = data_type
 				{
-					return match data_type
+					return match data_type.kind
 					{
-						Type::F32 => Some(Value::F32(value as f32)),
-						Type::F64 => Some(Value::F64(value)),
-						_ => { print_errln!(CompileError::TypeError(data_type, Type::F32), self.source, first_token.span.start, ""); }
+						TypeKind::F32 => Some(Value::F32(value as f32)),
+						TypeKind::F64 => Some(Value::F64(value)),
+						// TODO: Add pointer
+						_ => { print_errln!(CompileError::TypeError(data_type, Type::new(TypeKind::F32)), self.source, first_token.span.start, ""); }
 					}
 				}
 				return Some(Value::F64(value));
@@ -229,13 +230,13 @@ impl<'a> Parser<'a>
 			let operator_token = self.current_token();
 			if operator == BinExprOperator::AddressOf 
 			{
-				if data_type != Type::U64		/* TODO: Switch to pointer-type */
+				if data_type != Type::new(TypeKind::U64)		/* TODO: Switch to pointer-type */
 				{
 					print_errln!(
-						CompileError::TypeError(data_type, Type::U64), 		/* TODO: Switch to pointer-type */
+						CompileError::TypeError(data_type, Type::new(TypeKind::U64)), 		/* TODO: Switch to pointer-type */
 						self.source, 
 						operator_token.span.start, 
-						"Expected pointer data type ( * ) or {}.", Type::U64.to_string()
+						"Expected pointer data type ( * ) or {}.", Type::new(TypeKind::U64).to_string()
 					);
 				}
 
@@ -296,11 +297,8 @@ impl<'a> Parser<'a>
 		let result;
 		if self.current_token().kind == TokenKind::LeftParen
 		{
-			let next_token = self.peek(1).unwrap_or_else(|| {
-				print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing expression.");
-			});
 			// If casting to a data type. (u64)420
-			if let Some(_) = Type::from_token_kind(&next_token.kind)
+			if let Some(_) = self.parse_data_type_non_mut(1)
 			{
 				result = self.parse_type_cast(variables, data_type);
 				
@@ -346,16 +344,28 @@ impl<'a> Parser<'a>
 
 	fn parse_type_cast(&mut self, variables: &LocalVariables, data_type: Type) -> BinExprPart
 	{
-		let token_into_type = self.advance_token().unwrap_or_else(|| {
+		let token_left_paren = self.current_token();
+		if token_left_paren.kind != TokenKind::LeftParen
+		{
+			panic!("parse_type_cast() was not called on a type cast");
+		}
+
+		self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.end, "While parsing expression.");
 		});
-		let into_type = Type::from_token_kind(&token_into_type.kind).unwrap_or_else(|| {
+
+		let into_type = self.parse_data_type().unwrap_or_else(|| {
 			panic!("Dev error, parse_type_cast called on a non type cast.");
 		});
 		
-		if into_type == Type::Void
+		if into_type == Type::new(TypeKind::Void)
 		{
-			print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Cannot cast to {} data type.", Type::Void.to_string());
+			print_errln!(
+				CompileError::Syntax, 
+				self.source, 
+				self.current_token().span.start, 
+				"Cannot cast to {} data type.", Type::new(TypeKind::Void).to_string()
+			);
 		}
 		
 		if into_type != data_type
@@ -367,14 +377,14 @@ impl<'a> Parser<'a>
 				"Can only cast to the expressions data type."
 			);
 		}
-		
-		let token_right_paren = self.advance_token().unwrap_or_else(|| {
-			print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing type cast.");
-		});
+
+		let token_right_paren = self.current_token();
+
 		if token_right_paren.kind != TokenKind::RightParen
 		{
 			print_errln!(CompileError::Syntax, self.source, token_right_paren.span.start, "Expected closing parenthese on type cast.");
 		}
+
 		self.advance_token().unwrap_or_else(|| {
 			print_errln!(CompileError::UnexpectedEof, self.source, token_right_paren.span.end, "While parsing expression.");
 		});
@@ -383,7 +393,7 @@ impl<'a> Parser<'a>
 		let expression = self.parse_value_expr(from_type, variables);
 		if from_type == into_type
 		{
-			print_wrnln!(self.source, token_into_type.span.start, "Type cast ignored, casting to the same data type.");
+			print_wrnln!(self.source, token_left_paren.span.end, "Type cast ignored, casting to the same data type.");
 			return expression;
 		}
 

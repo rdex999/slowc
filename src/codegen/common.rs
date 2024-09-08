@@ -83,16 +83,16 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I8(_)   								=> Type::I8,
-			Value::U8(_)	 							=> Type::U8,
-			Value::I16(_) 								=> Type::I16,
-			Value::U16(_) 								=> Type::U16,
-			Value::I32(_) 								=> Type::I32,
-			Value::U32(_) 								=> Type::U32,
-			Value::I64(_) 								=> Type::I64,
-			Value::U64(_)								=> Type::U64,
-			Value::F32(_)								=> Type::F32,
-			Value::F64(_)								=> Type::F64,
+			Value::I8(_)   								=> Type::new(TypeKind::I8),
+			Value::U8(_)	 							=> Type::new(TypeKind::U8),
+			Value::I16(_) 								=> Type::new(TypeKind::I16),
+			Value::U16(_) 								=> Type::new(TypeKind::U16),
+			Value::I32(_) 								=> Type::new(TypeKind::I32),
+			Value::U32(_) 								=> Type::new(TypeKind::U32),
+			Value::I64(_) 								=> Type::new(TypeKind::I64),
+			Value::U64(_)								=> Type::new(TypeKind::U64),
+			Value::F32(_)								=> Type::new(TypeKind::F32),
+			Value::F64(_)								=> Type::new(TypeKind::F64),
 			Value::Var(index) 						=> locals[*index as usize].data_type,
 			Value::FuncCall(info)	=> self.ir.functions[info.index as usize].return_type,
 		}

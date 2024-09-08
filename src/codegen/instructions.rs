@@ -194,7 +194,7 @@ impl Register
 	{
 		if *self as u8 >= Register::XMM0 as u8 && *self as u8 <= Register::XMM15 as u8
 		{
-			return Type::F64;
+			return Type::new(TypeKind::F64);
 		}
 
 		match self {
@@ -203,7 +203,7 @@ impl Register
 			Register::R8  | Register::R9  | Register::R10 | Register::R11 |
 			Register::R12 | Register::R13 | Register::R14 | Register::R15 =>
 			{
-				return Type::U64;
+				return Type::new(TypeKind::U64);
 			},
 
 			Register::EAX | Register::EBX | Register::ECX | Register::EDX |
@@ -211,7 +211,7 @@ impl Register
 			Register::R8D  | Register::R9D  | Register::R10D | Register::R11D |
 			Register::R12D | Register::R13D | Register::R14D | Register::R15D =>
 			{
-				return Type::U32;
+				return Type::new(TypeKind::U32);
 			},
 
 			Register::AX | Register::BX | Register::CX | Register::DX |
@@ -219,9 +219,9 @@ impl Register
 			Register::R8W  | Register::R9W  | Register::R10W | Register::R11W |
 			Register::R12W | Register::R13W | Register::R14W | Register::R15W =>
 			{
-				return Type::U16;
+				return Type::new(TypeKind::U16);
 			},
-			_ => return Type::U8,
+			_ => return Type::new(TypeKind::U8),
 		}
 	}
 
@@ -417,10 +417,10 @@ impl<'a> CodeGen<'a>
 			self.write_text_segment(&format!("\n\tmov {} {destination}, {source_placeholder}", Self::size_2_opsize(destination.data_type.size())));
 			return;
 		}
-		if destination.data_type == Type::F64
+		if destination.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\tmovsd {destination}, {source_placeholder}"));
-		} else if destination.data_type == Type::F32
+		} else if destination.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\tmovss {destination}, {source_placeholder}"));
 		}
@@ -452,11 +452,11 @@ impl<'a> CodeGen<'a>
 	// Convert single floating point (64/32 bit) into an integer
 	pub fn instr_cvttsf2si(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		let destination = if destination.data_type.size() < 4 { destination.of_type(Type::U32) } else { *destination };
-		if source.data_type == Type::F64
+		let destination = if destination.data_type.size() < 4 { destination.of_type(Type::new(TypeKind::U32)) } else { *destination };
+		if source.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\tcvttsd2si {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-		} else if source.data_type == Type::F32
+		} else if source.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\tcvttss2si {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 		} else
@@ -468,11 +468,11 @@ impl<'a> CodeGen<'a>
 	// Convert single integer into single floating point (32/64 bit)
 	pub fn instr_cvtsi2sf(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		let source = if source.data_type.size() < 4 { source.of_type(Type::U32) } else { *source };
-		if destination.data_type == Type::F64
+		let source = if source.data_type.size() < 4 { source.of_type(Type::new(TypeKind::U32)) } else { *source };
+		if destination.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\tcvtsi2sd {destination}, {} {source}", Self::size_2_opsize(source.data_type.size())));
-		} else if destination.data_type == Type::F32
+		} else if destination.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\tcvtsi2ss {destination}, {} {source}", Self::size_2_opsize(source.data_type.size()) ));
 		} else
@@ -483,10 +483,10 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_cvtsf2sf(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		if source.data_type == Type::F64
+		if source.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\tcvtsd2ss {destination}, {source}"));
-		} else if source.data_type == Type::F32
+		} else if source.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\tcvtss2sd {destination}, {source}"));
 		} else
@@ -506,8 +506,8 @@ impl<'a> CodeGen<'a>
 			}
 
 			self.instr_sub(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Integer(source.data_type.size() as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::new(TypeKind::U64)),
+				&Placeholder::new(PlaceholderKind::Integer(source.data_type.size() as u64), Type::new(TypeKind::U64))
 			);
 
 			self.instr_mov(
@@ -543,8 +543,8 @@ impl<'a> CodeGen<'a>
 			);
 
 			self.instr_add(
-				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::U64), 
-				&Placeholder::new(PlaceholderKind::Integer(destination.data_type.size() as u64), Type::U64)
+				&Placeholder::new(PlaceholderKind::Reg(Register::RSP), Type::new(TypeKind::U64)), 
+				&Placeholder::new(PlaceholderKind::Integer(destination.data_type.size() as u64), Type::new(TypeKind::U64))
 			);
 			return;
 		}
@@ -561,10 +561,10 @@ impl<'a> CodeGen<'a>
 		if destination.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tadd {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-		} else if destination.data_type == Type::F64
+		} else if destination.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\taddsd {destination}, {source}"));
-		} else if destination.data_type == Type::F32
+		} else if destination.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\taddss {destination}, {source}"));
 		}
@@ -575,10 +575,10 @@ impl<'a> CodeGen<'a>
 		if destination.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tsub {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
-		} else if destination.data_type == Type::F64
+		} else if destination.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\tsubsd {destination}, {source}"));
-		} else if destination.data_type == Type::F32
+		} else if destination.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\tsubss {destination}, {source}"));
 		}
@@ -657,10 +657,10 @@ impl<'a> CodeGen<'a>
 				self.instr_mov(&dst_placeholder, destination);
 			}
 
-			if destination.data_type == Type::F64
+			if destination.data_type == Type::new(TypeKind::F64)
 			{
 				self.write_text_segment(&format!("\n\tmulsd {dst_placeholder}, {src_placeholder}"));
-			} else if destination.data_type == Type::F32
+			} else if destination.data_type == Type::new(TypeKind::F32)
 			{
 				self.write_text_segment(&format!("\n\tmulss {dst_placeholder}, {src_placeholder}"));
 			}
@@ -764,10 +764,10 @@ impl<'a> CodeGen<'a>
 				self.instr_mov(&dst, &destination);
 			}
 
-			if src.data_type == Type::F64
+			if src.data_type == Type::new(TypeKind::F64)
 			{
 				self.write_text_segment(&format!("\n\tdivsd {dst}, {src}"));
-			} else if src.data_type == Type::F32
+			} else if src.data_type == Type::new(TypeKind::F32)
 			{
 				self.write_text_segment(&format!("\n\tdivss {dst}, {src}"));
 			}
@@ -843,10 +843,10 @@ impl<'a> CodeGen<'a>
 		if lhs_placeholder.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tcmp {} {lhs_placeholder}, {rhs}", Self::size_2_opsize(lhs_placeholder.data_type.size())));
-		} else if lhs_placeholder.data_type == Type::F64
+		} else if lhs_placeholder.data_type == Type::new(TypeKind::F64)
 		{
 			self.write_text_segment(&format!("\n\tucomisd {lhs_placeholder}, {rhs}"));
-		} else if lhs_placeholder.data_type == Type::F32
+		} else if lhs_placeholder.data_type == Type::new(TypeKind::F32)
 		{
 			self.write_text_segment(&format!("\n\tucomiss {lhs_placeholder}, {rhs}"));
 		}
@@ -859,19 +859,19 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_sete(&mut self, destination: &Placeholder)
 	{
-		let destination = destination.of_type(Type::U8);
+		let destination = destination.of_type(Type::new(TypeKind::U8));
 		self.write_text_segment(&format!("\n\tsete {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setne(&mut self, destination: &Placeholder)
 	{
-		let destination = destination.of_type(Type::U8);
+		let destination = destination.of_type(Type::new(TypeKind::U8));
 		self.write_text_segment(&format!("\n\tsetne {} {destination}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	pub fn instr_setg(&mut self, destination: &Placeholder)
 	{
-		let destination = destination.of_type(Type::U8);
+		let destination = destination.of_type(Type::new(TypeKind::U8));
 		if destination.data_type.is_signed() && destination.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tsetg {} {destination}", Self::size_2_opsize(destination.data_type.size())));
@@ -883,7 +883,7 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_setl(&mut self, destination: &Placeholder)
 	{
-		let destination = destination.of_type(Type::U8);
+		let destination = destination.of_type(Type::new(TypeKind::U8));
 		if destination.data_type.is_signed() && destination.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tsetl {} {destination}", Self::size_2_opsize(destination.data_type.size())));
@@ -895,7 +895,7 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_setge(&mut self, destination: &Placeholder)
 	{
-		let destination = destination.of_type(Type::U8);
+		let destination = destination.of_type(Type::new(TypeKind::U8));
 		if destination.data_type.is_signed() && destination.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tsetge {} {destination}", Self::size_2_opsize(destination.data_type.size())));
@@ -907,7 +907,7 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_setle(&mut self, destination: &Placeholder)
 	{
-		let destination = destination.of_type(Type::U8);
+		let destination = destination.of_type(Type::new(TypeKind::U8));
 		if destination.data_type.is_signed() && destination.data_type.is_integer()
 		{
 			self.write_text_segment(&format!("\n\tsetle {} {destination}", Self::size_2_opsize(destination.data_type.size())));

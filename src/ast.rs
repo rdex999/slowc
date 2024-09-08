@@ -161,7 +161,17 @@ pub enum BinExprOperator
 
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-pub enum Type
+pub struct Type
+{
+	pub kind: TypeKind,
+	
+	// Doesnt matter if self.kind != TypeKind::Pointer
+	pub points_to: TypeKind,	
+	pub pointer_level: u8,		
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum TypeKind
 {
 	Void,
 	I8,
@@ -172,9 +182,11 @@ pub enum Type
 	U32,
 	I64,
 	U64,
+	Pointer,
 
 	F32,
 	F64,
+
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -326,23 +338,23 @@ impl VarUpdateInfo
 	}
 }
 
-impl Type
+impl TypeKind
 {
 	// Will return None if the given token kind is not a type
-	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Type>
+	pub fn from_token_kind(token_kind: &TokenKind) -> Option<Self>
 	{
 		match token_kind {
-			TokenKind::Void => return Some(Type::Void),
-			TokenKind::I8 	=> return Some(Type::I8),
-			TokenKind::U8 	=> return Some(Type::U8),
-			TokenKind::I16 	=> return Some(Type::I16),
-			TokenKind::U16 	=> return Some(Type::U16),
-			TokenKind::I32 	=> return Some(Type::I32),
-			TokenKind::U32 	=> return Some(Type::U32),
-			TokenKind::I64 	=> return Some(Type::I64),
-			TokenKind::U64 	=> return Some(Type::U64),
-			TokenKind::F32 	=> return Some(Type::F32),
-			TokenKind::F64 	=> return Some(Type::F64),
+			TokenKind::Void => return Some(Self::Void),
+			TokenKind::I8 	=> return Some(Self::I8),
+			TokenKind::U8 	=> return Some(Self::U8),
+			TokenKind::I16 	=> return Some(Self::I16),
+			TokenKind::U16 	=> return Some(Self::U16),
+			TokenKind::I32 	=> return Some(Self::I32),
+			TokenKind::U32 	=> return Some(Self::U32),
+			TokenKind::I64 	=> return Some(Self::I64),
+			TokenKind::U64 	=> return Some(Self::U64),
+			TokenKind::F32 	=> return Some(Self::F32),
+			TokenKind::F64 	=> return Some(Self::F64),
 			_ 				=> return None
 		};
 	}
@@ -351,11 +363,11 @@ impl Type
 	{
 		return match self
 		{
-			Type::Void 							=> 0,
-			Type::I8  | Type::U8 				=> 1,
-			Type::I16 | Type::U16				=> 2,
-			Type::I32 | Type::U32 | Type::F32	=> 4,
-			Type::I64 | Type::U64 | Type::F64 	=> 8,
+			Self::Void 											=> 0,
+			Self::I8  | Self::U8 								=> 1,
+			Self::I16 | Self::U16								=> 2,
+			Self::I32 | Self::U32 | Self::F32					=> 4,
+			Self::I64 | Self::U64 | Self::F64 | Self::Pointer 	=> 8,
 		}
 	}
 
@@ -363,15 +375,51 @@ impl Type
 	{
 		return match self
 		{
-			Type::I8  | Type::I16 | Type::I32 | Type::I64 |
-			Type::F32 | Type::F64 => true,
+			Self::I8  | Self::I16 | Self::I32 | Self::I64 |
+			Self::F32 | Self::F64 => true,
 			_ => false,
 		}
 	}
 
 	pub fn is_integer(&self) -> bool
 	{
-		return *self as u8 >= Type::I8 as u8 && *self as u8 <= Type::U64 as u8;
+		return *self as u8 >= Self::I8 as u8 && *self as u8 <= Self::Pointer as u8;
+	}
+}
+
+impl Type
+{
+	pub fn new(kind: TypeKind) -> Self
+	{
+		return Self {
+			kind,
+			points_to: TypeKind::Void,
+			pointer_level: 0,
+		};
+	}
+
+	pub fn new_ptr(kind: TypeKind, points_to: TypeKind, pointer_level: u8) -> Self
+	{
+		return Self {
+			kind,
+			points_to,
+			pointer_level,
+		};
+	}
+
+	pub fn size(&self) -> u8
+	{
+		return self.kind.size();
+	}
+
+	pub fn is_signed(&self) -> bool
+	{
+		return self.kind.is_signed();
+	}
+
+	pub fn is_integer(&self) -> bool
+	{
+		return self.kind.is_integer();
 	}
 }
 
@@ -379,7 +427,7 @@ impl std::fmt::Display for Type
 {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result 
 	{
-		let _ = write!(f, "{}", format!("{:?}", self).to_lowercase());
+		let _ = write!(f, "{}", format!("{:?}", self.kind).to_lowercase());
 		return Ok(());
 	}
 }

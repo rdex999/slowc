@@ -1,1 +1,1 @@
-func extern putchar(character u8) -> void;
+func extern putchar(character u8, second_crap u64) -> void;

@@ -32,14 +32,14 @@ impl<'a> CodeGen<'a>
 	{
 		return match value
 		{
-			Value::I8(number) 			=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I8),
-			Value::U8(number) 			=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U8),
-			Value::I16(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I16),
-			Value::U16(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U16),
-			Value::I32(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I32),
-			Value::U32(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U32),
-			Value::I64(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::I64),
-			Value::U64(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::U64),
+			Value::I8(number) 			=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::I8)),
+			Value::U8(number) 			=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::U8)),
+			Value::I16(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::I16)),
+			Value::U16(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::U16)),
+			Value::I32(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::I32)),
+			Value::U32(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::U32)),
+			Value::I64(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::I64)),
+			Value::U64(number) 		=> Placeholder::new(PlaceholderKind::Integer(*number as u64), Type::new(TypeKind::U64)),
 			Value::F64(_) | Value::F32(_) 	=> 
 			{
 				let lable = self.decl_var_data_seg(value);
@@ -79,7 +79,7 @@ impl<'a> CodeGen<'a>
 				return destination;
 			}
 			
-			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::U8);
+			let destination = Placeholder::new(PlaceholderKind::Reg(Register::AL), Type::new(TypeKind::U8));
 			self.instr_cmp(lhs, rhs); 
 			
 			match operator
@@ -140,7 +140,7 @@ impl<'a> CodeGen<'a>
 			BinExprOperator::BoolNot		=> {self.instr_test(&expression, &expression); self.instr_setz(&expression); },
 			BinExprOperator::AddressOf		=>
 			{
-				let rax = Placeholder::new(PlaceholderKind::Reg(Register::RAX), Type::U64);
+				let rax = Placeholder::new(PlaceholderKind::Reg(Register::RAX), Type::new(TypeKind::U64));
 				self.instr_lea(&rax, &expression);
 				return rax;
 			}
@@ -218,12 +218,12 @@ impl<'a> CodeGen<'a>
 					type_cast_info.into_type
 				);
 
-				match type_cast_info.into_type
+				match type_cast_info.into_type.kind
 				{
-					Type::U16 | Type::U32 => self.instr_movzx(&rax, &expression),
-					Type::U64 =>
+					TypeKind::U16 | TypeKind::U32 => self.instr_movzx(&rax, &expression),
+					TypeKind::U64 =>
 					{
-						if type_cast_info.from_type == Type::U16 || type_cast_info.from_type == Type::U8
+						if type_cast_info.from_type == Type::new(TypeKind::U16) || type_cast_info.from_type == Type::new(TypeKind::U8)
 						{
 							self.instr_movzx(&rax, &expression);
 						} else
@@ -266,12 +266,12 @@ impl<'a> CodeGen<'a>
 						type_cast_info.into_type
 					);
 
-					match type_cast_info.into_type
+					match type_cast_info.into_type.kind
 					{
-						Type::I16 | Type::I32 => self.instr_movzx(&rax, &expression),
-						Type::I64 =>
+						TypeKind::I16 | TypeKind::I32 => self.instr_movzx(&rax, &expression),
+						TypeKind::I64 =>
 						{
-							if type_cast_info.from_type == Type::I16 || type_cast_info.from_type == Type::I8
+							if type_cast_info.from_type == Type::new(TypeKind::I16) || type_cast_info.from_type == Type::new(TypeKind::I8)
 							{
 								self.instr_movsx(&rax, &expression);
 							} else
