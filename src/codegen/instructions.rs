@@ -171,6 +171,16 @@ impl LocationExpr
 			offset_multiplier,
 		};
 	}
+	
+	pub fn from_placeholder(placeholder: &Placeholder) -> Self
+	{
+		match placeholder.kind
+		{
+			PlaceholderKind::Integer(value) => Self::new(LocationExprPart::Offset(value as isize), LocationExprPart::Offset(0), None),
+			PlaceholderKind::Location(expr) => expr,
+			PlaceholderKind::Reg(register) => Self::new(LocationExprPart::Reg(register), LocationExprPart::Offset(0), None),
+		}
+	}
 }
 
 impl Lable
@@ -446,7 +456,7 @@ impl<'a> CodeGen<'a>
 
 	pub fn instr_lea(&mut self, destination: &Placeholder, source: &Placeholder)
 	{
-		self.write_text_segment(&format!("\n\tlea {destination}, {source}"));
+		self.write_text_segment(&format!("\n\tlea {} {destination}, {source}", Self::size_2_opsize(destination.data_type.size())));
 	}
 
 	// Convert single floating point (64/32 bit) into an integer

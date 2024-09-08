@@ -56,7 +56,7 @@ impl<'a> CodeGen<'a>
 			}
 			Value::Var(_) 											=> self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
-			_ => todo!(),
+			Value::Dereference(info)				=> self.gen_pointer_dereference(locals, info),
 		}	
 	}
 	
@@ -356,5 +356,36 @@ impl<'a> CodeGen<'a>
 			);
 			return xmm0;
 		}
+	}
+
+	fn gen_pointer_dereference(&mut self, locals: &Vec<Variable>, dereference_info: &DereferenceInfo) -> Placeholder
+	{
+		let expression = self.gen_expression(&dereference_info.expression, locals);
+		let mut result = Placeholder::new(PlaceholderKind::Reg(Register::RAX), dereference_info.data_type);
+		let start_dereference_cnt;
+		if expression.is_location()
+		{
+			start_dereference_cnt = 0;
+			self.instr_mov(&result, &expression);
+		} else
+		{
+			start_dereference_cnt = 1;
+			self.instr_mov(
+				&result, 
+				&Placeholder::new(PlaceholderKind::Location(LocationExpr::from_placeholder(&expression)), expression.data_type)
+			);
+			result = result.of_type(result.data_type.dereference(1));
+		}
+
+		for _ in start_dereference_cnt..dereference_info.dereference_count
+		{
+			self.instr_mov(
+				&result, 
+				&Placeholder::new(PlaceholderKind::Location(LocationExpr::from_placeholder(&result)), result.data_type)
+			);
+			result = result.of_type(result.data_type.dereference(1));
+		}
+
+		return result;
 	}
 }

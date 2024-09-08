@@ -2,9 +2,10 @@
 
 func global main() -> i32
 {
+	let first_num i32 = 212;
 	let num i32 = 123;
 	let pointer *i32 = &num;
 
-	let num_copy i32 = *pointer;		// Will panic in code_gen
-	return 0;
+	let num_copy i32 = *(pointer + 4);		// Gets the value of first_num
+	return num_copy;
 }
