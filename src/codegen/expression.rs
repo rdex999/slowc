@@ -56,6 +56,7 @@ impl<'a> CodeGen<'a>
 			}
 			Value::Var(_) 											=> self.gen_value_access(locals, value),
 			Value::FuncCall(function_call_info) 	=> self.gen_function_call(locals, function_call_info).unwrap(),
+			_ => todo!(),
 		}	
 	}
 	

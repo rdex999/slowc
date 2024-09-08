@@ -55,6 +55,7 @@ impl<'a> Parser<'a>
 				return var.data_type;
 			},
 			Value::FuncCall(func_call) => return self.func_manager.get_by_index(func_call.index).unwrap().return_type,
+			Value::Dereference(info) => return info.data_type.dereference(info.dereference_count),
 		}
 	}
 

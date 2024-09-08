@@ -2,7 +2,9 @@
 
 func global main() -> i32
 {
-	let num *i32 = 123;
-	let pointer **i32 = &num;
+	let num i32 = 123;
+	let pointer *i32 = &num;
+
+	let num_copy i32 = *pointer;		// Will panic in code_gen
 	return 0;
 }

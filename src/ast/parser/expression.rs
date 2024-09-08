@@ -158,6 +158,51 @@ impl<'a> Parser<'a>
 				}
 				return Some(Value::Var(var.index));
 			},
+
+			TokenKind::Asterisk => 
+			{
+				let mut dereference_count: u8 = 0;
+				while self.current_token().kind == TokenKind::Asterisk
+				{
+					dereference_count += 1;
+					self.advance_token().unwrap_or_else(|| {
+						print_errln!(CompileError::UnexpectedEof, self.source, self.current_token().span.start, "While parsing pointer dereference.");
+					});
+				}
+
+				let expr_data_type = self.get_expression_type(variables);
+
+				if dereference_count > expr_data_type.pointer_level
+				{
+					print_errln!(
+						CompileError::TypeError(expr_data_type, Type::new_ptr(expr_data_type.kind, expr_data_type.points_to, dereference_count)),
+						self.source,
+						first_token.span.start,
+						"Trying to dereference {dereference_count} times a data type of {}.", expr_data_type.to_string()
+					);
+				}
+
+				if data_type != None && expr_data_type.dereference(dereference_count) != data_type.unwrap()
+				{
+					print_errln!(
+						CompileError::TypeError(data_type.unwrap(), expr_data_type.dereference(dereference_count)),
+						self.source,
+						first_token.span.start,
+						"Pointer data type doesnt match. Try casting or dereferencing."
+					);
+				}
+
+				// let expression = self.parse_value_expr(expr_data_type, variables);
+				let expression = self.parse_bin_expression_high_precedence(expr_data_type, variables, BinExprOperator::Dereference.precedence());
+
+				// TODO: When adding arrays and the indexing operator, ( [] ) check if the expression is a dereference
+
+				return Some(Value::Dereference(DereferenceInfo::new(
+					BinExpr::new(expression), 
+					dereference_count, 
+					expr_data_type,
+				)));
+			},
 	
 			_ => return None
 		}
@@ -222,16 +267,24 @@ impl<'a> Parser<'a>
 		{
 			if !operator.is_self_operator()
 			{
-				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected value or self operator (~, !, &).");
+				print_errln!(CompileError::Syntax, self.source, self.current_token().span.start, "Expected value or self operator (~, !, &, *).");
+			}
+
+			if operator == BinExprOperator::Dereference
+			{
+				let value = self.parse_value(Some(data_type), variables, false).unwrap_or_else(|| {
+					panic!("self.parse_value has returned None.");
+				});
+				return Some(BinExprPart::Val(value));
 			}
 
 			let operator_token = self.current_token();
 			if operator == BinExprOperator::AddressOf 
 			{
-				if data_type != Type::new(TypeKind::U64) && data_type.kind != TypeKind::Pointer	/* TODO: Switch to pointer-type */
+				if data_type != Type::new(TypeKind::U64) && data_type.kind != TypeKind::Pointer
 				{
 					print_errln!(
-						CompileError::TypeError(data_type, Type::new(TypeKind::U64)), 		/* TODO: Switch to pointer-type */
+						CompileError::TypeError(data_type, Type::new(TypeKind::U64)),
 						self.source, 
 						operator_token.span.start, 
 						"Expected pointer data type ( * ) or {}.", Type::new(TypeKind::U64).to_string()

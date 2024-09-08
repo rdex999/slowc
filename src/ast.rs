@@ -70,13 +70,6 @@ pub struct VarUpdateInfo
 }
 
 #[derive(Debug, Clone)]
-pub struct FunctionCallInfo
-{
-	pub index: u8,
-	pub arguments: Vec<BinExpr>,
-}
-
-#[derive(Debug, Clone)]
 pub enum Value
 {
 	I8(i8),			/* (Not funny) */
@@ -90,15 +83,23 @@ pub enum Value
 	F32(f32),		/* (Not funny) */
 	F64(f64),		/* (Not funny) */
 	Var(u8),		/* The variables index in the variables array */
+	Dereference(DereferenceInfo),
 	FuncCall(FunctionCallInfo),
 }
 
 #[derive(Debug, Clone)]
-pub struct TypeCastInfo
+pub struct DereferenceInfo
 {
-	pub into_type: Type,
-	pub from_type: Type,
-	pub expression: BinExprPart,
+	pub expression: Box<BinExpr>,
+	pub dereference_count: u8,
+	pub data_type: Type,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionCallInfo
+{
+	pub index: u8,
+	pub arguments: Vec<BinExpr>,
 }
 
 #[derive(Debug, Clone)]
@@ -114,6 +115,14 @@ pub enum BinExprPart
 	Operation(Box<BinExprOperation>),
 	Val(Value),
 	TypeCast(Box<TypeCastInfo>),
+}
+
+#[derive(Debug, Clone)]
+pub struct TypeCastInfo
+{
+	pub into_type: Type,
+	pub from_type: Type,
+	pub expression: BinExprPart,
 }
 
 #[derive(Debug, Clone)]
@@ -157,6 +166,7 @@ pub enum BinExprOperator
 	BitwiseNot,
 	BoolNot,
 	AddressOf,
+	Dereference,
 }
 
 
@@ -473,7 +483,7 @@ impl BinExprOperator
 			TokenKind::BitwiseLeftShift 	=> Self::BitwiseLeftShift,
 			TokenKind::Plus 				=> Self::Add,
 			TokenKind::Minus 				=> Self::Sub,
-			TokenKind::Asterisk 			=> Self::Mul,
+			TokenKind::Asterisk 			=> if is_prev_operator { Self::Dereference } else { Self::Mul },
 			TokenKind::ForwardSlash 		=> Self::Div,
 			TokenKind::Percent 				=> Self::Modulo,
 			TokenKind::BitwiseNot			=> Self::BitwiseNot,
@@ -495,7 +505,7 @@ impl BinExprOperator
 			Self::BitwiseRightShift | Self::BitwiseLeftShift 						=> 6,
 			Self::Add | Self::Sub 													=> 7,
 			Self::Mul | Self::Div | Self::Modulo 									=> 8,
-			Self::BitwiseNot | Self::BoolNot | Self::AddressOf				 		=> 9,
+			Self::BitwiseNot | Self::BoolNot | Self::AddressOf | Self::Dereference	=> 9,
 		};
 	}
 
@@ -506,7 +516,7 @@ impl BinExprOperator
 
 	pub fn is_self_operator(&self) -> bool
 	{
-		return *self as u8 >= Self::BitwiseNot as u8 && *self as u8 <= Self::AddressOf as u8;
+		return *self as u8 >= Self::BitwiseNot as u8 && *self as u8 <= Self::Dereference as u8;
 	}
 }
 
@@ -531,6 +541,18 @@ impl TypeCastInfo
 			from_type,
 			expression,
 		}
+	}
+}
+
+impl DereferenceInfo
+{
+	pub fn new(expression: BinExpr, dereference_count: u8, data_type: Type) -> Self
+	{
+		return Self {
+			expression: Box::new(expression),
+			dereference_count,
+			data_type,
+		};
 	}
 }
 

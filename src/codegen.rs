@@ -116,19 +116,28 @@ impl<'a> CodeGen<'a>
 
 	fn gen_assign_stmt(&mut self, assign_data: &VarUpdateInfo, locals: &Vec<Variable>)
 	{
-		let source = self.gen_expression(&assign_data.value, locals);
-		let	src_reg = self.reg_alloc_allocate(source.data_type).unwrap();
-		let src_placeholder = Placeholder::new(
-			PlaceholderKind::Reg(src_reg), 
-			source.data_type
-		);
-		self.instr_mov(&src_placeholder, &source);
+		let mut expression = self.gen_expression(&assign_data.value, locals);
+		let mut allocated_reg = None;
+		if expression.is_register()
+		{
+			allocated_reg = Some(self.reg_alloc_allocate(expression.data_type).unwrap());
+
+			let expr_placeholder = Placeholder::new(
+				PlaceholderKind::Reg(allocated_reg.unwrap()), 
+				expression.data_type
+			);
+			self.instr_mov(&expr_placeholder, &expression);
+			expression = expr_placeholder;
+		}
 
 		let destination = self.gen_value_access(locals, &assign_data.destination);
 
-		self.instr_mov(&destination, &src_placeholder);
+		self.instr_mov(&destination, &expression);
 
-		self.reg_alloc_free(src_reg);
+		if let Some(register) = allocated_reg
+		{
+			self.reg_alloc_free(register);
+		}
 	}
 
 	fn gen_return_stmt(&mut self, locals: &Vec<Variable>, expression: &Option<BinExpr>)

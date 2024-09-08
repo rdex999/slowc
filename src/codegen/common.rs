@@ -95,6 +95,7 @@ impl<'a> CodeGen<'a>
 			Value::F64(_)								=> Type::new(TypeKind::F64),
 			Value::Var(index) 						=> locals[*index as usize].data_type,
 			Value::FuncCall(info)	=> self.ir.functions[info.index as usize].return_type,
+			_ => todo!(),
 		}
 	}
 }
