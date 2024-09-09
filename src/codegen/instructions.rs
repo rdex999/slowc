@@ -415,7 +415,7 @@ impl<'a> CodeGen<'a>
 			if let PlaceholderKind::Location(_) = source.kind
 			{
 				source_placeholder = Placeholder::new(
-					PlaceholderKind::Reg(Register::from_op_size(Register::default_for_type(source.data_type), source.data_type.size())), 
+					PlaceholderKind::Reg(Register::default_for_type(source.data_type)), 
 					source.data_type
 				);
 				self.instr_mov(&source_placeholder, source);

@@ -432,6 +432,11 @@ impl Type
 		return self.kind.is_integer();
 	}
 
+	pub fn is_pointer(&self) -> bool
+	{
+		return self.kind == TypeKind::Pointer;
+	}
+
 	pub fn dereference(&self, count: u8) -> Type
 	{
 		if self.kind != TypeKind::Pointer || count > self.pointer_level

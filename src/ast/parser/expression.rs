@@ -152,7 +152,9 @@ impl<'a> Parser<'a>
 				
 				if let Some(data_type) = data_type
 				{
-					if var.data_type != data_type
+					if 
+						(var.data_type != data_type && !data_type.is_pointer()) || 
+						(data_type.is_pointer() && var.data_type != data_type && var.data_type != Type::new(TypeKind::U64))
 					{
 						print_errln!(CompileError::TypeError(data_type, var.data_type), self.source, first_token.span.start, "");
 					}
@@ -218,7 +220,6 @@ impl<'a> Parser<'a>
 	fn parse_bin_expression_part(&mut self, mut data_type: Type, variables: &LocalVariables) -> BinExprPart
 	{
 		let mut root;
-		
 		if let Some(expression) = self.parse_self_operator(data_type, variables)
 		{
 			root = expression;
@@ -230,7 +231,7 @@ impl<'a> Parser<'a>
 				BinExprOperator::LOWEST_PRECEDENCE + 1
 			);
 		}
-
+		
 		while let Some(operator) = BinExprOperator::from_token_kind(&self.current_token().kind, false)
 		{
 			if operator.is_self_operator()
@@ -243,6 +244,36 @@ impl<'a> Parser<'a>
 				);
 			}	
 			
+			if self.bin_expr_part_type(&root, variables).is_pointer()
+			{
+				if operator != BinExprOperator::Add && operator != BinExprOperator::Sub
+				{
+					print_errln!(
+						CompileError::Syntax, 
+						self.source, 
+						self.current_token().span.start, 
+						"Can only offset pointers by addition or subtraction."
+					);
+				}
+
+				self.parse_bin_operator();
+
+				let mut expression = self.parse_bin_expression_part(
+					Type::new(TypeKind::U64), 
+					variables, 
+				);
+
+				let dereference_size = data_type.dereference(1).size();
+				expression = BinExprPart::Operation(Box::new(BinExprOperation::new(
+					BinExprOperator::Mul, 
+					expression, 
+					BinExprPart::Val(Value::U64(dereference_size as u64))
+				)));
+
+				root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, expression)));
+				return root;
+			}
+
 			self.parse_bin_operator();
 
 			// After a && or a || the numeric expression can have a different data type. For example: if 5 > 6 && 1.420 < 2.5
@@ -259,6 +290,7 @@ impl<'a> Parser<'a>
 
 			root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, rhs)));
 		}
+
 		return root;
 	}
 
@@ -340,6 +372,36 @@ impl<'a> Parser<'a>
 			if operator.precedence() < precedence
 			{
 				break;
+			}
+
+			if self.bin_expr_part_type(&root, variables).is_pointer()
+			{
+				if operator != BinExprOperator::Add && operator != BinExprOperator::Sub
+				{
+					print_errln!(
+						CompileError::Syntax, 
+						self.source, 
+						self.current_token().span.start, 
+						"Can only offset pointers by addition or subtraction."
+					);
+				}
+
+				self.parse_bin_operator();
+
+				let mut expression = self.parse_bin_expression_part(
+					Type::new(TypeKind::U64), 
+					variables, 
+				);
+
+				let dereference_size = data_type.dereference(1).size();
+				expression = BinExprPart::Operation(Box::new(BinExprOperation::new(
+					BinExprOperator::Mul, 
+					expression, 
+					BinExprPart::Val(Value::U64(dereference_size as u64))
+				)));
+
+				root = BinExprPart::Operation(Box::new(BinExprOperation::new(operator, root, expression)));
+				return root;
 			}
 
 			self.parse_bin_operator();	
@@ -454,7 +516,7 @@ impl<'a> Parser<'a>
 		});
 		
 		let from_type = self.get_expression_type(variables);
-		let mut expression = self.parse_value_expr(from_type, variables);
+		let expression = self.parse_value_expr(from_type, variables);
 		if from_type == into_type
 		{
 			print_wrnln!(self.source, token_left_paren.span.end, "Type cast ignored, casting to the same data type.");
@@ -462,21 +524,21 @@ impl<'a> Parser<'a>
 		}
 
 		// If casting to a pointer of different size, cast first to u64 then to the pointer
-		if into_type.kind == TypeKind::Pointer && from_type.size() != into_type.size()
-		{
-			expression = BinExprPart::TypeCast(Box::new(TypeCastInfo::new(Type::new(TypeKind::U64), from_type, expression)));
+		// if into_type.kind == TypeKind::Pointer && from_type.size() != into_type.size()
+		// {
+		// 	expression = BinExprPart::TypeCast(Box::new(TypeCastInfo::new(Type::new(TypeKind::U64), from_type, expression)));
 
-			// If casting to a pointer from a type of different size, multiply it by the size of the data type that into_type dereferences into
-			// int* pointer = &num + (int*)5;		// 5 is multiplied by sizeof(*(int*)) -> sizeof(int)	// &num + 5 * 4
-			if into_type.dereference(1).size() != 1
-			{
-				expression = BinExprPart::Operation(Box::new(BinExprOperation::new(
-					BinExprOperator::Mul, 
-					expression, 
-					BinExprPart::Val(Value::U64(into_type.dereference(1).size() as u64))
-				)));
-			}
-		}
+		// 	// If casting to a pointer from a type of different size, multiply it by the size of the data type that into_type dereferences into
+		// 	// int* pointer = &num + (int*)5;		// 5 is multiplied by sizeof(*(int*)) -> sizeof(int)	// &num + 5 * 4
+		// 	if into_type.dereference(1).size() != 1
+		// 	{
+		// 		expression = BinExprPart::Operation(Box::new(BinExprOperation::new(
+		// 			BinExprOperator::Mul, 
+		// 			expression, 
+		// 			BinExprPart::Val(Value::U64(into_type.dereference(1).size() as u64))
+		// 		)));
+		// 	}
+		// }
 
 		return BinExprPart::TypeCast(Box::from(TypeCastInfo::new(into_type, from_type, expression)));
 	}

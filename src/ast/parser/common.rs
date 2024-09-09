@@ -59,6 +59,17 @@ impl<'a> Parser<'a>
 		}
 	}
 
+	pub fn bin_expr_part_type(&self, part: &BinExprPart, variables: &LocalVariables) -> Type
+	{
+		match part
+		{
+			BinExprPart::Operation(operation) => return self.bin_expr_part_type(&operation.lhs, variables),
+			BinExprPart::SelfOperation(operation) => return self.bin_expr_part_type(&operation.expression, variables),
+			BinExprPart::TypeCast(info) => return info.into_type,
+			BinExprPart::Val(value) => self.value_type(value, variables),
+		}
+	}
+
 	// Self is not mutated if None is returned
 	pub fn parse_data_type(&mut self) -> Option<Type>
 	{
